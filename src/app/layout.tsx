@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "../config/material-tailwind-theme-provider";
 import ReactQueryClientProvider from "src/config/ReactQUeryClientProvider";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,7 +30,10 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ReactQueryClientProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <div className="w-full h-screen">{children}</div>
+          </ThemeProvider>
+          <Toaster />
         </ReactQueryClientProvider>
       </body>
     </html>
