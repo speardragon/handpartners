@@ -18,6 +18,7 @@ import { z } from "zod";
 import Image from "next/image";
 import HandPartnersLogo from "../../../../public/images/handpartners_logo.png";
 import { Input } from "src/components/ui/input";
+import { useRouter } from "next/navigation";
 
 const FormSchema = z.object({
   email: z.string().email({ message: "이메일 형식이 올바르지 않습니다." }),
@@ -31,6 +32,7 @@ const FormSchema = z.object({
 });
 
 export default function Login() {
+  const router = useRouter();
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -41,7 +43,7 @@ export default function Login() {
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    console.log(data);
+    // console.log(data);
     // toast({
     //   title: "You submitted the following values:",
     //   description: (
@@ -50,6 +52,7 @@ export default function Login() {
     //     </pre>
     //   ),
     // })
+    router.push("/");
   }
 
   return (
