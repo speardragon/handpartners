@@ -30,7 +30,7 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ReactQueryClientProvider>
-          <div className="w-full h-screen">
+          <div className="w-full min-h-screen">
             <Header />
             {children}
           </div>
