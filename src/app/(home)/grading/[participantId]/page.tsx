@@ -1,8 +1,24 @@
-import { memo } from "react";
+"use client";
+
+import { memo, useState } from "react";
 import EvaluateTable from "./_components/evaluate-table";
 import PDFViewer from "./_components/pdf-viewer";
 
 const Page = () => {
+  const [isFull, setIsFull] = useState<boolean>(false);
+
+  const handleFullButton = () => {
+    setIsFull(!isFull);
+  };
+
+  if (isFull) {
+    return (
+      <div className="flex flex-col w-full h-full justify-center bg-gray-50">
+        <PDFViewer isFull={isFull} handleFullButton={handleFullButton} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex w-full p-4 gap-2 h-screen">
       <div className="flex flex-col w-1/2 p-2">
@@ -14,7 +30,7 @@ const Page = () => {
         <EvaluateTable />
       </div>
       <div className="flex flex-col w-1/2 h-full justify-center bg-gray-50 p-4">
-        <PDFViewer />
+        <PDFViewer isFull={isFull} handleFullButton={handleFullButton} />
       </div>
     </div>
   );

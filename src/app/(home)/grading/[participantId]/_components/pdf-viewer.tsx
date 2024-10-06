@@ -1,21 +1,30 @@
 "use client";
 
 import { useResizeObserver } from "@wojtekmaj/react-hooks";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import {
+  Dispatch,
+  memo,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
+type Props = {
+  isFull: boolean;
+  handleFullButton?: () => void;
+};
 
-// pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
 const maxWidth = 400;
 const resizeObserverOptions = {};
 
-const PDFViewer = () => {
+const PDFViewer = ({ isFull, handleFullButton }: Props) => {
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [inputPage, setInputPage] = useState("");
@@ -81,26 +90,30 @@ const PDFViewer = () => {
 
   return (
     <div
-      className="flex flex-col h-full items-center justify-center"
+      className="flex flex-col h-full items-center justify-center gap-2"
       ref={setContainerRef}
     >
       <Document
         file="/test.pdf" // 여기는 가지고 계신 pdf 주소
         onLoadSuccess={onDocumentLoadSuccess}
-        className="w-full shadow-lg"
+        className="shadow-lg"
       >
         {/* height, width는 number 타입으로 vh, %는 먹지 않습니다. */}
         <Page
+          className="flex justify-center"
           pageNumber={pageNumber}
-          width={containerWidth ? containerWidth : maxWidth}
+          width={
+            isFull
+              ? (8 * containerWidth) / 11
+              : containerWidth
+              ? containerWidth
+              : maxWidth
+          }
         />
       </Document>
-      {/* <p className="text-sm text-gray-600">
-        Page {pageNumber} of {numPages}
-      </p> */}
       <div className="flex bg-gray-200 p-2 w-full justify-center space-x-2">
         <button
-          className={`px-3 py-1 rounded ${
+          className={`px-2 rounded  border border-gray-300 ${
             pageNumber > 1
               ? "bg-gray-200 hover:bg-gray-300 cursor-pointer"
               : "bg-gray-100 cursor-not-allowed"
@@ -122,7 +135,7 @@ const PDFViewer = () => {
           <span className="ml-2 text-sm text-gray-600">of {numPages}</span>
         </div>
         <button
-          className={`px-3 py-1 rounded ${
+          className={`px-2 rounded border border-gray-300 ${
             pageNumber < numPages
               ? "bg-gray-200 hover:bg-gray-300 cursor-pointer"
               : "bg-gray-100 cursor-not-allowed"
@@ -134,12 +147,7 @@ const PDFViewer = () => {
         </button>
         {/* <button
           className="ml-auto px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-          onClick={() => {
-            const viewerElement = document.querySelector(".pdf-container"); // PDF 뷰어의 전체를 담고 있는 컨테이너 클래스에 맞게 지정
-            if (viewerElement?.requestFullscreen) {
-              viewerElement.requestFullscreen();
-            }
-          }}
+          onClick={() => handleFullButton()}
         >
           {"<>"}
         </button> */}
