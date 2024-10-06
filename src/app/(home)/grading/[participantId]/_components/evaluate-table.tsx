@@ -9,6 +9,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function EvaluateTable() {
   // 더미 데이터와 초기 선택 상태 정의 (group과 배점 분리)
@@ -51,6 +52,8 @@ export default function EvaluateTable() {
   ];
 
   const [evaluationData, setEvaluationData] = useState(initialData);
+
+  const router = useRouter();
 
   // Select 값 변경 핸들러
   const handleSelectChange = (id: number, value: string) => {
@@ -121,7 +124,9 @@ export default function EvaluateTable() {
         <Button className="bg-purple-600 text-white" onClick={handleReset}>
           리셋
         </Button>
-        <Button variant="outline">닫기</Button>
+        <Button variant="outline" onClick={() => router.back()}>
+          닫기
+        </Button>
       </div>
       <p className="text-center mt-2 text-sm text-gray-500">
         점수 입력이나 수정 후 반드시 저장해 주십시오.

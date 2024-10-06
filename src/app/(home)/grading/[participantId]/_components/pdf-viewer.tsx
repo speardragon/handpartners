@@ -1,7 +1,7 @@
 "use client";
 
 import { useResizeObserver } from "@wojtekmaj/react-hooks";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
@@ -19,9 +19,6 @@ const PDFViewer = () => {
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [inputPage, setInputPage] = useState("");
-  // const [containerHeight, setContainerHeight] = useState(0);
-  // const containerRef = useRef<HTMLDivElement | null>(null);
-
   const [containerRef, setContainerRef] = useState<HTMLElement | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>();
 
@@ -34,7 +31,6 @@ const PDFViewer = () => {
   }, []);
 
   useResizeObserver(containerRef, resizeObserverOptions, onResize);
-  console.log(containerWidth);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
@@ -89,7 +85,7 @@ const PDFViewer = () => {
       ref={setContainerRef}
     >
       <Document
-        file="/deep.pdf" // 여기는 가지고 계신 pdf 주소
+        file="/test.pdf" // 여기는 가지고 계신 pdf 주소
         onLoadSuccess={onDocumentLoadSuccess}
         className="w-full shadow-lg"
       >
@@ -152,4 +148,4 @@ const PDFViewer = () => {
   );
 };
 
-export default PDFViewer;
+export default memo(PDFViewer);

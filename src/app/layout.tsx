@@ -30,9 +30,9 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ReactQueryClientProvider>
-          <div className="w-full min-h-screen">
+          <div className="flex flex-col w-full min-h-screen">
             <Header />
-            {children}
+            <main className="flex-grow">{children}</main>
           </div>
           <Toaster />
         </ReactQueryClientProvider>
