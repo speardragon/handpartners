@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import ReactQueryClientProvider from "src/config/ReactQUeryClientProvider";
+import ReactQueryClientProvider from "@/config/ReactQueryClientProvider";
 import { Toaster } from "sonner";
 import Header from "./_components/Header";
 
