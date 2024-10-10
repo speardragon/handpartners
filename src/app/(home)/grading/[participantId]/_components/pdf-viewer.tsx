@@ -145,12 +145,12 @@ const PDFViewer = ({ isFull, handleFullButton }: Props) => {
         >
           {">"}
         </button>
-        {/* <button
+        <button
           className="ml-auto px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
           onClick={() => handleFullButton()}
         >
           {"<>"}
-        </button> */}
+        </button>
       </div>
     </div>
   );
