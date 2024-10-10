@@ -16,7 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Image from "next/image";
-import HandPartnersLogo from "../../../../public/images/handpartners_logo.png";
+import HandPartnersLogo from "../../../../../public/images/handpartners_logo.png";
 import { Input } from "src/components/ui/input";
 import { useRouter } from "next/navigation";
 
@@ -59,12 +59,12 @@ export default function Login() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className=" flex flex-col w-1/2 bg-white items-center shadow-lg border"
+        className="flex flex-col items-center w-1/2 bg-white border shadow-lg "
       >
-        <div className="flex flex-col justify-center items-center p-4 px-8">
+        <div className="flex flex-col items-center justify-center p-4 px-8">
           <Image src={HandPartnersLogo} alt="logo" />
-          <div className="flex flex-col w-full p-4 items-center gap-4">
-            <div className="text-xl font-bold mb-4">비밀유지 서약</div>
+          <div className="flex flex-col items-center w-full gap-4 p-4">
+            <div className="mb-4 text-xl font-bold">비밀유지 서약</div>
             <div className="text-center">
               본 심사위원은 스포츠 창업 데모데이에 <br />
               출품된 아이디어가 출품자의 지식재산임을 인정합니다. 심사과정에서
@@ -80,7 +80,7 @@ export default function Login() {
               control={form.control}
               name="isAgree"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start gap-2 rounded-md p-4">
+                <FormItem className="flex flex-row items-start gap-2 p-4 rounded-md">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -92,7 +92,7 @@ export default function Login() {
               )}
             />
           </div>
-          <div className="flex flex-col gap-2 w-full">
+          <div className="flex flex-col w-full gap-2">
             <FormField
               control={form.control}
               name="email"
@@ -120,7 +120,7 @@ export default function Login() {
               )}
             />
           </div>
-          <Button className="mt-4 w-full" type="submit">
+          <Button className="w-full mt-4" type="submit">
             로그인
           </Button>
         </div>
