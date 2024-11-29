@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Button } from "src/components/ui/button";
 import { Checkbox } from "src/components/ui/checkbox";
 import {
@@ -19,6 +18,9 @@ import Image from "next/image";
 import HandPartnersLogo from "../../../../../public/images/handpartners_logo.png";
 import { Input } from "src/components/ui/input";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+import { useLoginMutation } from "../_hooks/useLoginMutation";
 
 const FormSchema = z.object({
   email: z.string().email({ message: "이메일 형식이 올바르지 않습니다." }),
@@ -32,7 +34,8 @@ const FormSchema = z.object({
 });
 
 export default function Login() {
-  const router = useRouter();
+  const { mutate } = useLoginMutation();
+
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -42,17 +45,9 @@ export default function Login() {
     },
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
-    // console.log(data);
-    // toast({
-    //   title: "You submitted the following values:",
-    //   description: (
-    //     <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-    //       <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-    //     </pre>
-    //   ),
-    // })
-    router.push("/");
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
+    const { email, password } = data;
+    mutate({ email, password });
   }
 
   return (
@@ -61,9 +56,9 @@ export default function Login() {
         onSubmit={form.handleSubmit(onSubmit)}
         className="flex flex-col items-center w-1/2 bg-white border shadow-lg "
       >
-        <div className="flex flex-col items-center justify-center p-4 px-8">
+        <div className="flex flex-col items-center justify-center p-4 px-8 space-y-2">
           <Image src={HandPartnersLogo} alt="logo" />
-          <div className="flex flex-col items-center w-full gap-4 p-4">
+          <div className="flex flex-col items-center justify-center w-full gap-4 p-4">
             <div className="mb-4 text-xl font-bold">비밀유지 서약</div>
             <div className="text-center">
               본 심사위원은 스포츠 창업 데모데이에 <br />
@@ -76,22 +71,27 @@ export default function Login() {
               법적 문제 발생 시 민·형사상 책임을 지도록 하겠습니다.
               <br />
             </div>
-            <FormField
-              control={form.control}
-              name="isAgree"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start gap-2 p-4 rounded-md">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormLabel>위 비밀유지 서약에 동의합니다.</FormLabel>
-                </FormItem>
-              )}
-            />
           </div>
+          <FormField
+            control={form.control}
+            name="isAgree"
+            render={({ field }) => (
+              <FormItem className="flex flex-row w-full items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>위 비밀유지 서약에 동의합니다.</FormLabel>
+                  <FormDescription>
+                    You can manage your mobile notifications in the
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
           <div className="flex flex-col w-full gap-2">
             <FormField
               control={form.control}

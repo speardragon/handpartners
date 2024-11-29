@@ -13,7 +13,7 @@ export default function Page() {
   });
 
   return (
-    <div className="flex w-full h-full justify-center items-center bg-blue-gray-50">
+    <div className="flex w-full h-full py-16 justify-center items-center bg-blue-gray-50">
       <Login />
     </div>
   );

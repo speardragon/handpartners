@@ -6,6 +6,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FolderKanban } from "lucide-react";
 import { Files } from "lucide-react";
+import Image from "next/image";
+import handpartnersLogo from "../../../../../public/images/handpartners_logo.png";
 
 export default function SideNav() {
   const pathname = usePathname();
@@ -20,8 +22,18 @@ export default function SideNav() {
 
   return (
     // h-screen 뺌
-    <div className="w-[270px] min-h-screen flex flex-col items-center border-r border-gray-300">
-      <div className="flex flex-col w-full h-full p-4 space-y-6">
+    <div className="min-w-[270px] min-h-screen flex flex-col items-center border-r border-gray-300">
+      <div className="flex flex-col items-center w-full h-full p-4 space-y-6">
+        <Link href="/" className="">
+          <Image
+            alt="logo"
+            src={handpartnersLogo}
+            // className="-mr-1"
+            width={180}
+            height={180}
+            priority={true}
+          />
+        </Link>
         <Link href="/admin/user" className={linkClassName("user")}>
           <Users />
           <div>유저 관리</div>

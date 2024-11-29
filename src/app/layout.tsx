@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "sonner";
-import Header from "./_components/Header";
 import ReactQueryClientProvider from "@/config/ReactQueryClientProvider2";
 
-const inter = Inter({ subsets: ["latin"] });
+const pretendard = localFont({
+  src: "./fonts/PretendardVariable.woff2",
+  display: "swap",
+  weight: "45 920",
+  variable: "--font-pretendard",
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -18,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${pretendard.variable}`}>
       <head>
         <link
           rel="stylesheet"
@@ -28,14 +32,9 @@ export default function RootLayout({
           referrerPolicy="no-referrer"
         />
       </head>
-      <body className={inter.className}>
-        <ReactQueryClientProvider>
-          <div className="flex flex-col w-full min-h-screen">
-            <Header />
-            <main className="flex-grow">{children}</main>
-          </div>
-          <Toaster />
-        </ReactQueryClientProvider>
+      <body className={`${pretendard.className} antialiased`}>
+        <Toaster richColors />
+        <ReactQueryClientProvider>{children}</ReactQueryClientProvider>
       </body>
     </html>
   );

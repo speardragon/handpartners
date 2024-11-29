@@ -4,7 +4,7 @@ import handpartnersLogo from "../../../public/images/handpartners_logo.png";
 
 export default function Header() {
   return (
-    <header className="sticky inset-x-0 top-0 left-0 z-50 text-gray-700 bg-white border-b border-gray-400">
+    <header className="flex z-50 w-full items-center h-20 border-b border-gray-200">
       {/* <header className="z-50 text-gray-700 bg-white border-b border-gray-600 "> */}
       <div className="flex items-center justify-between w-full px-4 font-medium text-gray-900">
         <Link href="/">
