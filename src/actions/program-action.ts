@@ -3,15 +3,17 @@
 import { Database } from "types_db";
 import { createServerSupabaseClient } from "../utils/supabase/server";
 
-export type UserRow = Database["public"]["Tables"]["user"]["Row"];
-export type UserRowInsert = Database["public"]["Tables"]["user"]["Insert"];
-export type UserRowUpdate = Database["public"]["Tables"]["user"]["Update"];
+export type ProgramRow = Database["public"]["Tables"]["program"]["Row"];
+export type ProgramRowInsert =
+  Database["public"]["Tables"]["program"]["Insert"];
+export type ProgramRowUpdate =
+  Database["public"]["Tables"]["program"]["Update"];
 interface Result {
   currentPage: number;
   totalPages: number;
   totalElements: number;
   size: number;
-  result: UserRow[];
+  result: ProgramRow[];
 }
 
 function handleError(error) {
@@ -19,13 +21,9 @@ function handleError(error) {
   throw new Error(error.message);
 }
 
-export async function getUsers(
-  page: number,
-  size: number
-  // username?: string
-): Promise<Result> {
+export async function getPrograms(page: number, size: number): Promise<Result> {
   const supabase = await createServerSupabaseClient();
-  let query = supabase.from("user").select("*", { count: "exact" });
+  let query = supabase.from("program").select("*", { count: "exact" });
 
   const { data, error, count } = await query.range(
     (page - 1) * size,
@@ -44,15 +42,15 @@ export async function getUsers(
     totalPages,
     totalElements,
     size,
-    result: data as UserRow[],
+    result: data as ProgramRow[],
   };
 }
 
-export async function createUser(user: UserRowInsert) {
+export async function createProgram(program: ProgramRowInsert) {
   const supabase = await createServerSupabaseClient();
 
-  const { data, error } = await supabase.from("user").insert({
-    ...user,
+  const { data, error } = await supabase.from("program").insert({
+    ...program,
     created_at: new Date().toISOString(),
   });
 
@@ -62,17 +60,15 @@ export async function createUser(user: UserRowInsert) {
   return data;
 }
 
-export async function updateUser(user: UserRowUpdate) {
-  console.log(user);
+export async function updateProgram(program: ProgramRowUpdate) {
   const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
-    .from("user")
+    .from("program")
     .update({
-      ...user,
-      updated_at: new Date().toISOString(),
+      ...program,
     })
-    .eq("id", user.id);
+    .eq("id", program.id);
 
   if (error) {
     handleError(error);
@@ -80,10 +76,13 @@ export async function updateUser(user: UserRowUpdate) {
   return data;
 }
 
-export async function deleteUser(userId: number) {
+export async function deleteProgram(programId: number) {
   const supabase = await createServerSupabaseClient();
 
-  const { data, error } = await supabase.from("user").delete().eq("id", userId);
+  const { data, error } = await supabase
+    .from("program")
+    .delete()
+    .eq("id", programId);
 
   if (error) {
     handleError(error);

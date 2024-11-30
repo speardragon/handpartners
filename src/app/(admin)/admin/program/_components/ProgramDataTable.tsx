@@ -16,14 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import UserEditDialog from "./UserEditDialog";
 import useDialogOpenStore from "@/store/useDialogOpenStore";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { UserRow } from "@/actions/user-actions";
+import { ProgramRow } from "@/actions/program-action";
 import { DataTablePagination } from "../../_components/DataTablePagination";
-import { Button } from "@/components/ui/button";
-import UserCreateDialog from "./UserCreateDialog";
 import Loading from "@/app/_components/Loading";
+import ProgramEditDialog from "./ProgramEditDialog";
+import ProgramCreateDialog from "./ProgramCreateDialog";
 import { Plus } from "lucide-react";
 
 interface DataTableProps<TData, TValue> {
@@ -34,7 +33,7 @@ interface DataTableProps<TData, TValue> {
   totalPages: number;
 }
 
-export function UserDataTable<TData, TValue>({
+export function ProgramDataTable<TData, TValue>({
   columns,
   data,
   pagination,
@@ -43,14 +42,14 @@ export function UserDataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const { setOpen, setCreateOpen } = useDialogOpenStore((state) => state);
 
-  const [userId, setUserId] = useState<number>();
-  const [userProfile, setUserProfile] = useState<Partial<UserRow>>({
-    username: "",
-    role: "",
-    email: "",
-    affiliation: "",
-    position: "",
-    phone_number: "",
+  const [programId, setProgramId] = useState<number>();
+  const [programInfo, setProgramInfo] = useState<Partial<ProgramRow>>({
+    name: "",
+    description: "",
+    start_date: "",
+    end_date: "",
+    categories: [],
+    created_at: "",
   });
 
   const table = useReactTable({
@@ -72,15 +71,15 @@ export function UserDataTable<TData, TValue>({
   });
 
   useEffect(() => {
-    if (userProfile.username !== "") {
+    if (programInfo.name !== "") {
       setOpen(true);
     }
-  }, [userProfile]);
+  }, [programInfo]);
 
   return (
     <div className="rounded-lg border space-y-2 shadow-lg p-4 font-medium overflow-y-auto">
-      <UserEditDialog userId={userId} userProfile={userProfile} />
-      <UserCreateDialog />
+      <ProgramEditDialog programId={programId} programInfo={programInfo} />
+      <ProgramCreateDialog />
       <div className="flex w-full justify-end">
         <button
           onClick={(e) => {
@@ -89,7 +88,7 @@ export function UserDataTable<TData, TValue>({
           className="flex p-2 py-1 pr-3 border border-blue-600 text-xs gap-2 rounded-lg bg-blue-300 text-black hover:bg-blue-400"
         >
           <Plus className="w-4 h-4" />
-          사용자 추가
+          프로그램 추가
         </button>
       </div>
       <Table className="container relative py-2 mx-auto overflow-y-auto border">
@@ -118,14 +117,13 @@ export function UserDataTable<TData, TValue>({
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
                 onClick={() => {
-                  setUserId(row.getValue("id"));
-                  setUserProfile({
-                    username: row.getValue("username"),
-                    role: row.getValue("role"),
-                    email: row.getValue("email"),
-                    affiliation: row.getValue("affiliation"),
-                    position: row.getValue("position"),
-                    phone_number: row.getValue("phone_number"),
+                  setProgramId(row.getValue("id"));
+                  setProgramInfo({
+                    name: row.getValue("name"),
+                    description: row.getValue("description"),
+                    start_date: row.getValue("start_date"),
+                    end_date: row.getValue("end_date"),
+                    categories: row.getValue("categories"),
                   });
                   // setOpen(true);
                 }}
@@ -142,8 +140,8 @@ export function UserDataTable<TData, TValue>({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                {/* No results. */}
+              <TableCell colSpan={columns.length} className="h-24 text-center ">
+                {/* 로딩 중... */}
                 <Loading />
               </TableCell>
             </TableRow>

@@ -17,9 +17,6 @@ import { z } from "zod";
 import Image from "next/image";
 import HandPartnersLogo from "../../../../../public/images/handpartners_logo.png";
 import { Input } from "src/components/ui/input";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 import { useLoginMutation } from "../_hooks/useLoginMutation";
 
 const FormSchema = z.object({

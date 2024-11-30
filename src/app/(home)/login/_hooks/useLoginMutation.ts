@@ -25,14 +25,14 @@ export function useLoginMutation() {
       }
 
       if (error) {
-        throw new Error("로그인 오류");
+        throw new Error(error.message);
       }
     },
     onSuccess: (data) => {
       router.push("/");
     },
     onError: (error: any) => {
-      toast.error(error.message);
+      toast.error(JSON.stringify(error));
     },
   });
 }

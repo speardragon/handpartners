@@ -10,10 +10,3 @@ export const useUserQuery = (
     queryFn: () => getUsers(pagination.pageIndex + 1, pagination.pageSize),
   });
 };
-
-// export const useOneUserQuery = (userId: number) => {
-//   return useQuery({
-//     queryKey: ["users", userId],
-//     queryFn: () => getOneUser(userId),
-//   });
-// };

@@ -130,27 +130,30 @@ export type Database = {
       judging_round: {
         Row: {
           created_at: string
-          date: string | null
           description: string | null
+          end_date: string | null
           id: number
           name: string
           program_id: number
+          start_date: string | null
         }
         Insert: {
           created_at?: string
-          date?: string | null
           description?: string | null
+          end_date?: string | null
           id?: number
           name: string
           program_id: number
+          start_date?: string | null
         }
         Update: {
           created_at?: string
-          date?: string | null
           description?: string | null
+          end_date?: string | null
           id?: number
           name?: string
           program_id?: number
+          start_date?: string | null
         }
         Relationships: [
           {
@@ -353,7 +356,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_unique_evaluations: {
+        Args: {
+          judging_round: number
+        }
+        Returns: {
+          judging_round_id: number
+          company_id: number
+          status: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

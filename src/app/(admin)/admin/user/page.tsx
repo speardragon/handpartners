@@ -20,7 +20,8 @@ export default function Page() {
   }
 
   return (
-    <div className="flex flex-col justify-center w-full min-h-screen p-10">
+    <div className="flex flex-col space-y-2 justify-center w-full min-h-screen p-10">
+      <div className="text-xl font-semibold">유저</div>
       <UserDataTable
         totalPages={users?.totalPages}
         pagination={pagination}
