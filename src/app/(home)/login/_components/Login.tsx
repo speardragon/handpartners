@@ -58,13 +58,10 @@ export default function Login() {
           <div className="flex flex-col items-center justify-center w-full gap-4 p-4">
             <div className="mb-4 text-xl font-bold">비밀유지 서약</div>
             <div className="text-center">
-              본 심사위원은 스포츠 창업 데모데이에 <br />
-              출품된 아이디어가 출품자의 지식재산임을 인정합니다. 심사과정에서
-              <br />
-              열람한 내용을 출품자의 서면 허락없이 사용하거나 외부에 발설하는 등
-              <br />
+              본 심사위원은 (주) 핸드파트너스가 주관하는 프로그램에 출품된
+              아이디어가 출품자의 지식재산임을 인정합니다. 심사과정에서 열람한
+              내용을 출품자의 서면 허락없이 사용하거나 외부에 발설하는 등
               출품자의 지식재산권을 침해 할 만한 행위를 하지 않겠으며, 이로 인한
-              <br />
               법적 문제 발생 시 민·형사상 책임을 지도록 하겠습니다.
               <br />
             </div>

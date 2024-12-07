@@ -1,16 +1,15 @@
 "use client";
 
-import { useResizeObserver } from "@wojtekmaj/react-hooks";
 import {
-  Dispatch,
-  memo,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useResizeObserver } from "@wojtekmaj/react-hooks";
+import { memo, useCallback, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
+import "core-js/full/promise/with-resolvers.js";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
 
@@ -95,9 +94,7 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
       ref={setContainerRef}
     >
       <Document
-        file={
-          "https://sxoubewcczvrahedcuql.supabase.co/storage/v1/object/public/test/IR/shareBookShelf_IR.pdf"
-        } // 여기는 가지고 계신 pdf 주소
+        file={pdfPath} // 여기는 가지고 계신 pdf 주소
         onLoadSuccess={onDocumentLoadSuccess}
         className="shadow-lg"
       >
@@ -148,12 +145,21 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
         >
           {">"}
         </button>
-        <button
-          className="ml-auto px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-          onClick={() => handleFullButton()}
-        >
-          {"<>"}
-        </button>
+        <TooltipProvider delayDuration={0}>
+          <Tooltip>
+            <TooltipTrigger>
+              <button
+                className="ml-auto px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                onClick={() => handleFullButton()}
+              >
+                {"<>"}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="text-base">
+              <p>전체화면</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   );

@@ -48,11 +48,11 @@ const Page = ({ params }: Props) => {
     <div className="flex w-full p-4 gap-2 h-screen">
       <div className="flex flex-col w-1/2 p-2">
         <div className="space-y-2 text-gray-600">
-          <p className="text-gray-700">
-            {judgeRound.program.name} | 심사위원 4명 | 채점 현황
+          <p className="text-gray-700 text-lg font-semibold">
+            {judgeRound.program.name}
           </p>
-          <p className="text-gray-800 font-medium">{judgeRound.name}</p>
-          <p>{judgeRound.description}</p>
+          <p className="text-gray-800 font-bold">{judgeRound.name}</p>
+          <p className="text-sm">{judgeRound.description}</p>
         </div>
         <EvaluateTable judgeRoundId={judgeRoundId} companyId={companyId} />
       </div>
