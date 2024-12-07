@@ -16,7 +16,7 @@ export default function AuthProvider({ accessToken, children }) {
       data: { subscription: authListner },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
-        // router.push("login");
+        router.push("login");
       }
       if (session.access_token !== accessToken) {
         router.refresh();
