@@ -28,6 +28,7 @@ import { createUser, updateUser, UserRowInsert } from "@/actions/user-actions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { createServerSupabaseClient } from "@/utils/supabase/server";
 
 export default function UserCreateDialog() {
   const { createOpen, setCreateOpen } = useDialogOpenStore((state) => state);
@@ -48,8 +49,18 @@ export default function UserCreateDialog() {
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof ProfileCreateFormSchema>) => {
-    await createUser(data as UserRowInsert);
+  const onSubmit = async (
+    userData: z.infer<typeof ProfileCreateFormSchema>
+  ) => {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase.auth.signUp({
+      email: "example@email.com",
+      password: "example-password",
+      options: {
+        data: userData,
+      },
+    });
+    // await createUser(data as UserRowInsert);
     queryClient.invalidateQueries({ queryKey: ["users"] });
     setCreateOpen(false);
     toast.success("새로운 사용가자 추가되었습니다.");

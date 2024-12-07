@@ -91,3 +91,39 @@ export async function deleteUser(userId: number) {
 
   return data;
 }
+
+type UserProfile = {
+  id: string;
+  username: string;
+  created_at: string;
+  updated_at: string | null;
+  email: string | null;
+  role: string;
+  affiliation: string | null;
+  position: string | null;
+  phone_number: string | null;
+};
+export async function getUserProfile(): Promise<UserProfile | null> {
+  const supabase = await createServerSupabaseClient();
+
+  // 현재 세션 정보 가져오기
+  const session = await supabase.auth.getSession();
+  const userId = session.data?.session?.user?.id;
+
+  if (!userId) {
+    throw new Error("User not authenticated");
+  }
+
+  // user 테이블에서 프로필 정보 가져오기
+  const { data: userProfile, error } = await supabase
+    .from("user")
+    .select("*")
+    .eq("id", userId)
+    .single(); // 단일 결과를 가져오기
+
+  if (error) {
+    throw new Error(`Failed to fetch user profile: ${error.message}`);
+  }
+
+  return userProfile;
+}

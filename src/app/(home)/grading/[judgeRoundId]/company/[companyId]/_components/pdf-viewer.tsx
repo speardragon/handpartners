@@ -16,6 +16,7 @@ import "react-pdf/dist/esm/Page/TextLayer.css";
 
 type Props = {
   isFull: boolean;
+  pdfPath: string;
   handleFullButton?: () => void;
 };
 
@@ -24,7 +25,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 const maxWidth = 400;
 const resizeObserverOptions = {};
 
-const PDFViewer = ({ isFull, handleFullButton }: Props) => {
+const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [inputPage, setInputPage] = useState("");
@@ -94,7 +95,9 @@ const PDFViewer = ({ isFull, handleFullButton }: Props) => {
       ref={setContainerRef}
     >
       <Document
-        file="/test.pdf" // 여기는 가지고 계신 pdf 주소
+        file={
+          "https://sxoubewcczvrahedcuql.supabase.co/storage/v1/object/public/test/IR/shareBookShelf_IR.pdf"
+        } // 여기는 가지고 계신 pdf 주소
         onLoadSuccess={onDocumentLoadSuccess}
         className="shadow-lg"
       >

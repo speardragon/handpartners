@@ -1,5 +1,5 @@
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -10,6 +10,7 @@ type LoginRequest = {
 
 export function useLoginMutation() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const supabase = createBrowserSupabaseClient();
 
   return useMutation({
@@ -29,6 +30,8 @@ export function useLoginMutation() {
       }
     },
     onSuccess: (data) => {
+      // queryClient.invalidateQueries({queryKey: ["users"]});
+      // queryClient.invalidateQueries({queryKey: ["users"]});
       router.push("/");
     },
     onError: (error: any) => {

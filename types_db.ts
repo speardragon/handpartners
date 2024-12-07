@@ -35,31 +35,34 @@ export type Database = {
           company_id: number
           created_at: string
           evaluation_criterion_id: number
+          feedback: string | null
           grade: number
           id: number
           judging_round_id: number
           status: string | null
-          user_id: number
+          user_id: string
         }
         Insert: {
           company_id: number
           created_at?: string
           evaluation_criterion_id: number
+          feedback?: string | null
           grade: number
           id?: number
           judging_round_id: number
           status?: string | null
-          user_id: number
+          user_id: string
         }
         Update: {
           company_id?: number
           created_at?: string
           evaluation_criterion_id?: number
+          feedback?: string | null
           grade?: number
           id?: number
           judging_round_id?: number
           status?: string | null
-          user_id?: number
+          user_id?: string
         }
         Relationships: [
           {
@@ -170,6 +173,7 @@ export type Database = {
           category: string | null
           company_id: number
           created_at: string
+          feedback: string | null
           id: number
           judge_num: number | null
           judging_round_id: number
@@ -179,6 +183,7 @@ export type Database = {
           category?: string | null
           company_id: number
           created_at?: string
+          feedback?: string | null
           id?: number
           judge_num?: number | null
           judging_round_id: number
@@ -188,6 +193,7 @@ export type Database = {
           category?: string | null
           company_id?: number
           created_at?: string
+          feedback?: string | null
           id?: number
           judge_num?: number | null
           judging_round_id?: number
@@ -215,19 +221,19 @@ export type Database = {
           created_at: string
           id: number
           judging_round_id: number
-          user_id: number
+          user_id: string
         }
         Insert: {
           created_at?: string
           id?: number
           judging_round_id: number
-          user_id: number
+          user_id: string
         }
         Update: {
           created_at?: string
           id?: number
           judging_round_id?: number
-          user_id?: number
+          user_id?: string
         }
         Relationships: [
           {
@@ -317,8 +323,7 @@ export type Database = {
           affiliation: string | null
           created_at: string
           email: string | null
-          id: number
-          password: string
+          id: string
           phone_number: string | null
           position: string | null
           role: string
@@ -329,8 +334,7 @@ export type Database = {
           affiliation?: string | null
           created_at?: string
           email?: string | null
-          id?: number
-          password: string
+          id: string
           phone_number?: string | null
           position?: string | null
           role?: string
@@ -341,8 +345,7 @@ export type Database = {
           affiliation?: string | null
           created_at?: string
           email?: string | null
-          id?: number
-          password?: string
+          id?: string
           phone_number?: string | null
           position?: string | null
           role?: string

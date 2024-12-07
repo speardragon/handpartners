@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 export const applyMiddlewareSupabaseClient = async (request: NextRequest) => {
+  console.log("hi");
   // Create an unmodified response
   let response = NextResponse.next({
     request: {
@@ -57,13 +58,23 @@ export const applyMiddlewareSupabaseClient = async (request: NextRequest) => {
     }
   );
 
-  // refreshing the auth token
-  await supabase.auth.getUser();
+  // Refreshing the auth token
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  // console.log(session);
+
+  // If session is null, return a redirect response to /login
+  if (!session) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 
   return response;
 };
 
-export async function middleware(request) {
+export async function middleware(request: NextRequest) {
+  console.log("sdfsdfs");
   return await applyMiddlewareSupabaseClient(request);
 }
 
@@ -77,5 +88,6 @@ export const config = {
      * Feel free to modify this pattern to include more paths.
      */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // "*",
   ],
 };

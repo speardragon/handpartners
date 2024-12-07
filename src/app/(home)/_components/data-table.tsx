@@ -18,9 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { Filter } from "@/components/filter";
 
 interface DataTableProps<TData, TValue> {
@@ -89,7 +87,7 @@ export function DataTable<TData, TValue>({
           ) : (
             <TableRow>
               <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
+                목록이 없습니다.
               </TableCell>
             </TableRow>
           )}

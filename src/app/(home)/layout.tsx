@@ -1,4 +1,4 @@
-import Header from "../_components/Header";
+import Header from "../_components/Header2";
 import "../globals.css";
 
 export default function HomeLayout({
