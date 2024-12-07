@@ -18,6 +18,9 @@ export const columns: ColumnDef<ReviewStatus>[] = [
   {
     accessorKey: "score",
     header: "점수",
+    cell: ({ row }) => {
+      return <div className="font-bold">{row.getValue("score")}</div>;
+    },
   },
   {
     accessorKey: "companyName",

@@ -35,7 +35,7 @@ export default function Header2() {
 
   return (
     <header className="flex z-50 w-full items-center h-20 border-b border-gray-200">
-      <div className="flex items-center justify-between w-full px-4 font-medium text-gray-900">
+      <div className="flex items-center justify-between w-full p-2 px-6 font-medium text-gray-900">
         <Link href="/">
           <Image
             className="h-full w-auto"

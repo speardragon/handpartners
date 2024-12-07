@@ -151,12 +151,10 @@ export default function EvaluateTable({ judgeRoundId, companyId }: Props) {
           ))}
           <tr className="border-t">
             <td className="p-2">총점</td>
-            {/* <td className="p-2 text-center">
-              상위 20 팀은 A 그룹 점수를 배분 부탁드립니다.
-              <br />
-              A: 100~91 / B: 90~81 / C: 80~71 / D: 70~
-            </td> */}
-            <td className="p-2 text-center">
+            <td className="p-2 text-center text-gray-600">
+              이번 심사는 점수를 부여하시지 않아도 됩니다.
+            </td>
+            <td className="p-2">
               {evaluations.reduce((total, item) => total + item.grade, 0)}
             </td>
           </tr>

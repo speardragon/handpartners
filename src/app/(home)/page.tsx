@@ -39,32 +39,24 @@ export default function Home() {
   // 오늘 날짜를 가져옵니다.
   const today = new Date();
 
-  // 오늘 날짜가 심사 기간에 포함되는 심사만 필터링합니다.
-  const filteredData = data.filter((screening: Screening) => {
-    const startDate = new Date(screening.start_date);
-    const endDate = new Date(screening.end_date);
-
-    // 오늘 날짜가 start_date와 end_date 사이에 있는지 확인합니다.
-    return startDate <= today && today <= endDate;
-  });
-
   return (
     <main className="w-full h-full">
-      <div className="flex flex-col w-full h-full p-4 space-y-4 px-16 ">
+      <div className="flex flex-col w-full h-full items-center p-4 space-y-4 px-16">
         <div className="text-center text-2xl font-bold">
           현재 진행 중인 심사
         </div>
-        {filteredData.length === 0 ? (
+        {data.length === 0 ? (
           <div className="text-center mt-4">
             현재 진행 중인 심사가 없습니다. 🤔
           </div>
         ) : (
           <Accordion
-            defaultValue={`${filteredData[0]?.id}`}
+            className="flex max-w-[960px] w-full"
+            defaultValue={`${data[0]?.id}`}
             type="single"
             collapsible
           >
-            {filteredData.map((screening: Screening) => {
+            {data.map((screening: Screening) => {
               const scoreDistribution = calculateScoreDistribution(
                 screening.companies
               );
@@ -74,7 +66,7 @@ export default function Home() {
 
               return (
                 <AccordionItem
-                  className="border border-gray-300 p-2 rounded-lg"
+                  className="border w-full border-gray-300 p-2 rounded-lg"
                   key={screening.id}
                   value={`${screening.id}`}
                 >
@@ -91,7 +83,7 @@ export default function Home() {
                         <div className="font-bold">-점수 분포 현황-</div>
                         <table className="table-auto border-collapse border border-gray-300 w-full mt-2">
                           <tbody>
-                            <tr className="border border-gray-300 bg-gray-100">
+                            <tr className="border border-gray-300 bg-gray-100 font-semibold">
                               <td className="border border-gray-300 px-4 py-2 text-center">
                                 90점 이상
                               </td>
@@ -132,14 +124,14 @@ export default function Home() {
                         <div className="font-bold">-심사 상태 분포-</div>
                         <table className="table-auto border-collapse border border-gray-300 w-full mt-2">
                           <tbody>
-                            <tr className="border border-gray-300 bg-gray-100">
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                            <tr className="border border-gray-300 bg-gray-100 font-semibold">
+                              <td className="border border-gray-300 text-red-400 px-4 py-2 text-center">
                                 심사 예정
                               </td>
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              {/* <td className="border border-gray-300 px-4 py-2 text-center">
                                 심사 중
-                              </td>
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              </td> */}
+                              <td className="border border-gray-300 text-green-600 px-4 py-2 text-center">
                                 심사 완료
                               </td>
                             </tr>
@@ -147,9 +139,9 @@ export default function Home() {
                               <td className="border border-gray-300 px-4 py-2 text-center">
                                 {statusDistribution["심사 예정"]}개
                               </td>
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              {/* <td className="border border-gray-300 px-4 py-2 text-center">
                                 {statusDistribution["심사 중"]}개
-                              </td>
+                              </td> */}
                               <td className="border border-gray-300 px-4 py-2 text-center">
                                 {statusDistribution["심사 완료"]}개
                               </td>
