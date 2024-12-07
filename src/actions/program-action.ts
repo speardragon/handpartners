@@ -149,18 +149,18 @@ export async function getScreenings(): Promise<any> {
     `
     )
     .eq("judging_round_user.user_id", userId)
-    .gte(
-      "start_date",
-      new Date(
-        new Date().setHours(0, 0, 0, 0) - 9 * 60 * 60 * 1000
-      ).toISOString()
-    ) // 오늘 00:00 UTC 기준
-    .lt(
-      "start_date",
-      new Date(
-        new Date().setHours(24, 0, 0, 0) - 9 * 60 * 60 * 1000
-      ).toISOString()
-    ) // 오늘 23:59:59 UTC 기준
+    // .gte(
+    //   "start_date",
+    //   new Date(
+    //     new Date().setHours(0, 0, 0, 0) - 9 * 60 * 60 * 1000
+    //   ).toISOString()
+    // ) // 오늘 00:00 UTC 기준
+    // .lt(
+    //   "start_date",
+    //   new Date(
+    //     new Date().setHours(24, 0, 0, 0) - 9 * 60 * 60 * 1000
+    //   ).toISOString()
+    // ) // 오늘 23:59:59 UTC 기준
     .order("id");
 
   if (error) {
