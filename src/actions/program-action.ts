@@ -134,6 +134,7 @@ export async function getScreenings(): Promise<any> {
       ),
       companies:judging_round_company (
         judge_num,
+        group_name,
         category,
         company:company_id (
           id,
@@ -142,7 +143,8 @@ export async function getScreenings(): Promise<any> {
         )
       ),
       judging_round_user!inner(
-        user_id
+        user_id,
+        group_name
       )
     `
     )
@@ -167,6 +169,14 @@ export async function getScreenings(): Promise<any> {
   }
 
   const screenings = data as any;
+
+  // 해당 심사자의 group_name에 할당된 company만 필터링
+  screenings.forEach((screening) => {
+    const userGroupName = screening.judging_round_user[0].group_name;
+    screening.companies = screening.companies.filter(
+      (company) => company.group_name === userGroupName
+    );
+  });
 
   // Step 2: (judging_round_id, company_id) 쌍을 만든다.
   const judgingCompanyPairs = [];

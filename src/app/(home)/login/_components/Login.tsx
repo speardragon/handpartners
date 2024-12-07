@@ -54,7 +54,7 @@ export default function Login() {
         className="flex flex-col items-center w-1/2 bg-white border shadow-lg "
       >
         <div className="flex flex-col items-center justify-center p-4 px-8 space-y-2">
-          <Image src={HandPartnersLogo} alt="logo" />
+          <Image className="w-64" src={HandPartnersLogo} alt="logo" />
           <div className="flex flex-col items-center justify-center w-full gap-4 p-4">
             <div className="mb-4 text-xl font-bold">비밀유지 서약</div>
             <div className="text-center">
@@ -106,7 +106,7 @@ export default function Login() {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input placeholder="비밀번호" {...field} />
+                    <Input type="password" placeholder="비밀번호" {...field} />
                   </FormControl>
 
                   <FormMessage />

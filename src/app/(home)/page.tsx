@@ -18,6 +18,7 @@ import {
 } from "./_lib/lib";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import PdfDownloadButton from "./_components/PdfDownloadButton";
 
 export default function Home() {
   const queryClient = useQueryClient();
@@ -75,7 +76,12 @@ export default function Home() {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="mb-4">
-                      <div className="text-xl font-bold">{screening.name}</div>
+                      <div className="flex w-full justify-between">
+                        <div className="text-xl font-bold">
+                          {screening.name}
+                        </div>
+                        <PdfDownloadButton judgingRoundId={screening.id} />
+                      </div>
                       <div className="text-gray-600">
                         {screening.program.description}
                       </div>
