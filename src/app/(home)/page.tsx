@@ -37,11 +37,8 @@ export default function Home() {
     return <div>Error loading data: {error?.message}</div>;
   }
 
-  // 오늘 날짜를 가져옵니다.
-  const today = new Date();
-
   return (
-    <main className="w-full h-full">
+    <main className="w-full h-full overflow-y-auto">
       <div className="flex flex-col w-full h-full items-center p-4 space-y-4 px-16">
         <div className="text-center text-2xl font-bold">
           현재 진행 중인 심사

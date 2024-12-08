@@ -12,7 +12,7 @@ import {
   EvaluationItem,
   UserProfile,
 } from "@/types/evaluation-type";
-import "core-js/full/promise/with-resolvers.js";
+// import "core-js/full/promise/with-resolvers.js";
 
 Font.register({
   family: "Pretendard",
@@ -154,7 +154,15 @@ const EvaluationDocument = ({ evaluationReport }: Props) => {
                 <Text style={styles.judgeCell}>
                   {report.user_profile.position || ""}
                 </Text>
-                <Text style={styles.judgeCellLast}>(서명)</Text>
+                {/* <Text style={styles.judgeCell}>
+                  {report.user_profile.position || ""}
+                </Text> */}
+                <View style={styles.judgeCellLastContainer}>
+                  <Text style={styles.textCenter}>
+                    {report.user_profile.name || ""}
+                  </Text>
+                  <Text style={styles.textRight}>(서명)</Text>
+                </View>
               </View>
             </View>
           </Page>
@@ -242,9 +250,11 @@ const styles = StyleSheet.create({
   },
   textCenter: {
     textAlign: "center",
+    flex: 1,
   },
   textRight: {
     textAlign: "right",
+    flex: 1,
   },
   fontBold: {
     fontWeight: "bold",
@@ -336,6 +346,14 @@ const styles = StyleSheet.create({
     padding: 8,
     fontSize: 12,
     flex: 1,
+  },
+  judgeCellLastContainer: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between", // 중앙과 오른쪽으로 배치
+    alignItems: "center",
+    fontSize: 12,
+    padding: 8,
   },
   judgeCellLast: {
     borderColor: "#D1D5DB",

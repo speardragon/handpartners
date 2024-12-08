@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import ReactQueryClientProvider from "@/config/ReactQueryClientProvider2";
 import AuthProvider from "./_components/AuthProvider";
 import { createServerSupabaseClient } from "@/utils/supabase/server";
+import "core-js/full/promise/with-resolvers";
 
 const pretendard = localFont({
   src: "./fonts/PretendardVariable.woff2",

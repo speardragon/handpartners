@@ -10,7 +10,7 @@ export const queryClient = new QueryClient({
       refetchOnMount: true, // 데이터가 stale 상태이면 컴포넌트가 마운트될 때 refetch
       retryOnMount: false,
       refetchOnReconnect: true,
-      retry: 3, //// API 요청 실패시 재시도 하는 옵션 (설정값 만큼 재시도)
+      retry: 2, //// API 요청 실패시 재시도 하는 옵션 (설정값 만큼 재시도)
       retryDelay: 1000,
       staleTime: 1000 * 60 * 10, // 10분 동안 데이터가 stale 상태이면 refetch
       gcTime: 1000 * 60 * 60,

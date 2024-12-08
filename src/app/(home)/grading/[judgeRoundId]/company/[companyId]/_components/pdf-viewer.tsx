@@ -6,10 +6,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import usePdfPageStore from "@/store/usePdfPageStore";
 import { useResizeObserver } from "@wojtekmaj/react-hooks";
 import { memo, useCallback, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import "core-js/full/promise/with-resolvers.js";
+// import "core-js/full/promise/with-resolvers.js";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
 
@@ -148,12 +149,12 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
         <TooltipProvider delayDuration={0}>
           <Tooltip>
             <TooltipTrigger>
-              <button
+              <div
                 className="ml-auto px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                 onClick={() => handleFullButton()}
               >
                 {"<>"}
-              </button>
+              </div>
             </TooltipTrigger>
             <TooltipContent className="text-base">
               <p>전체화면</p>

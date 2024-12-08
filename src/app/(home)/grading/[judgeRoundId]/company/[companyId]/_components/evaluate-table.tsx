@@ -115,9 +115,12 @@ export default function EvaluateTable({ judgeRoundId, companyId }: Props) {
     }));
     try {
       await createEvaluation(judgeRoundId, companyId, evaluationRecords);
-      toast.success("평가와 피드백이 성공적으로 저장되었습니다!");
+      toast.success("평가와 피드백이 성공적으로 저장되었습니다!", {
+        position: "top-center",
+      });
+
       queryClient.invalidateQueries();
-      // router.push("/");
+      router.push("/");
     } catch (error) {
       toast.error("저장 중 문제가 발생했습니다.");
       console.error(error);
@@ -151,9 +154,7 @@ export default function EvaluateTable({ judgeRoundId, companyId }: Props) {
           ))}
           <tr className="border-t">
             <td className="p-2">총점</td>
-            <td className="p-2 text-center text-gray-600">
-              이번 심사는 점수를 부여하시지 않아도 됩니다.
-            </td>
+            <td className="p-2 text-center text-gray-600"></td>
             <td className="p-2">
               {evaluations.reduce((total, item) => total + item.grade, 0)}
             </td>

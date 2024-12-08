@@ -1,6 +1,5 @@
 "use client";
 
-import { useAuthStore } from "@/store/useAuthStore";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -8,8 +7,6 @@ import { useEffect } from "react";
 export default function AuthProvider({ accessToken, children }) {
   const supabase = createBrowserSupabaseClient();
   const router = useRouter();
-
-  const { user, setUser } = useAuthStore((state) => state);
 
   useEffect(() => {
     const {
