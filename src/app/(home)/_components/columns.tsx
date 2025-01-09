@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 
 export type ReviewStatus = {
-  score: string; // 접수번호
+  score: number; // 접수번호
   companyName: string; // 기업(팀)명/이름
   description: string; // 아이디어/창업아이템 명
   category: string; // 지원분야

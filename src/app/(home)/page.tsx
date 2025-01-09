@@ -3,7 +3,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { columns } from "./_components/columns";
 import { DataTable } from "./_components/data-table";
-import { useFetchAllPrograms } from "./_hooks/useScreeningQuery";
+import { useProgramsQuery } from "./_hooks/useProgramsQuery";
 import { Company, Screening } from "@/actions/program-action";
 import {
   Accordion,
@@ -23,7 +23,7 @@ import PdfDownloadButton from "./_components/PdfDownloadButton";
 export default function Home() {
   const queryClient = useQueryClient();
 
-  const { data, isLoading, error } = useFetchAllPrograms();
+  const { data, isLoading, error } = useProgramsQuery();
 
   useEffect(() => {
     queryClient.invalidateQueries();

@@ -6,6 +6,7 @@ import ReactQueryClientProvider from "@/config/ReactQueryClientProvider2";
 import AuthProvider from "./_components/AuthProvider";
 import { createServerSupabaseClient } from "@/utils/supabase/server";
 import "core-js/full/promise/with-resolvers";
+import { PrimeReactProvider } from "primereact/api";
 
 const pretendard = localFont({
   src: "./fonts/PretendardVariable.woff2",

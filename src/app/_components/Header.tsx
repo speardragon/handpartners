@@ -44,14 +44,14 @@ export default function Header() {
             src={handpartnersLogo}
             width={180}
             height={180}
-            priority={true}
+            priority
           />
         </Link>
         <div className="flex flex-row gap-4">
           {user ? (
             <>
               {userProfile?.role === "관리자" && (
-                <Link href="/admin">관리자 페이지</Link>
+                <Link href="/admin/user">관리자 페이지</Link>
               )}
               <div
                 onClick={async () => {

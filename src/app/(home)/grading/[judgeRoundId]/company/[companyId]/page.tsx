@@ -22,8 +22,7 @@ const Page = () => {
   const companyId = parseInt(params.companyId);
 
   const { data: judgeRound, isLoading } = useJudgeQuery(judgeRoundId);
-  const { data: existEvaluation, isLoading: isEvaluationLoading } =
-    useEvaluationQuery(judgeRoundId, companyId);
+  const { data: existEvaluation } = useEvaluationQuery(judgeRoundId, companyId);
 
   const [isFull, setIsFull] = useState<boolean>(false);
 
@@ -31,7 +30,7 @@ const Page = () => {
     setIsFull(!isFull);
   };
 
-  if (isLoading || !judgeRound || !existEvaluation) {
+  if (!judgeRound) {
     return <Loading />;
   }
 
@@ -62,7 +61,7 @@ const Page = () => {
         <PdfViewer
           isFull={isFull}
           handleFullButton={handleFullButton}
-          pdfPath={existEvaluation.pdfPath}
+          pdfPath={existEvaluation?.pdfPath}
         />
       </div>
     </div>

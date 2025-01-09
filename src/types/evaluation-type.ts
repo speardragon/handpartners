@@ -19,6 +19,7 @@ export type UserProfile = {
   name: string; // user.username을 name으로 사용
   affiliation: string | null;
   position: string | null;
+  role?: string;
 };
 
 export type FinalResult = {

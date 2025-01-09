@@ -17,12 +17,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import useDialogOpenStore from "@/store/useDialogOpenStore";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { ProgramRow } from "@/actions/program-action";
+import { Dispatch, SetStateAction } from "react";
 import { DataTablePagination } from "../../_components/DataTablePagination";
 import Loading from "@/app/_components/Loading";
-import ProgramEditDialog from "./ProgramEditDialog";
-import ProgramCreateDialog from "./ProgramCreateDialog";
+import ProgramCreateSheet from "./ProgramCreateSheet";
 import { Plus } from "lucide-react";
 
 interface DataTableProps<TData, TValue> {
@@ -40,17 +38,7 @@ export function ProgramDataTable<TData, TValue>({
   setPagination,
   totalPages,
 }: DataTableProps<TData, TValue>) {
-  const { setOpen, setCreateOpen } = useDialogOpenStore((state) => state);
-
-  const [programId, setProgramId] = useState<number>();
-  const [programInfo, setProgramInfo] = useState<Partial<ProgramRow>>({
-    name: "",
-    description: "",
-    start_date: "",
-    end_date: "",
-    categories: [],
-    created_at: "",
-  });
+  const { setCreateOpen } = useDialogOpenStore((state) => state);
 
   const table = useReactTable({
     data,
@@ -70,16 +58,9 @@ export function ProgramDataTable<TData, TValue>({
     onPaginationChange: setPagination,
   });
 
-  useEffect(() => {
-    if (programInfo.name !== "") {
-      setOpen(true);
-    }
-  }, [programInfo]);
-
   return (
     <div className="rounded-lg border space-y-2 shadow-lg p-4 font-medium overflow-y-auto">
-      <ProgramEditDialog programId={programId} programInfo={programInfo} />
-      <ProgramCreateDialog />
+      <ProgramCreateSheet />
       <div className="flex w-full justify-end">
         <button
           onClick={(e) => {
@@ -91,7 +72,7 @@ export function ProgramDataTable<TData, TValue>({
           프로그램 추가
         </button>
       </div>
-      <Table className="container relative py-2 mx-auto overflow-y-auto border">
+      <Table className="container relative py-2 mx-auto overflow-y-auto border rounded-full">
         <TableHeader className="sticky top-0 bg-gray-100">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
@@ -114,23 +95,14 @@ export function ProgramDataTable<TData, TValue>({
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
               <TableRow
+                className="bg-white hover:bg-white"
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
-                onClick={() => {
-                  setProgramId(row.getValue("id"));
-                  setProgramInfo({
-                    name: row.getValue("name"),
-                    description: row.getValue("description"),
-                    start_date: row.getValue("start_date"),
-                    end_date: row.getValue("end_date"),
-                    categories: row.getValue("categories"),
-                  });
-                  // setOpen(true);
-                }}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
-                    className="cursor-pointer p-3 px-6 text-gray-600"
+                    className="p-3 px-6 text-gray-600"
+                    style={{ width: cell.column.getSize() }}
                     key={cell.id}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

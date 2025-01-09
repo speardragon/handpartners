@@ -22,7 +22,7 @@ export interface Program {
   description: string; // 프로그램 설명(Program)
 }
 export interface Company {
-  score: string; // 심사 대상 기업 총 점수(evaluation)
+  score: number; // 심사 대상 기업 총 점수(evaluation)
   companyName: string; // 기업 이름 (Company)
   description: string; // 사업 아이템 이름 (Company)
   category: string; // 지원 분야
@@ -68,18 +68,52 @@ export async function getPrograms(page: number, size: number): Promise<Result> {
   };
 }
 
-export async function createProgram(program: ProgramRowInsert) {
+/**
+ * program 테이블과 program_company 테이블에 데이터를 저장
+ * @param program 프로그램 기본 정보
+ * @param companyIds 함께 추가할 기업 ID 배열
+ */
+export async function createProgram(
+  program: ProgramRowInsert,
+  companyIds: number[]
+) {
   const supabase = await createServerSupabaseClient();
 
-  const { data, error } = await supabase.from("program").insert({
-    ...program,
-    created_at: new Date().toISOString(),
-  });
+  // 1) program 테이블에 레코드 추가
+  //    insert 후 생성된 program_id를 받아야 하므로 select, single() 사용
+  const { data: insertedData, error: programError } = await supabase
+    .from("program")
+    .insert({
+      ...program,
+      created_at: new Date().toISOString(),
+    })
+    .select("id") // 새로 추가된 행의 id를 반환
+    .single();
 
-  if (error) {
-    handleError(error);
+  if (programError) {
+    handleError(programError);
   }
-  return data;
+
+  const newProgramId = insertedData.id;
+
+  // 2) program_company 테이블에 (program_id, company_id) 쌍으로 레코드 생성
+  if (newProgramId && companyIds.length > 0) {
+    const inserts = companyIds.map((companyId) => ({
+      program_id: newProgramId,
+      company_id: companyId,
+      created_at: new Date().toISOString(),
+    }));
+
+    const { error: programCompanyError } = await supabase
+      .from("program_company")
+      .insert(inserts);
+
+    if (programCompanyError) {
+      handleError(programCompanyError);
+    }
+  }
+
+  return insertedData; // 방금 생성된 program 정보(또는 null)
 }
 
 export async function updateProgram(program: ProgramRowUpdate) {
@@ -119,6 +153,10 @@ export async function getScreenings(): Promise<any> {
   const session = await supabase.auth.getSession();
   const userId = session.data?.session?.user?.id;
 
+  const nowUtc = new Date();
+  const nowKst = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
+  const nowKstIsoString = nowKst.toISOString();
+
   // Step 1: screening에 필요한 데이터
   const { data, error } = await supabase
     .from("judging_round")
@@ -149,30 +187,20 @@ export async function getScreenings(): Promise<any> {
     `
     )
     .eq("judging_round_user.user_id", userId)
-    // .gte(
-    //   "start_date",
-    //   new Date(
-    //     new Date().setHours(0, 0, 0, 0) - 9 * 60 * 60 * 1000
-    //   ).toISOString()
-    // ) // 오늘 00:00 UTC 기준
-    // .lt(
-    //   "start_date",
-    //   new Date(
-    //     new Date().setHours(24, 0, 0, 0) - 9 * 60 * 60 * 1000
-    //   ).toISOString()
-    // ) // 오늘 23:59:59 UTC 기준
+    .lte("start_date", nowKstIsoString)
+    .gte("end_date", nowKstIsoString)
     .order("id");
 
   if (error) {
     console.error("Error fetching screenings:", error);
-    return [];
+    throw new Error(error.message);
   }
 
   const screenings = data as any;
 
   // 해당 심사자의 group_name에 할당된 company만 필터링
   screenings.forEach((screening) => {
-    const userGroupName = screening.judging_round_user[0].group_name;
+    const userGroupName = screening.judging_round_user?.[0]?.group_name;
     screening.companies = screening.companies.filter(
       (company) => company.group_name === userGroupName
     );
@@ -205,7 +233,7 @@ export async function getScreenings(): Promise<any> {
 
   if (evalError) {
     console.error("Error fetching evaluations:", evalError);
-    return [];
+    throw new Error(error.message);
   }
 
   // Step 4: Group evaluations by judging_round_id and company_id, calculate total score

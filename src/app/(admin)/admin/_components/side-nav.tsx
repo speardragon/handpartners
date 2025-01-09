@@ -32,6 +32,7 @@ export default function SideNav() {
             width={180}
             height={180}
             priority={true}
+            style={{ width: "100%", height: "auto" }}
           />
         </Link>
         <Link href="/admin/user" className={linkClassName("user")}>
@@ -42,10 +43,10 @@ export default function SideNav() {
           <FolderKanban />
           <div>프로그램 관리</div>
         </Link>
-        <Link href="/admin/judge" className={`${linkClassName("judge")}`}>
+        {/* <Link href="/admin/judge" className={`${linkClassName("judge")}`}>
           <Files />
           <div>심사 관리</div>
-        </Link>
+        </Link> */}
         <Link href="/admin/company" className={`${linkClassName("company")}`}>
           <Building2 />
           <div>기업 관리</div>

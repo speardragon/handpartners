@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useEvaluationReportQuery } from "../../_hooks/useEvaluationReportQuery";
 import { saveAs } from "file-saver";
-import { pdf } from "@react-pdf/renderer";
 import EvaluationDocument from "../../_components/EvaluationDocument";
 
 type Props = {
@@ -20,9 +19,10 @@ export default function Page({ params }: Props) {
 
   useEffect(() => {
     const savePDF = async () => {
-      console.log("hi");
       if (!isLoading && data && !isSaved) {
         try {
+          const { pdf } = await import("@react-pdf/renderer");
+
           const blob = await pdf(
             <EvaluationDocument evaluationReport={data} />
             // <TestDocument />
@@ -44,7 +44,7 @@ export default function Page({ params }: Props) {
     savePDF();
   }, [isLoading, data]);
 
-  if (isLoading) {
+  if (isLoading || !data) {
     return <div>Loading...</div>;
   }
 
