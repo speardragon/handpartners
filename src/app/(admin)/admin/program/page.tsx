@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useProgramQuery } from "./_hooks/useProgramQuery";
 import { PaginationState } from "@tanstack/react-table";
 import { ProgramDataTable } from "./_components/ProgramDataTable";
-import { programColumns } from "./_components/ProgramColumns";
+import { ProgramColumns } from "./_components/ProgramColumns";
 
 export default function Page() {
   const [pagination, setPagination] = useState<PaginationState>({
@@ -22,7 +22,7 @@ export default function Page() {
         pagination={pagination}
         setPagination={setPagination}
         data={programs?.result || []}
-        columns={programColumns}
+        columns={ProgramColumns}
       />
     </div>
   );
