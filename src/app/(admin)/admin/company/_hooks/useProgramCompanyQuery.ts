@@ -1,3 +1,4 @@
+import { ProgramCompanyRow } from "@/actions/program-company-action";
 import { useQuery } from "@tanstack/react-query";
 
 const getCompanies = async (programId: number) => {
@@ -15,8 +16,11 @@ const getCompanies = async (programId: number) => {
   return response.json();
 };
 
+interface ProgramCompanyResult extends ProgramCompanyRow {
+  company: { name: string };
+}
 export const useProgramCompanyQuery = (programId: number) => {
-  return useQuery({
+  return useQuery<ProgramCompanyResult[]>({
     queryKey: ["programs", programId, "companies"],
     queryFn: () => getCompanies(programId),
   });

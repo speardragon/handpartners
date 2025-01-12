@@ -83,7 +83,7 @@ export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
           className="p-0 px-4 hover:border hover:border-gray-400"
           variant="outline"
         >
-          1개의 심사 <Map className="ml-2 h-4 w-4" />
+          심사 관리 <Map className="ml-2 h-4 w-4" />
         </Button>
       );
     },

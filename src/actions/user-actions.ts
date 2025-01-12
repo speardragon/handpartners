@@ -2,11 +2,13 @@
 
 import { Database } from "types_db";
 import { createServerSupabaseClient } from "../utils/supabase/server";
+import { ProfileCreateFormSchema } from "@/app/(admin)/admin/user/_lib/ProfileFormSchema";
+import { z } from "zod";
 
 export type UserRow = Database["public"]["Tables"]["user"]["Row"];
 export type UserRowInsert = Database["public"]["Tables"]["user"]["Insert"];
 export type UserRowUpdate = Database["public"]["Tables"]["user"]["Update"];
-interface Result {
+export interface UserResult {
   currentPage: number;
   totalPages: number;
   totalElements: number;
@@ -23,7 +25,7 @@ export async function getUsers(
   page: number,
   size: number
   // username?: string
-): Promise<Result> {
+): Promise<UserResult> {
   const supabase = await createServerSupabaseClient();
   let query = supabase.from("user").select("*", { count: "exact" });
 
@@ -80,10 +82,11 @@ export async function updateUser(user: UserRowUpdate) {
   return data;
 }
 
-export async function deleteUser(userId: number) {
+export async function deleteUser(userId: string) {
   const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase.from("user").delete().eq("id", userId);
+  await supabase.auth.admin.deleteUser(userId);
 
   if (error) {
     handleError(error);
@@ -126,4 +129,52 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   }
 
   return userProfile;
+}
+
+/**
+ * 회원가입( Supabase Auth signUp ) + user 테이블 레코드 등록을 동시에 처리하는 함수
+ */
+export async function registerUser(
+  userData: z.infer<typeof ProfileCreateFormSchema>
+) {
+  const supabase = await createServerSupabaseClient();
+
+  // 먼저 Supabase Auth에 사용자 생성
+  const { data: signUpData, error: signUpError } =
+    await supabase.auth.admin.createUser({
+      email: userData.email,
+      password: userData.password,
+    });
+
+  if (signUpError) {
+    handleError(signUpError);
+  }
+
+  // Auth를 통해 생성된 user id 가져오기
+  const newUserId = signUpData?.user?.id;
+  if (!newUserId) {
+    throw new Error("Sign up succeeded but user id not found.");
+  }
+
+  // user 테이블에 레코드 생성 (Auth에 만들어진 UID(newUserId)를 id 필드로 사용)
+  const { data: userInsertData, error: userInsertError } = await supabase
+    .from("user")
+    .insert({
+      id: newUserId,
+      username: userData.username,
+      email: userData.email,
+      role: userData.role,
+      affiliation: userData.affiliation,
+      position: userData.position,
+      phone_number: userData.phone_number,
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single(); // 단일 레코드 반환
+
+  if (userInsertError) {
+    handleError(userInsertError);
+  }
+
+  return userInsertData;
 }

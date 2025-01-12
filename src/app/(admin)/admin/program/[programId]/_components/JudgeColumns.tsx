@@ -1,6 +1,5 @@
 "use client";
 
-import { deleteProgram, ProgramRow } from "@/actions/program-action";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   DropdownMenu,
@@ -9,20 +8,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuItem,
-  DropdownMenuShortcut,
 } from "@/components/ui/dropdown-menu";
 import {
   Sheet,
-  SheetTrigger,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetOverlay,
 } from "@/components/ui/sheet";
 import {
   AlertDialog,
-  AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -30,16 +25,17 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
-  AlertDialogOverlay,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { EllipsisVertical, Map, Pencil, Trash } from "lucide-react";
+import { EllipsisVertical, Pencil, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { JudgingRoundRow } from "@/actions/judging_round-action";
+import {
+  deleteJudgingRound,
+  JudgingRoundRow,
+} from "@/actions/judging_round-action";
+import JudgeEditForm from "./JudgeEditForm";
 
 export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
   {
@@ -51,6 +47,14 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
     accessorKey: "name",
     header: "심사 이름",
     size: 300,
+  },
+  {
+    accessorKey: "number_of_companies",
+    header: "참여 기업 수",
+  },
+  {
+    accessorKey: "number_of_users",
+    header: "심사위원 수",
   },
   {
     accessorKey: "description",
@@ -87,32 +91,34 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
 
       const queryClient = useQueryClient();
 
-      const deleteHandler = async (programId: number) => {
-        const result = await deleteProgram(programId);
+      const deleteHandler = async (judgingRoundId: number) => {
+        const result = await deleteJudgingRound(judgingRoundId);
         toast.success("프로그램이 삭제되었습니다.", result);
-        queryClient.invalidateQueries({ queryKey: ["programs"] });
+        queryClient.invalidateQueries({ queryKey: ["judging_rounds"] });
       };
 
-      const programId = Number(row.original.id?.toString());
+      const judgingRoundId = Number(row.original.id?.toString());
+      const programId = Number(row.original.program_id?.toString());
       return (
         <>
           <Sheet open={openEdit} onOpenChange={setOpenEdit}>
-            <SheetContent className="min-w-[600px]">
+            <SheetContent className="min-w-[800px] overflow-y-auto">
               <SheetHeader>
                 <SheetTitle>심사 수정</SheetTitle>
                 <SheetDescription>{row.original.name}</SheetDescription>
                 <Separator />
               </SheetHeader>
-              {/* <ProgramEditSheet
+              <JudgeEditForm
+                setOpenEdit={setOpenEdit}
                 programId={programId}
-                programInfo={{
+                judgingRoundId={judgingRoundId}
+                judgingRoundInfo={{
                   name: row.original.name ?? "",
                   description: row.original.description ?? "",
                   start_date: row.original.start_date ?? "",
                   end_date: row.original.end_date ?? "",
-                  categories: row.original.categories ?? [],
                 }}
-              /> */}
+              />
             </SheetContent>
           </Sheet>
 
@@ -127,7 +133,7 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
               <AlertDialogFooter>
                 <AlertDialogCancel>취소</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={() => deleteHandler(programId)}
+                  onClick={() => deleteHandler(judgingRoundId)}
                   className="bg-red-500"
                 >
                   삭제

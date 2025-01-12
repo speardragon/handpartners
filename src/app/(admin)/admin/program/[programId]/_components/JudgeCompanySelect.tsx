@@ -1,44 +1,66 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import InfiniteScroll from "react-infinite-scroller";
-import { useCompanyInfiniteQuery } from "../../company/_hooks/useCompanyInfiniteQuery";
+import React, { useEffect, useState } from "react";
 import { CompanyRow } from "@/actions/company-action";
 import { Separator } from "@/components/ui/separator";
-import Loading from "@/app/_components/Loading";
+import { useProgramCompanyQuery } from "../../../company/_hooks/useProgramCompanyQuery";
+import { useJudgingRoundCompanyQuery } from "../_hooks/useJudgingRoundCompanyQuery";
 
-interface CompanySelectProps {
-  targetList: CompanyRow[];
-  onTargetListChange: (newList: CompanyRow[]) => void;
+interface Company {
+  id: number;
+  name: string;
+  pdfFile?: File;
+  pdfPath?: string;
+  groupName?: string;
 }
 
-export default function CompanySelect({
+interface CompanySelectProps {
+  judgingRoundId: number;
+  programId: number;
+  targetList: Company[];
+  onTargetListChange: (newList: Company[]) => void;
+}
+
+export default function JudgeCompanySelect({
+  judgingRoundId,
+  programId,
   targetList,
   onTargetListChange,
 }: CompanySelectProps) {
-  const [search, setSearch] = useState("");
+  // const [search, setSearch] = useState("");
   const [selectedSourceIds, setSelectedSourceIds] = useState<number[]>([]);
   const [selectedTargetIds, setSelectedTargetIds] = useState<number[]>([]);
 
   // useCompanyQuery 훅 사용 (10개씩, search)
-  const { data, fetchNextPage, hasNextPage, isLoading, refetch } =
-    useCompanyInfiniteQuery(search);
+  const { data: allCompanies } = useProgramCompanyQuery(programId);
+  const { data: judgingRoundCompanies } =
+    useJudgingRoundCompanyQuery(judgingRoundId);
 
-  // 무한 스크롤로 로딩할 데이터 (sourceList)
-  // => react-query의 infiniteQuery 구조상 pages 배열 형태
-  //    [ { result: CompanyRow[] ... }, { result: CompanyRow[] ... }, ... ]
-  const sourceList = data?.pages.flatMap((page) => page.result) ?? [];
-
-  /**
-   * 검색어 변경 시 첫 페이지부터 다시 불러오도록 refetch
-   */
+  // 1) 처음 로드 시, judgingRoundCompanies 로 targetList를 초기화
   useEffect(() => {
-    // react-query의 경우, queryKey가 변하면 자동으로 refetch 되지만
-    // search가 바뀔 때마다 pageParam을 1로 리셋하고 싶으면
-    // 아래처럼 수동으로 처리하거나, queryKey에 search를 넣으면 알아서 해주기도 합니다.
-    // 여기서는 간단히 refetch만 호출.
-    refetch();
-  }, [search, refetch]);
+    if (judgingRoundCompanies && judgingRoundCompanies.length > 0) {
+      const mapped = judgingRoundCompanies.map((item) => ({
+        id: item.company_id,
+        name: item.company?.name || "",
+        pdf_path: item.pdf_path,
+        group_name: item.group_name,
+      }));
+      onTargetListChange(mapped);
+    }
+    // 만약 라운드에 속한 기업이 없으면 빈 배열로 초기화
+    else if (judgingRoundCompanies && judgingRoundCompanies.length === 0) {
+      onTargetListChange([]);
+    }
+  }, [judgingRoundCompanies, onTargetListChange]);
+
+  const sourceList =
+    allCompanies?.map((c) => ({ id: c.company_id, name: c.company.name })) ??
+    [];
+
+  // 모든 Source 아이템이 선택되었는지 여부 (// 변경 부분)
+  const areAllSelected =
+    sourceList.length > 0 &&
+    sourceList.every((company) => selectedSourceIds.includes(company.id));
 
   // Source 영역에서 아이템 클릭 시 선택/해제 토글
   const handleSelectSource = (id: number) => {
@@ -75,7 +97,7 @@ export default function CompanySelect({
     setSelectedSourceIds([]);
   };
 
-  // "<" 버튼: Target에서 선택된 회사들을 다시 Source로 이동(이 예시에서는 사실상 Source에서 안 빼도 되지만, 요구사항에 맞춰 구현)
+  // // "<" 버튼: Target에서 선택된 회사들을 다시 Source로 이동(이 예시에서는 사실상 Source에서 안 빼도 되지만, 요구사항에 맞춰 구현)
   const moveTargetToSource = () => {
     if (selectedTargetIds.length === 0) return;
 
@@ -88,12 +110,17 @@ export default function CompanySelect({
     setSelectedTargetIds([]);
   };
 
-  // Source 무한 스크롤 로드
-  const loadMore = () => {
-    if (!isLoading && hasNextPage) {
-      setTimeout(() => {
-        fetchNextPage();
-      }, 1000); // 1초 딜레이
+  // 전체 선택/해제 핸들러 (// 변경 부분)
+  const toggleSelectAllSource = () => {
+    // Source 아이템이 하나도 없으면 그냥 반환
+    if (sourceList.length === 0) return;
+
+    // 이미 모두 선택된 경우 해제
+    if (areAllSelected) {
+      setSelectedSourceIds([]);
+    } else {
+      // 모두 선택되지 않은 경우, 전체 선택
+      setSelectedSourceIds(sourceList.map((company) => company.id));
     }
   };
 
@@ -105,7 +132,7 @@ export default function CompanySelect({
           기업 리스트 ({selectedSourceIds.length}개 선택중)
         </div>
         {/* 검색 인풋 */}
-        <input
+        {/* <input
           type="text"
           value={search}
           onChange={(e) => {
@@ -113,31 +140,30 @@ export default function CompanySelect({
           }}
           placeholder="기업명 검색"
           className="border p-1 w-full rounded-md"
-        />
+        /> */}
+        {/* 전체 선택/해제 버튼 (// 변경 부분) */}
+        <div
+          onClick={toggleSelectAllSource}
+          className="border p-1 text-center rounded-md cursor-pointer text-xs bg-gray-100 hover:bg-gray-200"
+        >
+          {areAllSelected ? "전체 해제" : "전체 선택"}
+        </div>
         {/* 검색된 회사 리스트 (무한 스크롤) */}
         <div className="flex-1 overflow-auto">
-          <InfiniteScroll
-            pageStart={1}
-            loadMore={loadMore}
-            hasMore={!!hasNextPage}
-            useWindow={false} // 특정 영역에 스크롤바를 사용하기 위해 false
-            loader={<Loading key="loader" />}
-          >
-            {sourceList.map((company) => {
-              const isSelected = selectedSourceIds.includes(company.id);
-              return (
-                <div
-                  key={company.id}
-                  onClick={() => handleSelectSource(company.id)}
-                  className={`p-2 border-b cursor-pointer ${
-                    isSelected ? "bg-blue-100" : "bg-white"
-                  } hover:bg-blue-50`}
-                >
-                  {company.name}
-                </div>
-              );
-            })}
-          </InfiniteScroll>
+          {sourceList.map((company) => {
+            const isSelected = selectedSourceIds.includes(company.id);
+            return (
+              <div
+                key={company.id}
+                onClick={() => handleSelectSource(company.id)}
+                className={`p-2 border-b cursor-pointer ${
+                  isSelected ? "bg-blue-100" : "bg-white"
+                } hover:bg-blue-50`}
+              >
+                {company.name}
+              </div>
+            );
+          })}
         </div>
       </div>
 

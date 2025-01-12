@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import {
   Document,
@@ -12,7 +14,6 @@ import {
   EvaluationItem,
   UserProfile,
 } from "@/types/evaluation-type";
-// import "core-js/full/promise/with-resolvers.js";
 
 Font.register({
   family: "Pretendard",
@@ -65,7 +66,7 @@ const EvaluationDocument = ({ evaluationReport }: Props) => {
             {/* 기업 정보 섹션 */}
             <View style={[styles.infoTableContainer, styles.section]}>
               <View style={styles.infoTableRow}>
-                <Text style={styles.infoTableLabel}>(예정)창업기업</Text>
+                <Text style={styles.infoTableLabel}>기업</Text>
                 <Text style={styles.infoTableValue}>{report.company.name}</Text>
               </View>
               <View style={styles.infoTableRow}>
@@ -154,14 +155,19 @@ const EvaluationDocument = ({ evaluationReport }: Props) => {
                 <Text style={styles.judgeCell}>
                   {report.user_profile.position || ""}
                 </Text>
-                {/* <Text style={styles.judgeCell}>
-                  {report.user_profile.position || ""}
-                </Text> */}
                 <View style={styles.judgeCellLastContainer}>
-                  <Text style={styles.textCenter}>
-                    {report.user_profile.name || ""}
-                  </Text>
-                  <Text style={styles.textRight}>(서명)</Text>
+                  {/* 왼쪽 영역: 빈 뷰 (좌우 균형을 맞추기 위해 flex: 1 할당) */}
+                  <View style={styles.judgeLeft} />
+
+                  {/* 가운데 영역: 이름을 표시하는 텍스트 */}
+                  <View style={styles.judgeCenter}>
+                    <Text>{report.user_profile.name || ""}</Text>
+                  </View>
+
+                  {/* 오른쪽 영역: 우측 끝에 “(서명)” 배치 */}
+                  <View style={styles.judgeRight}>
+                    <Text>(서명)</Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -256,6 +262,11 @@ const styles = StyleSheet.create({
     textAlign: "right",
     flex: 1,
   },
+  signTextRight: {
+    position: "absolute",
+    flex: 1,
+    right: 4,
+  },
   fontBold: {
     fontWeight: "bold",
   },
@@ -348,12 +359,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   judgeCellLastContainer: {
+    position: "relative",
     flex: 1,
     flexDirection: "row",
-    justifyContent: "space-between", // 중앙과 오른쪽으로 배치
+    justifyContent: "center", // 중앙과 오른쪽으로 배치
     alignItems: "center",
     fontSize: 12,
     padding: 8,
+  },
+  judgeLeft: {
+    flex: 1,
+  },
+  judgeCenter: {
+    // 가운데 이름 표시부 (굳이 flex를 주지 않아도 됨)
+    // 필요하면 textAlign 등을 적용
+  },
+  judgeRight: {
+    flex: 1,
+    alignItems: "flex-end",
   },
   judgeCellLast: {
     borderColor: "#D1D5DB",

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDetailedEvaluationsByUser } from "@/actions/evaluation-action";
+import { getJudgingRoundUsersById } from "@/actions/judging_round_user-action";
 
 interface Params {
   params: {
@@ -9,12 +9,10 @@ interface Params {
 
 export async function GET(request: Request, { params }: Params) {
   const { judgeRoundId } = params;
-
   try {
-    // 서버 액션 함수 호출
-    const data = await getDetailedEvaluationsByUser(Number(judgeRoundId));
+    const data = await getJudgingRoundUsersById(Number(judgeRoundId));
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ error: error }, { status: 400 });
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }

@@ -1,17 +1,21 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CompanyRow } from "@/actions/company-action";
 import { Separator } from "@/components/ui/separator";
 import { useProgramCompanyQuery } from "../../company/_hooks/useProgramCompanyQuery";
 import Loading from "@/app/_components/Loading";
 import { useCompanyInfiniteQuery } from "../../company/_hooks/useCompanyInfiniteQuery";
 import InfiniteScroll from "react-infinite-scroller";
 
+interface Company {
+  id: number;
+  name: string;
+}
+
 interface CompanySelectForModifyProps {
   programId?: number;
-  targetList: CompanyRow[]; // 이미 선택된(타겟) 기업 목록
-  onTargetListChange: (newList: CompanyRow[]) => void;
+  targetList: Company[]; // 이미 선택된(타겟) 기업 목록
+  onTargetListChange: (newList: Company[]) => void;
 }
 
 export default function CompanySelectForModify({
@@ -40,10 +44,7 @@ export default function CompanySelectForModify({
         // allCompanies를 { id, name } 형태로 변환
         const mapped = allCompanies.map((pc) => ({
           id: pc.company_id,
-          // 혹시 company.name이 없을 수도 있으니 optional 처리
           name: pc.company?.name ?? `Company #${pc.company_id}`,
-          // created_at: "",
-          // description: null,
         }));
         onTargetListChange(mapped);
       }
@@ -135,7 +136,7 @@ export default function CompanySelectForModify({
             loadMore={loadMore}
             hasMore={!!hasNextPage}
             useWindow={false} // 특정 영역에 스크롤바를 사용하기 위해 false
-            loader={<div key="loader">Loading...</div>}
+            loader={<Loading key="loader" />}
           >
             {sourceList.map((company) => {
               const isSelected = selectedSourceIds.includes(company.id);

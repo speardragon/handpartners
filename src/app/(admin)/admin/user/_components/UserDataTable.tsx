@@ -43,7 +43,7 @@ export function UserDataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const { setOpen, setCreateOpen } = useDialogOpenStore((state) => state);
 
-  const [userId, setUserId] = useState<number>();
+  const [userId, setUserId] = useState<string>();
   const [userProfile, setUserProfile] = useState<Partial<UserRow>>({
     username: "",
     role: "",

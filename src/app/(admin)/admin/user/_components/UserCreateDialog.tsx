@@ -24,7 +24,12 @@ import {
   ProfileUpdateFormSchema,
 } from "../_lib/ProfileFormSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createUser, updateUser, UserRowInsert } from "@/actions/user-actions";
+import {
+  createUser,
+  registerUser,
+  updateUser,
+  UserRowInsert,
+} from "@/actions/user-actions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -52,18 +57,16 @@ export default function UserCreateDialog() {
   const onSubmit = async (
     userData: z.infer<typeof ProfileCreateFormSchema>
   ) => {
-    const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase.auth.signUp({
-      email: "example@email.com",
-      password: "example-password",
-      options: {
-        data: userData,
-      },
-    });
-    // await createUser(data as UserRowInsert);
-    queryClient.invalidateQueries({ queryKey: ["users"] });
-    setCreateOpen(false);
-    toast.success("새로운 사용가자 추가되었습니다.");
+    try {
+      await registerUser(userData);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setCreateOpen(false);
+      toast.success("새로운 사용자가 추가되었습니다.");
+    } catch (error) {
+      // 에러 처리 로직
+      toast.error("사용자 등록에 실패했습니다.");
+      console.error(error);
+    }
   };
 
   return (

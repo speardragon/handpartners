@@ -16,6 +16,11 @@ import { CompanyRow } from "@/actions/company-action";
 import { useState } from "react";
 import { updateProgramAndCompanies } from "@/actions/program-company-action";
 
+interface Company {
+  id: number;
+  name: string;
+}
+
 type Props = {
   programId?: number;
   programInfo: Partial<ProgramRow>;
@@ -29,7 +34,7 @@ export default function ProgramEditForm({
 }: Props) {
   const queryClient = useQueryClient();
 
-  const [targetList, setTargetList] = useState<CompanyRow[]>([]);
+  const [targetList, setTargetList] = useState<Company[]>([]);
 
   const form = useForm<z.infer<typeof ProgramUpdateFormSchema>>({
     resolver: zodResolver(ProgramUpdateFormSchema),

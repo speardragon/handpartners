@@ -28,7 +28,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
-  userId?: number;
+  userId?: string;
   userProfile: Partial<UserRow>;
 };
 
@@ -76,7 +76,7 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
     }
   };
 
-  const deleteHandler = async (userId: number) => {
+  const deleteHandler = async (userId: string) => {
     const confirmation = window.confirm("정말로 이 사용자를 삭제하시겠습니까?");
     if (!confirmation) {
       return; // 사용자가 취소를 눌렀을 경우 삭제 로직을 실행하지 않습니다.

@@ -1,4 +1,3 @@
-import { JudgingRoundPaginationResult } from "@/actions/judging_round-action";
 import { useQuery } from "@tanstack/react-query";
 
 const getJudgingRounds = async (
@@ -23,7 +22,7 @@ export function useJudgingRoundsByProgram(
     pageSize: number;
   }
 ) {
-  return useQuery<JudgingRoundPaginationResult>({
+  return useQuery({
     queryKey: ["judging_rounds", programId, pagination],
     queryFn: () =>
       getJudgingRounds(

@@ -93,7 +93,8 @@ export async function getEvaluationByUser(
     .eq("user_id", userId);
 
   if (evaluationError) {
-    throw new Error(`Failed to fetch evaluations: ${evaluationError.message}`);
+    handleError(evaluationError);
+    // throw new Error(`Failed to fetch evaluations: ${evaluationError.message}`);
   }
 
   // judging_round_company의 pdf_path 가져오기
@@ -105,9 +106,10 @@ export async function getEvaluationByUser(
     .single(); // 단일 결과 반환
 
   if (companyError) {
-    throw new Error(
-      `Failed to fetch judging_round_company data: ${companyError.message}`
-    );
+    handleError(companyError);
+    // throw new Error(
+    //   `Failed to fetch judging_round_company data: ${companyError.message}`
+    // );
   }
 
   // pdf_path 추출
@@ -136,6 +138,7 @@ export async function getDetailedEvaluationsByUser(
     .single();
 
   if (userError) {
+    handleError(userError);
     throw new Error(`Failed to fetch user profile: ${userError.message}`);
   }
 
@@ -154,6 +157,7 @@ export async function getDetailedEvaluationsByUser(
     .single();
 
   if (jruError) {
+    handleError(jruError);
     throw new Error(`Failed to fetch judging_round_user: ${jruError.message}`);
   }
 

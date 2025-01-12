@@ -22,6 +22,6 @@ export const useEvaluationReportQuery = (
       }
       return res.json();
     },
-    enabled: options?.enabled,
+    enabled: !!judgingRoundId,
   });
 };

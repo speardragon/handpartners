@@ -27,8 +27,7 @@ import {
   JudgeCreateFormType,
 } from "../_lib/JudgeFormSchema";
 import { createJudgingRound } from "@/actions/judging_round-action";
-import { useState } from "react";
-import { PaginationState } from "@tanstack/react-table";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface JudgeCreateType {
   name: string;
@@ -42,14 +41,8 @@ type Props = {
 };
 
 export default function JudgeCreateSheet({ programId }: Props) {
+  const queryClient = useQueryClient();
   const { createOpen, setCreateOpen } = useDialogOpenStore((state) => state);
-
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 100,
-  });
-
-  // const { data: companies } = useCompanyQuery(pagination);
 
   const form = useForm<JudgeCreateFormType>({
     resolver: zodResolver(JudgeCreateFormSchema),
@@ -58,14 +51,6 @@ export default function JudgeCreateSheet({ programId }: Props) {
       description: "",
       start_date: "",
       end_date: "",
-      companies: [
-        // 예시용 기본값 (없으면 비워둠)
-        { company_id: 0, pdf_path: "", group_name: "" },
-      ],
-      users: [
-        // 예시용 기본값
-        { user_id: "", group_name: "" },
-      ],
     },
     mode: "onSubmit",
   });
@@ -76,23 +61,11 @@ export default function JudgeCreateSheet({ programId }: Props) {
     formState: { isSubmitting },
   } = form;
 
-  // 기업 항목 dynamic 관리 (예시)
-  // const { fields: companyFields, append: appendCompany } = useFieldArray({
-  //   control,
-  //   name: "companies",
-  // });
-
-  // // 심사위원 항목 dynamic 관리 (예시)
-  // const { fields: userFields, append: appendUser } = useFieldArray({
-  //   control,
-  //   name: "users",
-  // });
-
   // 폼 제출 함수
   const onSubmit = async (data: JudgeCreateType) => {
     try {
-      // await createJudge(programId, data);
       await createJudgingRound({ ...data, program_id: programId });
+      queryClient.invalidateQueries({ queryKey: ["judging_rounds"] });
       toast.success("새로운 심사가 생성되었습니다.");
       setCreateOpen(false);
     } catch (error: any) {

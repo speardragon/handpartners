@@ -13,7 +13,9 @@ export default function Page({ params }: Props) {
   const judgingRoundId = parseInt(params.judgingRoundId);
 
   // useEvaluationReportQuery를 사용해 데이터 불러오기
-  const { data, isLoading } = useEvaluationReportQuery(judgingRoundId);
+  const { data, isLoading } = useEvaluationReportQuery(judgingRoundId, {
+    enabled: !!judgingRoundId,
+  });
   // 중복 저장 방지 플래그
   const [isSaved, setIsSaved] = useState(false);
 
@@ -25,7 +27,6 @@ export default function Page({ params }: Props) {
 
           const blob = await pdf(
             <EvaluationDocument evaluationReport={data} />
-            // <TestDocument />
           ).toBlob();
 
           // PDF 다운로드

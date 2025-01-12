@@ -49,7 +49,7 @@ export default function Home() {
           </div>
         ) : (
           <Accordion
-            className="flex max-w-[960px] w-full"
+            className="flex flex-col max-w-[960px] w-full"
             defaultValue={`${data[0]?.id}`}
             type="single"
             collapsible

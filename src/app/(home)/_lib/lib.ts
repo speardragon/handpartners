@@ -36,7 +36,7 @@ export function calculateScoreDistribution(companies: Company[]) {
   };
 
   companies.forEach((company) => {
-    const score = parseInt(company.score, 10);
+    const score = company.score;
 
     if (score >= 90) {
       scoreDistribution["90점 이상"]++;
