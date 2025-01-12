@@ -36,7 +36,7 @@ import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export const ProgramColumns: ColumnDef<Partial<ProgramRow>>[] = [
+export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
   {
     accessorKey: "id",
     cell: (info) => info.getValue(),
