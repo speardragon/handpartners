@@ -1,9 +1,13 @@
 "use server";
 
 import { Database } from "types_db";
-import { createServerSupabaseClient } from "../utils/supabase/server";
+import {
+  createServerSupabaseAdminClient,
+  createServerSupabaseClient,
+} from "../utils/supabase/server";
 import { ProfileCreateFormSchema } from "@/app/(admin)/admin/user/_lib/ProfileFormSchema";
 import { z } from "zod";
+import { cookies } from "next/headers";
 
 export type UserRow = Database["public"]["Tables"]["user"]["Row"];
 export type UserRowInsert = Database["public"]["Tables"]["user"]["Insert"];
@@ -65,7 +69,6 @@ export async function createUser(user: UserRowInsert) {
 }
 
 export async function updateUser(user: UserRowUpdate) {
-  console.log(user);
   const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
@@ -137,7 +140,8 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 export async function registerUser(
   userData: z.infer<typeof ProfileCreateFormSchema>
 ) {
-  const supabase = await createServerSupabaseClient();
+  // const supabase = await createServerSupabaseClient(cookies(), true);
+  const supabase = await createServerSupabaseAdminClient();
 
   // 먼저 Supabase Auth에 사용자 생성
   const { data: signUpData, error: signUpError } =

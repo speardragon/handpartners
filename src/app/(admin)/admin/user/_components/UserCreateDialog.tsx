@@ -33,7 +33,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
 
 export default function UserCreateDialog() {
   const { createOpen, setCreateOpen } = useDialogOpenStore((state) => state);

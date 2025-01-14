@@ -58,7 +58,6 @@ export async function getCompanies(
 }
 
 export async function createCompany(company: CompanyRowInsert) {
-  console.log(company);
   const supabase = await createServerSupabaseClient();
 
   // 1) 현재 DB에 동일한 name이 있는지 미리 체크

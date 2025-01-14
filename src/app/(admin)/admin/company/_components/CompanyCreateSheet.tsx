@@ -52,6 +52,7 @@ export default function CompanyCreateSheet() {
       await createCompany(data as CompanyRowInsert);
       toast.success("새로운 기업이 생성되었습니다.");
       queryClient.invalidateQueries({ queryKey: ["companies"] });
+      form.reset();
       setCreateOpen(false);
     } catch (error: any) {
       toast.error(error.message || "오류가 발생했습니다.");
