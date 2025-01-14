@@ -77,7 +77,10 @@ export default function Home() {
                         <div className="text-xl font-bold">
                           {screening.name}
                         </div>
-                        <PdfDownloadButton judgingRoundId={screening.id} />
+                        <PdfDownloadButton
+                          programId={screening.program.id}
+                          judgingRoundId={screening.id}
+                        />
                       </div>
                       <div className="text-gray-600">
                         {screening.program.description}

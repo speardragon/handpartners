@@ -14,20 +14,21 @@ import {
   EvaluationItem,
   UserProfile,
 } from "@/types/evaluation-type";
+import { ProgramRow } from "@/actions/program-action";
 
 Font.register({
   family: "Pretendard",
   fonts: [
     {
-      src: "../fonts/Pretendard-Regular.ttf",
+      src: "../../../../fonts/Pretendard-Regular.ttf",
       fontWeight: "300" as "normal",
     },
     {
-      src: "../fonts/Pretendard-SemiBold.ttf",
+      src: "../../../../fonts/Pretendard-SemiBold.ttf",
       fontWeight: "600" as "semibold",
     },
     {
-      src: "../fonts/Pretendard-Bold.ttf",
+      src: "../../../../fonts/Pretendard-Bold.ttf",
       fontWeight: "700" as "bold",
     },
   ],
@@ -41,9 +42,10 @@ type EvaluationReportItem = {
 
 type Props = {
   evaluationReport: EvaluationReportItem[];
+  programInfo: ProgramRow;
 };
 
-const EvaluationDocument = ({ evaluationReport }: Props) => {
+const EvaluationDocument = ({ evaluationReport, programInfo }: Props) => {
   return (
     <Document>
       {evaluationReport.map((report, index) => {
@@ -57,9 +59,7 @@ const EvaluationDocument = ({ evaluationReport }: Props) => {
             {/* 헤더 */}
             <View style={[styles.headerContainer, styles.section]}>
               <View style={styles.headerInner}>
-                <Text style={styles.headerText}>
-                  실전창업교육 데모데이 심사 평가표
-                </Text>
+                <Text style={styles.headerText}>{programInfo.name}</Text>
               </View>
             </View>
 

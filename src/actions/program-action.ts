@@ -18,6 +18,7 @@ export interface Screening {
   companies: Company[]; // 심사 대상 팀 목록
 }
 export interface Program {
+  id: number;
   name: string; // 프로그램 이름(Program)
   description: string; // 프로그램 설명(Program)
 }
@@ -41,6 +42,22 @@ interface Result {
 function handleError(error) {
   console.error(error);
   throw new Error(error.message);
+}
+
+export async function getProgramById(programId: number) {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("program")
+    .select("*")
+    .eq("id", programId)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
 }
 
 export async function getPrograms(page: number, size: number): Promise<Result> {
@@ -158,7 +175,7 @@ export async function getScreenings(): Promise<any> {
   const nowKstIsoString = nowKst.toISOString();
 
   // Step 1: screening에 필요한 데이터
-  const { data, error } = await supabase
+  const { data: screenings, error } = await supabase
     .from("judging_round")
     .select(
       `
@@ -167,6 +184,7 @@ export async function getScreenings(): Promise<any> {
       start_date,
       end_date,
       program:program_id (
+        id,
         name,
         description
       ),
@@ -195,8 +213,6 @@ export async function getScreenings(): Promise<any> {
     console.error("Error fetching screenings:", error);
     throw new Error(error.message);
   }
-
-  const screenings = data as any;
 
   // 해당 심사자의 group_name에 할당된 company만 필터링
   screenings.forEach((screening) => {
@@ -256,6 +272,7 @@ export async function getScreenings(): Promise<any> {
     start_date: screening.start_date,
     end_date: screening.end_date,
     program: {
+      id: screening.program.id,
       name: screening.program.name,
       description: screening.program.description,
     },

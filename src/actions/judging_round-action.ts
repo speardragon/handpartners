@@ -577,3 +577,174 @@ export async function updateJudgeBasic(data: JudgeBasicData) {
     return { success: false, message: error.message };
   }
 }
+
+export type JudgingRoundDetail = {
+  id: number;
+  name: string;
+  start_date: string | null;
+  end_date: string | null;
+  program_name: string;
+  criteriaList: {
+    id: number;
+    item_name: string;
+    points: number;
+  }[];
+  companies: {
+    company_id: number;
+    company_name: string;
+    description: string | null;
+    // 한 기업에 대한 "모든 유저"의 평가
+    evaluations: {
+      user_id: string;
+      username: string; // JOIN 결과
+      feedback: string | null; // 해당 유저가 남긴 피드백(여러 criteria가 동일한 피드백이면 1번만 저장)
+      criteriaScores: {
+        evaluation_criterion_id: number;
+        grade: number;
+      }[];
+    }[];
+    totalScore: number; // 모든 유저, 모든 criteria grade 합
+  }[];
+};
+
+export async function getJudgingRoundDetails(
+  judgingRoundId: number
+): Promise<JudgingRoundDetail> {
+  const supabase = await createServerSupabaseClient();
+
+  // 1) 심사 라운드 기본 정보
+  const { data: roundData, error: roundError } = await supabase
+    .from("judging_round")
+    .select(
+      `
+        id,
+        name,
+        start_date,
+        end_date,
+        program:program_id (
+          name
+        )
+      `
+    )
+    .eq("id", judgingRoundId)
+    .single();
+
+  if (roundError || !roundData) {
+    throw new Error(roundError?.message ?? "라운드 정보를 가져올 수 없습니다.");
+  }
+
+  // 2) 평가 기준 가져오기
+  const { data: criteriaData, error: criteriaError } = await supabase
+    .from("evaluation_criteria")
+    .select("id, item_name, points")
+    .eq("judging_round_id", judgingRoundId);
+
+  if (criteriaError) {
+    throw new Error(criteriaError.message);
+  }
+
+  // 3) 참여 기업 목록(judging_round_company)
+  const { data: companyData, error: companyError } = await supabase
+    .from("judging_round_company")
+    .select(
+      `
+        company_id,
+        company:company_id (
+          name,
+          description
+        )
+      `
+    )
+    .eq("judging_round_id", judgingRoundId);
+
+  if (companyError) {
+    throw new Error(companyError.message);
+  }
+
+  const companyList = companyData?.map((c) => ({
+    company_id: c.company_id,
+    company_name: c.company.name,
+    description: c.company.description,
+  }));
+
+  // 4) evaluation(평가) JOIN user
+  //    -> user:user_id (username)를 함께 가져온다.
+  const { data: evaluations, error: evaluationError } = await supabase
+    .from("evaluation")
+    .select(
+      `
+        company_id,
+        user_id,
+        evaluation_criterion_id,
+        grade,
+        feedback,
+        user:user_id (
+          username
+        )
+      `
+    )
+    .eq("judging_round_id", judgingRoundId);
+
+  if (evaluationError) {
+    throw new Error(evaluationError.message);
+  }
+
+  // 5) 회사별로 evaluation 그룹핑 -> 유저 단위로 재그룹
+  const companyMap = new Map<number, any>();
+  for (const comp of companyList) {
+    companyMap.set(comp.company_id, {
+      company_id: comp.company_id,
+      company_name: comp.company_name,
+      description: comp.description,
+      evaluations: [] as any[],
+      totalScore: 0,
+    });
+  }
+
+  evaluations.forEach((evalItem) => {
+    const companyEntry = companyMap.get(evalItem.company_id);
+    if (!companyEntry) return;
+
+    // 유저별로 그룹핑이 이미 되어 있는지 확인
+    let userEval = companyEntry.evaluations.find(
+      (u) => u.user_id === evalItem.user_id
+    );
+    if (!userEval) {
+      // 없다면 새로 삽입
+      userEval = {
+        user_id: evalItem.user_id,
+        username: evalItem.user?.username ?? "(이름 없음)",
+        feedback: evalItem.feedback, // 동일한 피드백이 들어오므로 일단 첫 레코드 feedback만 저장
+        criteriaScores: [] as {
+          evaluation_criterion_id: number;
+          grade: number;
+        }[],
+      };
+      companyEntry.evaluations.push(userEval);
+    }
+
+    // criteriaScores 추가
+    userEval.criteriaScores.push({
+      evaluation_criterion_id: evalItem.evaluation_criterion_id,
+      grade: evalItem.grade,
+    });
+
+    // 총점 추가
+    companyEntry.totalScore += evalItem.grade;
+  });
+
+  // 회사별 totalScore 내림차순 정렬
+  const finalCompanies = Array.from(companyMap.values()).sort(
+    (a, b) => b.totalScore - a.totalScore
+  );
+
+  return {
+    id: roundData.id,
+    name: roundData.name,
+    start_date: roundData.start_date,
+    end_date: roundData.end_date,
+    program_name: roundData.program.name,
+    criteriaList: criteriaData || [],
+    companies: finalCompanies,
+  };
+}

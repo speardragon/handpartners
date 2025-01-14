@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Screening } from "@/actions/program-action";
 
 const getPrograms = async () => {
-  const response = await fetch("/api/program");
+  const response = await fetch("/api/screening");
   if (!response.ok) {
     let errorMsg = "Failed to fetch screenings.";
 

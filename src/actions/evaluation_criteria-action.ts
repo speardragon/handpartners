@@ -10,6 +10,7 @@ import { createServerSupabaseClient } from "../utils/supabase/server";
  */
 export async function getJudgingCriteriaByRound(judgingRoundId: number) {
   const supabase = await createServerSupabaseClient();
+
   const { data, error } = await supabase
     .from("evaluation_criteria")
     .select("*")

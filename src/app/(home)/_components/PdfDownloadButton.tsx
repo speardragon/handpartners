@@ -1,20 +1,16 @@
 import React from "react";
-import { saveAs } from "file-saver";
-import { pdf } from "@react-pdf/renderer";
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
-import EvaluationDocument from "./EvaluationDocument";
-import { useRouter } from "next/navigation";
 
 type Props = {
   judgingRoundId: number;
+  programId: number;
 };
 
-const PdfDownloadButton = ({ judgingRoundId }: Props) => {
-  const router = useRouter();
+const PdfDownloadButton = ({ programId, judgingRoundId }: Props) => {
   const handleButtonClick = () => {
     const newWindow = window.open(
-      `/evaluationReport/${judgingRoundId}`,
+      `/evaluationReport/program/${programId}/judgingRound/${judgingRoundId}`,
       "_blank"
     );
     if (!newWindow) {

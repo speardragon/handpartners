@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 import JudgeCreateSheet from "./JudgeCreateSheet";
 
 interface DataTableProps<TData, TValue> {
+  isPending: boolean;
   programId: number;
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -36,6 +37,7 @@ interface DataTableProps<TData, TValue> {
 }
 
 export function JudgeDataTable<TData, TValue>({
+  isPending,
   programId,
   columns,
   data,
@@ -122,6 +124,12 @@ export function JudgeDataTable<TData, TValue>({
                 ))}
               </TableRow>
             ))
+          ) : isPending ? (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center ">
+                <Loading />
+              </TableCell>
+            </TableRow>
           ) : (
             <TableRow>
               <TableCell colSpan={columns.length} className="h-24 text-center ">
