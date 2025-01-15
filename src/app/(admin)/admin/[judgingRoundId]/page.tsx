@@ -122,44 +122,54 @@ export default function JudgingRoundDetailPage() {
                     <p className="text-gray-600">평가 정보가 없습니다.</p>
                   ) : (
                     <ul className="space-y-4">
-                      {company.evaluations.map((evalItem, eIdx) => (
-                        <li
-                          key={eIdx}
-                          className="bg-gray-50 rounded p-3 text-gray-700"
-                        >
-                          {/* 유저 이름 + 피드백 */}
-                          <p className="font-medium text-blue-700 mb-1">
-                            심사자: {evalItem.username}{" "}
-                            {evalItem.feedback && (
-                              <span className="ml-2 text-sm text-gray-600">
-                                (피드백: {evalItem.feedback})
+                      {company.evaluations.map((evalItem, eIdx) => {
+                        // 각 심사위원이 부여한 점수 합계
+                        const userTotal = evalItem.criteriaScores.reduce(
+                          (sum, score) => sum + score.grade,
+                          0
+                        );
+                        return (
+                          <li
+                            key={eIdx}
+                            className="bg-gray-50 rounded p-3 text-gray-700"
+                          >
+                            {/* 유저 이름 + 피드백 + 각 심사위원 총점 */}
+                            <p className="font-medium text-blue-700 mb-1">
+                              심사자: {evalItem.username}{" "}
+                              <span className="ml-1 text-sm text-gray-600">
+                                ({userTotal}점)
                               </span>
-                            )}
-                          </p>
+                              {evalItem.feedback && (
+                                <span className="ml-2 text-sm text-gray-600">
+                                  (피드백: {evalItem.feedback})
+                                </span>
+                              )}
+                            </p>
 
-                          {/* 해당 유저의 (기준, 점수) 목록 */}
-                          <ul className="pl-4 list-disc space-y-1">
-                            {evalItem.criteriaScores.map((cs, i) => {
-                              // criteriaList에서 매칭
-                              const matchedCriterion = criteriaList.find(
-                                (c) => c.id === cs.evaluation_criterion_id
-                              );
-                              const criterionName =
-                                matchedCriterion?.item_name ??
-                                `기준 #${cs.evaluation_criterion_id}`;
+                            {/* 해당 유저의 (기준, 점수) 목록 */}
+                            <ul className="pl-4 list-disc space-y-1">
+                              {evalItem.criteriaScores.map((cs, i) => {
+                                // criteriaList에서 매칭
+                                const matchedCriterion = criteriaList.find(
+                                  (c) => c.id === cs.evaluation_criterion_id
+                                );
+                                const criterionName =
+                                  matchedCriterion?.item_name ??
+                                  `기준 #${cs.evaluation_criterion_id}`;
 
-                              return (
-                                <li key={i}>
-                                  <span className="font-medium">
-                                    {criterionName}
-                                  </span>
-                                  : {cs.grade}
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </li>
-                      ))}
+                                return (
+                                  <li key={i}>
+                                    <span className="font-medium">
+                                      {criterionName}
+                                    </span>
+                                    : {cs.grade}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </AccordionContent>
