@@ -15,13 +15,19 @@ import {
 } from "../_lib/JudgeFormSchema";
 import JudgeCompanySelect from "./JudgeCompanySelect";
 import JudgeUserSelect from "./JudgeUserSelect";
+import { v4 as uuidv4 } from "uuid";
 
 // ************** 변경된 부분: updateJudgeBasic, updateJudgeUser는 객체로 전달 **************
 import { updateJudgeBasic } from "@/actions/judging_round-action";
-import { updateJudgeCompany } from "@/actions/judging_rounds_company-action";
+import {
+  updateJudgeCompany,
+  updateJudgeCompany2,
+} from "@/actions/judging_rounds_company-action";
 import { updateJudgeUser } from "@/actions/judging_round_user-action";
 import JudgeCriteriaSelect from "./JudgeCriteriaSelect";
 import { updateJudgeCriteria } from "@/actions/evaluation_criteria-action";
+import { Database } from "types_db";
+import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 
 // (참고) 기존 sanitizeFileName 등 필요한 함수/타입들
 function sanitizeFileName(originalName: string) {
@@ -63,6 +69,7 @@ export default function JudgeEditForm({
   judgingRoundInfo,
   setOpenEdit,
 }: Props) {
+  const supabaseClient = createBrowserSupabaseClient();
   const queryClient = useQueryClient();
 
   const [targetList, setTargetList] = useState<SimpleCompany[]>([]);
@@ -119,44 +126,44 @@ export default function JudgeEditForm({
   // ---------------------------------------------------------------------------
   //  (2) 기업 정보 업데이트 → PDF 처리가 있어 FormData 유지
   // ---------------------------------------------------------------------------
-  const handleSubmitCompanies = async () => {
-    try {
-      // PDF 파일 처리를 위해 기존대로 FormData 사용
-      const formData = new FormData();
-      formData.append("judgingRoundId", String(judgingRoundId ?? ""));
+  // const handleSubmitCompanies = async () => {
+  //   try {
+  //     // PDF 파일 처리를 위해 기존대로 FormData 사용
+  //     const formData = new FormData();
+  //     formData.append("judgingRoundId", String(judgingRoundId ?? ""));
 
-      // company payload
-      const companiesPayload = targetList.map((c) => ({
-        company_id: c.id,
-        group_name: c.group_name ?? "",
-      }));
-      formData.append("companies", JSON.stringify(companiesPayload));
+  //     // company payload
+  //     const companiesPayload = targetList.map((c) => ({
+  //       company_id: c.id,
+  //       group_name: c.group_name ?? "",
+  //     }));
+  //     formData.append("companies", JSON.stringify(companiesPayload));
 
-      // 파일들 (index 일치)
-      targetList.forEach((c, i) => {
-        if (c.pdf_file) {
-          const sanitizedName = sanitizeFileName(c.pdf_file.name);
-          const renamedFile = new File([c.pdf_file], sanitizedName, {
-            type: c.pdf_file.type,
-          });
-          formData.append(`files[${i}]`, renamedFile);
-        }
-      });
+  //     // 파일들 (index 일치)
+  //     targetList.forEach((c, i) => {
+  //       if (c.pdf_file) {
+  //         const sanitizedName = sanitizeFileName(c.pdf_file.name);
+  //         const renamedFile = new File([c.pdf_file], sanitizedName, {
+  //           type: c.pdf_file.type,
+  //         });
+  //         formData.append(`files[${i}]`, renamedFile);
+  //       }
+  //     });
 
-      const result = await updateJudgeCompany(formData);
-      if (result.success) {
-        queryClient.invalidateQueries({
-          queryKey: ["judging_round_companies"],
-        });
-        queryClient.invalidateQueries({ queryKey: ["judging_round_users"] });
-        toast.success("기업 정보를 수정하였습니다.");
-      } else {
-        toast.error("기업 정보 수정 중 오류가 발생했습니다.");
-      }
-    } catch (error: any) {
-      toast.error(`기업 업데이트 중 오류가 발생했습니다: ${error.message}`);
-    }
-  };
+  //     const result = await updateJudgeCompany(formData);
+  //     if (result.success) {
+  //       queryClient.invalidateQueries({
+  //         queryKey: ["judging_round_companies"],
+  //       });
+  //       queryClient.invalidateQueries({ queryKey: ["judging_round_users"] });
+  //       toast.success("기업 정보를 수정하였습니다.");
+  //     } else {
+  //       toast.error("기업 정보 수정 중 오류가 발생했습니다.");
+  //     }
+  //   } catch (error: any) {
+  //     toast.error(`기업 업데이트 중 오류가 발생했습니다: ${error.message}`);
+  //   }
+  // };
 
   // ---------------------------------------------------------------------------
   //  (3) 사용자(심사자) 정보 업데이트 → 객체 payload로 updateJudgeUser 호출
@@ -217,6 +224,78 @@ export default function JudgeEditForm({
       newArr[index] = { ...newArr[index], group_name: value };
       return newArr;
     });
+  };
+
+  const handleSubmitCompanies = async () => {
+    try {
+      // 1) 클라이언트에서 Supabase에 직접 업로드
+      //    (기존 FormData로 보내지 않는다!)
+      const updatedList = [...targetList]; // 복사본
+
+      for (let i = 0; i < updatedList.length; i++) {
+        const c = updatedList[i];
+        if (c.pdf_file) {
+          // 파일이 새로 선택된 경우만 업로드
+          const sanitizedName = sanitizeFileName(c.pdf_file.name);
+          const uniqueId = uuidv4();
+          const fileName = `${Date.now()}-${uniqueId}-${sanitizedName}`;
+          const filePath = `judging-round-pdfs/${fileName}`;
+
+          const { error: storageError } = await supabaseClient.storage
+            .from("handpartners")
+            .upload(filePath, c.pdf_file, {
+              cacheControl: "3600",
+              upsert: true,
+            });
+
+          if (storageError) {
+            console.error("Storage upload error:", storageError);
+            throw new Error(storageError.message);
+          }
+
+          // public URL 생성
+          const { data: publicUrlData } = supabaseClient.storage
+            .from("handpartners")
+            .getPublicUrl(filePath);
+
+          if (publicUrlData?.publicUrl) {
+            // 업로드 성공 시 local state에 pdf_path 저장
+            updatedList[i] = {
+              ...updatedList[i],
+              pdf_path: publicUrlData.publicUrl,
+            };
+          }
+        }
+      }
+
+      // 2) 모든 업로드가 끝났으면, DB에 반영할 최종 정보만 Server Action에 전달
+      //    Server Action으로는 큰 파일이 아니라 { judgingRoundId, companies }만 보냄
+      const companiesPayload = updatedList.map((c) => ({
+        company_id: c.id,
+        group_name: c.group_name ?? "",
+        pdf_path: c.pdf_path || null,
+      }));
+
+      const payload = {
+        judgingRoundId: judgingRoundId ?? 0,
+        companies: companiesPayload,
+      };
+
+      const result = await updateJudgeCompany2(payload);
+
+      if (result.success) {
+        setTargetList(updatedList); // state 갱신
+        queryClient.invalidateQueries({
+          queryKey: ["judging_round_companies"],
+        });
+        toast.success("기업 정보를 수정하였습니다.");
+      } else {
+        toast.error("기업 정보 수정 중 오류가 발생했습니다.");
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.error(`기업 업데이트 중 오류가 발생했습니다: ${error.message}`);
+    }
   };
 
   // ------------------------------------------------------------------
