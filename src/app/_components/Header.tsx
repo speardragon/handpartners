@@ -1,41 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useUserProfileQuery } from "../_hooks/useUserQuery";
+import { useAuth } from "../_hooks/useAuth"; // 새로 만든 훅 import
 import Image from "next/image";
 import Link from "next/link";
 import handpartnersLogo from "../../../public/images/handpartners_logo.png";
-import { createBrowserSupabaseClient } from "@/utils/supabase/client";
-import { useUserProfileQuery } from "../_hooks/useUserQuery";
 
 export default function Header() {
-  const supabase = createBrowserSupabaseClient();
-  const [user, setUser] = useState(null);
+  // 커스텀 훅에서 user, supabase 가져오기
+  const { user, supabase } = useAuth();
+
+  // role 정보를 가져오는 기존 훅 (예: react-query 기반으로 추정)
   const { data: userProfile } = useUserProfileQuery();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-    };
-
-    fetchUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setUser(session?.user || null);
-      }
-    );
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, [supabase]);
+  // 로그아웃 처리
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    // useAuth 훅에서 user 상태가 자동으로 null로 업데이트됩니다.
+  };
 
   return (
     <header className="flex z-50 w-full items-center h-16 border-b border-gray-200">
-      {/* <header className="fixed top-0 left-0 z-50 items-center w-full h-16 px-4 bg-white border-b border-gray-200"> */}
       <div className="flex items-center justify-between w-full p-2 px-6 font-medium text-gray-900">
         <Link href="/">
           <Image
@@ -54,10 +39,7 @@ export default function Header() {
                 <Link href="/admin/user">관리자 페이지</Link>
               )}
               <div
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  setUser(null); // 로그아웃 시 사용자 상태 초기화
-                }}
+                onClick={handleSignOut}
                 className="hover:underline cursor-pointer"
               >
                 로그아웃

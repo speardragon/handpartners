@@ -70,7 +70,7 @@ export async function updateJudgeCompany(formData: FormData) {
       throw new Error("judgingRoundId가 없습니다.");
     }
     const judgingRoundId = parseInt(judgingRoundIdString, 10);
-    console.log({ judgingRoundId });
+    // console.log({ judgingRoundId });
 
     // 2) companies JSON 파싱
     const companiesJson = formData.get("companies") as string;
@@ -78,7 +78,7 @@ export async function updateJudgeCompany(formData: FormData) {
     if (companiesJson) {
       companies = JSON.parse(companiesJson);
     }
-    console.log({ companies });
+    // console.log({ companies });
 
     // 3) DB에서 기존 기업 레코드 조회
     const { data: oldCompanies, error: oldCompaniesError } = await supabase
@@ -86,7 +86,7 @@ export async function updateJudgeCompany(formData: FormData) {
       .select("*")
       .eq("judging_round_id", judgingRoundId);
 
-    console.log({ oldCompanies });
+    // console.log({ oldCompanies });
 
     if (oldCompaniesError) {
       console.error("조회 실패:", oldCompaniesError);
@@ -104,7 +104,7 @@ export async function updateJudgeCompany(formData: FormData) {
       });
     });
 
-    console.log(newMap);
+    // console.log(newMap);
 
     // (2) 기존 목록 중 '사라진' 기업 찾기(= 새 목록에는 없는데 old에는 있는 경우)
     const toDelete = oldCompanies.filter((oc) => !newMap.has(oc.company_id));
@@ -139,8 +139,6 @@ export async function updateJudgeCompany(formData: FormData) {
     // 5) 실제 DB 작업
     // (A) 삭제할 기업
     if (toDelete.length > 0) {
-      console.log(`삭제`);
-      console.log(toDelete[0]);
       const ids = toDelete.map((x) => x.id); // PK id
       const { error: deleteError } = await supabase
         .from("judging_round_company")
@@ -155,8 +153,6 @@ export async function updateJudgeCompany(formData: FormData) {
 
     // (B) 삽입할 기업 (파일 업로드 포함)
     if (toInsert.length > 0) {
-      console.log(`삽입`);
-      console.log(toInsert[0]);
       const insertPayload = [];
       for (const insertion of toInsert) {
         let pdfPath = null;
@@ -212,13 +208,13 @@ export async function updateJudgeCompany(formData: FormData) {
 
     // (C) 업데이트할 기업
     for (let i = 0; i < toUpdate.length; i++) {
-      console.log(`업데이트`);
-      console.log(toUpdate);
+      // console.log(`업데이트`);
+      // console.log(toUpdate);
       const c = toUpdate[i];
       const existing = oldMap.get(c.company_id);
       if (!existing) continue;
 
-      console.log({ existing });
+      // console.log({ existing });
 
       // 기존에 있던 레코드의 id
       const rowId = existing.id;
@@ -232,13 +228,13 @@ export async function updateJudgeCompany(formData: FormData) {
       // 안전하게는 companies.findIndex(...) 로 i를 찾거나, 별도 맵핑을 구성해야 합니다.
 
       const file = formData.get(fileKey) as File | null;
-      console.log(file);
+      // console.log(file);
       if (file) {
         const uniqueId = uuidv4();
         const fileName = `${Date.now()}-${uniqueId}-${file.name}`;
         const filePath = `judging-round-pdfs/${fileName}`;
 
-        console.log(filePath);
+        // console.log(filePath);
 
         const { error: storageError } = await supabase.storage
           .from("handpartners")
@@ -251,7 +247,7 @@ export async function updateJudgeCompany(formData: FormData) {
           throw new Error(storageError.message);
         }
 
-        console.log("업로드 성공");
+        // console.log("업로드 성공");
 
         const { data: publicUrlData } = supabase.storage
           .from("handpartners")

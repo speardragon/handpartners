@@ -21,10 +21,6 @@ export function useLoginMutation() {
         password,
       });
 
-      if (data) {
-        console.log(data);
-      }
-
       if (error) {
         throw new Error(error.message);
       }

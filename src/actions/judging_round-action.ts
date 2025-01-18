@@ -355,7 +355,6 @@ export async function updateJudgeLegacy(
         group_name: c.group_name || "A",
       });
     }
-    console.log(companiesPayload);
 
     if (companiesPayload.length > 0) {
       const { error: companyInsertError } = await supabase
@@ -477,7 +476,6 @@ export async function updateJudge(formData: FormData) {
         const uniqueId = uuidv4();
         const fileName = `${Date.now()}-${uniqueId}`;
         const filePath = `judging-round-pdfs/${fileName}`;
-        console.log(fileName);
 
         // Supabase Storage에 업로드
         const { data: storageData, error: storageError } =
@@ -487,7 +485,6 @@ export async function updateJudge(formData: FormData) {
               cacheControl: "3600",
               upsert: true,
             });
-        console.log(storageData);
 
         if (storageError) {
           console.error("Storage upload error", storageError);
@@ -498,8 +495,6 @@ export async function updateJudge(formData: FormData) {
         const { data: publicUrlData } = supabase.storage
           .from("handpartners")
           .getPublicUrl(filePath);
-
-        console.log(publicUrlData);
 
         if (publicUrlData?.publicUrl) {
           pdfPath = publicUrlData.publicUrl;
@@ -746,5 +741,54 @@ export async function getJudgingRoundDetails(
     program_name: roundData.program.name,
     criteriaList: criteriaData || [],
     companies: finalCompanies,
+  };
+}
+
+/**
+ * 주어진 judging_round_id를 기반으로
+ * 회사별(Company.name) 모든 feedback을 배열 형태로 모아서 반환
+ */
+export async function getCompanyFeedbacksByRoundId(judging_round_id: number) {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("evaluation")
+    .select(
+      `
+      feedback,
+      company:company_id (name)
+    `
+    )
+    .eq("judging_round_id", judging_round_id);
+
+  if (error) {
+    console.error("getCompanyFeedbacksByRoundId error:", error);
+    throw new Error(error.message);
+  }
+
+  // 회사별 피드백을 모으기 (중복 제거)
+  const feedbackMap = new Map<string, Set<string>>();
+
+  data?.forEach((row) => {
+    const companyName = row.company?.name;
+    const feedback = row.feedback;
+
+    if (!companyName || !feedback) return;
+
+    if (!feedbackMap.has(companyName)) {
+      feedbackMap.set(companyName, new Set<string>());
+    }
+
+    // 중복 제거를 위해 Set 사용
+    feedbackMap.get(companyName)!.add(feedback);
+  });
+
+  // 최종 반환 구조
+  // 회사마다 feedbacks: Set -> Array 로 변환
+  return {
+    companies: Array.from(feedbackMap.entries()).map(([name, feedbackSet]) => ({
+      name,
+      feedbacks: Array.from(feedbackSet),
+    })),
   };
 }

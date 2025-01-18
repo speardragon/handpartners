@@ -1,10 +1,9 @@
 "use client";
 
-import { Skeleton } from "@/components/ui/skeleton";
 import { columns } from "./_components/columns";
 import { DataTable } from "./_components/data-table";
 import { useProgramsQuery } from "./_hooks/useProgramsQuery";
-import { Company, Screening } from "@/actions/program-action";
+import { Screening } from "@/actions/program-action";
 import {
   Accordion,
   AccordionContent,
@@ -19,9 +18,16 @@ import {
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import PdfDownloadButton from "./_components/PdfDownloadButton";
+import FeedbackToExcelButton from "./_components/FeedbackToExcelButton";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../_hooks/useAuth";
 
 export default function Home() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+
+  const { user, supabase } = useAuth();
 
   const { data, isLoading, error } = useProgramsQuery();
 
@@ -77,10 +83,24 @@ export default function Home() {
                         <div className="text-xl font-bold">
                           {screening.name}
                         </div>
-                        <PdfDownloadButton
-                          programId={screening.program.id}
-                          judgingRoundId={screening.id}
-                        />
+                        <div className="flex gap-2">
+                          {user && (
+                            <Button
+                              onClick={() => {
+                                router.push(`/admin/${screening.id}`);
+                              }}
+                            >
+                              심사 현황
+                            </Button>
+                          )}
+                          <FeedbackToExcelButton
+                            judgingRoundId={screening.id}
+                          />
+                          <PdfDownloadButton
+                            programId={screening.program.id}
+                            judgingRoundId={screening.id}
+                          />
+                        </div>
                       </div>
                       <div className="text-gray-600">
                         {screening.program.description}
