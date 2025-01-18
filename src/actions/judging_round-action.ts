@@ -791,7 +791,8 @@ export async function getCompanyScoresByRoundId(
     });
 
     // 평균(= totalScore / 심사자 수)
-    const avgScore = judgings.length > 0 ? totalScore / judgings.length : 0;
+    const nonZeroCount = judgings.filter((j) => j.score !== 0).length;
+    const avgScore = nonZeroCount > 0 ? totalScore / nonZeroCount : 0;
 
     companiesArray.push({
       name: companyName,
