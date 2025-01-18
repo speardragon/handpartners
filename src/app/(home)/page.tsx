@@ -22,6 +22,23 @@ import FeedbackToExcelButton from "./_components/FeedbackToExcelButton";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../_hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  EllipsisVertical,
+  Pencil,
+  SquareArrowOutUpRight,
+  Trash2,
+} from "lucide-react";
+import ScoreToExcelButton from "./_components/ScoreToExcelButton";
 
 export default function Home() {
   const queryClient = useQueryClient();
@@ -83,23 +100,51 @@ export default function Home() {
                         <div className="text-xl font-bold">
                           {screening.name}
                         </div>
-                        <div className="flex gap-2">
-                          {user && (
-                            <Button
-                              onClick={() => {
-                                router.push(`/admin/${screening.id}`);
-                              }}
-                            >
-                              심사 현황
-                            </Button>
-                          )}
-                          <FeedbackToExcelButton
-                            judgingRoundId={screening.id}
-                          />
-                          <PdfDownloadButton
-                            programId={screening.program.id}
-                            judgingRoundId={screening.id}
-                          />
+                        <div className="flex gap-2 p-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button className="p-1 px-2" variant="outline">
+                                <EllipsisVertical size={16} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56">
+                              <DropdownMenuLabel>
+                                내 이력서 관리
+                              </DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuGroup>
+                                {user && (
+                                  <DropdownMenuItem>
+                                    <Button
+                                      className="flex justify-evenly w-full"
+                                      onClick={() => {
+                                        router.push(`/admin/${screening.id}`);
+                                      }}
+                                    >
+                                      <SquareArrowOutUpRight size={18} />
+                                      심사 현황 보러가기
+                                    </Button>
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem>
+                                  <ScoreToExcelButton
+                                    judgingRoundId={screening.id}
+                                  />
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <FeedbackToExcelButton
+                                    judgingRoundId={screening.id}
+                                  />
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <PdfDownloadButton
+                                    programId={screening.program.id}
+                                    judgingRoundId={screening.id}
+                                  />
+                                </DropdownMenuItem>
+                              </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                       <div className="text-gray-600">

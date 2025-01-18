@@ -264,130 +264,6 @@ export interface JudgeCreateData {
     group_name?: string;
   }[];
 }
-export async function updateJudgeLegacy(
-  judgingRoundId: number,
-  judgeData: JudgeCreateData
-) {
-  const supabase = await createServerSupabaseClient();
-
-  // 1) judge_round 업데이트
-  const { data: updatedRoundData, error: updateRoundError } = await supabase
-    .from("judging_round")
-    .update({
-      name: judgeData.name,
-      description: judgeData.description,
-      start_date: judgeData.start_date || null,
-      end_date: judgeData.end_date || null,
-    })
-    .eq("id", judgingRoundId)
-    .select("id")
-    .single();
-
-  if (updateRoundError) {
-    console.error("judge_round update error", updateRoundError);
-    throw new Error(updateRoundError.message);
-  }
-
-  if (!updatedRoundData) {
-    throw new Error("심사 라운드 업데이트에 실패했습니다.");
-  }
-
-  // 2) 기존 judge_round_company, judge_round_user 모두 삭제
-  const { error: deleteCompanyError } = await supabase
-    .from("judging_round_company")
-    .delete()
-    .eq("judging_round_id", judgingRoundId);
-  if (deleteCompanyError) {
-    throw new Error(deleteCompanyError.message);
-  }
-
-  const { error: deleteUserError } = await supabase
-    .from("judging_round_user")
-    .delete()
-    .eq("judging_round_id", judgingRoundId);
-  if (deleteUserError) {
-    throw new Error(deleteUserError.message);
-  }
-
-  // 3) judge_round_company 새로 insert
-  //    - 만약 judgeData.companies N개가 들어왔다면, 각 파일을 Supabase에 업로드 후
-  //      그 public URL을 pdf_path로 세팅
-  if (judgeData.companies && judgeData.companies.length > 0) {
-    const companiesPayload = [];
-
-    for (const c of judgeData.companies) {
-      let pdfPath: string | null = null;
-
-      // (1) 파일이 있는 경우: Supabase Storage 업로드 -> public URL 할당
-      if (c.file) {
-        const fileName = `${Date.now()}_${c.file.name}`; // 중복 방지를 위해 prefix 추가 예시
-        const filePath = `judging-round-pdfs/${fileName}`;
-
-        // Supabase Storage에 업로드
-        const { data: storageData, error: storageError } =
-          await supabase.storage
-            .from("my-bucket") // ★ 실제 프로젝트 버킷명
-            .upload(filePath, c.file, {
-              cacheControl: "3600",
-              upsert: true,
-            });
-
-        if (storageError) {
-          console.error("Storage upload error", storageError);
-          throw new Error(storageError.message);
-        }
-
-        // public URL 생성
-        const { data: publicUrlData } = supabase.storage
-          .from("handpartners")
-          .getPublicUrl(filePath);
-
-        if (publicUrlData?.publicUrl) {
-          pdfPath = publicUrlData.publicUrl; // 최종 PDF 경로
-        }
-      }
-
-      // (2) Insert 할 레코드 구성
-      companiesPayload.push({
-        judging_round_id: judgingRoundId,
-        company_id: c.company_id!,
-        pdf_path: pdfPath, // 업로드 완료된 경로
-        group_name: c.group_name || "A",
-      });
-    }
-
-    if (companiesPayload.length > 0) {
-      const { error: companyInsertError } = await supabase
-        .from("judging_round_company")
-        .insert(companiesPayload);
-
-      if (companyInsertError) {
-        console.error("judge_round_company insert error", companyInsertError);
-        throw new Error(companyInsertError.message);
-      }
-    }
-  }
-
-  // 4) judge_round_user 새로 insert
-  if (judgeData.users && judgeData.users.length > 0) {
-    const usersPayload = judgeData.users.map((u) => ({
-      user_id: u.user_id,
-      group_name: u.group_name || "A",
-      judging_round_id: judgingRoundId,
-    }));
-
-    const { error: userInsertError } = await supabase
-      .from("judging_round_user")
-      .insert(usersPayload);
-
-    if (userInsertError) {
-      console.error("judge_round_user insert error", userInsertError);
-      throw new Error(userInsertError.message);
-    }
-  }
-
-  return { success: true };
-}
 
 export async function updateJudge(formData: FormData) {
   const supabase = await createServerSupabaseClient();
@@ -791,4 +667,150 @@ export async function getCompanyFeedbacksByRoundId(judging_round_id: number) {
       feedbacks: Array.from(feedbackSet),
     })),
   };
+}
+
+export interface JudgingRow {
+  judgingUserName: string; // 심사자 이름
+  score: number;
+}
+
+export interface CompanyScoreResult {
+  name: string; // 회사명
+  judgings: JudgingRow[]; // [{judgingUserName, score}, ...]
+  totalScore: number;
+  avgScore: number;
+  ranking: number; // totalScore 내림차순 순위
+}
+/**
+ * 주어진 judging_round_id에 대해
+ * 회사별 (심사자별 점수 합, totalScore, 평균, 순위)를 구해 반환
+ */
+export async function getCompanyScoresByRoundId(
+  judging_round_id: number
+): Promise<{ companies: CompanyScoreResult[] }> {
+  const supabase = await createServerSupabaseClient();
+
+  // 1) evaluation + company + user 조인
+  // - grade: 심사 기준별 점수
+  // - company:company_id ( name )
+  // - user:user_id ( username )
+  //
+  // DB 스키마상 user 테이블에는 username 필드가 존재하므로,
+  // select("..., user:user_id(username)") 형태로 조인
+  const { data: evaluationRows, error } = await supabase
+    .from("evaluation")
+    .select(
+      `
+        grade,
+        company:company_id ( name ),
+        user:user_id ( username )
+      `
+    )
+    .eq("judging_round_id", judging_round_id);
+
+  if (error) {
+    console.error("getCompanyScoresByRoundId error:", error);
+    throw new Error(error.message);
+  }
+
+  /**
+   * evaluationRows 예시:
+   * [
+   *   {
+   *     grade: 10,
+   *     company: { name: "A기업" },
+   *     user: { username: "judge1" }
+   *   },
+   *   {
+   *     grade: 15,
+   *     company: { name: "A기업" },
+   *     user: { username: "judge1" }
+   *   },
+   *   {
+   *     grade: 12,
+   *     company: { name: "A기업" },
+   *     user: { username: "judge2" }
+   *   },
+   *   {
+   *     grade: 20,
+   *     company: { name: "B기업" },
+   *     user: { username: "judge1" }
+   *   },
+   *   ...
+   * ]
+   *
+   * => 같은 (company, user)에 대해서 여러 행 존재 (심사 기준별)
+   * => (company, user)별로 grade 합산 필요
+   */
+
+  // 2) (companyName) -> (userName -> grade 합산) 구조로 일단 그룹화
+  const companyMap = new Map<
+    string, // company name
+    Map<string, number> // userName -> sumOfGrades
+  >();
+
+  evaluationRows?.forEach((row) => {
+    const companyName = row.company?.name;
+    const userName = row.user?.username;
+    const grade = row.grade;
+
+    // 유효성 체크
+    if (!companyName || !userName || grade == null) {
+      return; // 누락 데이터는 무시
+    }
+
+    // 회사명이 없으면 생성
+    if (!companyMap.has(companyName)) {
+      companyMap.set(companyName, new Map<string, number>());
+    }
+
+    const userScoreMap = companyMap.get(companyName)!;
+    // userName이 없으면 0으로 초기화
+    if (!userScoreMap.has(userName)) {
+      userScoreMap.set(userName, 0);
+    }
+
+    // grade 누적
+    userScoreMap.set(userName, userScoreMap.get(userName)! + grade);
+  });
+
+  // 3) 이제 companyMap을 순회하며 최종 CompanyScoreResult 계산
+  let companiesArray: CompanyScoreResult[] = [];
+
+  companyMap.forEach((userScoreMap, companyName) => {
+    let totalScore = 0;
+    const judgings: JudgingRow[] = [];
+
+    // (userName -> score) 순회
+    userScoreMap.forEach((score, userName) => {
+      judgings.push({
+        judgingUserName: userName,
+        score,
+      });
+      totalScore += score;
+    });
+
+    // 평균(= totalScore / 심사자 수)
+    const avgScore = judgings.length > 0 ? totalScore / judgings.length : 0;
+
+    companiesArray.push({
+      name: companyName,
+      judgings,
+      totalScore,
+      avgScore,
+      ranking: 0, // 일단 0으로 초기화, 뒤에서 부여
+    });
+  });
+
+  // 4) totalScore 내림차순 정렬 & 단순 순위 매기기
+  companiesArray.sort((a, b) => b.totalScore - a.totalScore);
+
+  let rank = 1;
+  companiesArray.forEach((company) => {
+    company.ranking = rank;
+    rank++;
+  });
+
+  // 5) 반환
+  return { companies: companiesArray };
 }

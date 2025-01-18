@@ -20,12 +20,12 @@ const PdfDownloadButton = ({ programId, judgingRoundId }: Props) => {
 
   return (
     <Button
-      className="flex gap-2 bg-red-500 pr-6 text-sm hover:bg-red-700"
+      className="flex justify-evenly gap-2 w-full bg-red-500 pr-6 text-sm hover:bg-red-700"
       // onClick={downloadPdf}
       onClick={handleButtonClick}
       // onClick={() => router.push(`/evaluationReport/${judgingRoundId}`)}
     >
-      <FileText />
+      <FileText size={18} />
       <div>보고서 저장(.pdf)</div>
     </Button>
   );

@@ -63,10 +63,10 @@ export default function FeedbackToExcelButton({ judgingRoundId }: Props) {
 
   return (
     <Button
-      className="bg-green-600 gap-2 hover:bg-green-700"
+      className="flex justify-evenly w-full bg-green-600 gap-2 hover:bg-green-700"
       onClick={handleExport}
     >
-      <FileSpreadsheet />
+      <FileSpreadsheet size={18} />
       {isLoading ? "Loading..." : "피드백 저장(.xlsx)"}
     </Button>
   );

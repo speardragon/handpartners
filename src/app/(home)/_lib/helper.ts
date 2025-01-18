@@ -85,9 +85,17 @@ export function applySheetStylesAndWidths(
       if (!ws[cellAddress].s) ws[cellAddress].s = {};
 
       ws[cellAddress].s.alignment = {
-        horizontal: "center", // 가로 중앙
+        horizontal: C === 2 ? "left" : "center",
         vertical: "center", // 세로 중앙
         wrapText: true, // 내용 길면 줄바꿈
+      };
+
+      // 2) 테두리
+      ws[cellAddress].s.border = {
+        top: { style: "thin", color: { rgb: "000000" } },
+        right: { style: "thin", color: { rgb: "000000" } },
+        bottom: { style: "thin", color: { rgb: "000000" } },
+        left: { style: "thin", color: { rgb: "000000" } },
       };
     }
   }
