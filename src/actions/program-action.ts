@@ -206,8 +206,7 @@ export async function getScreenings(): Promise<any> {
     )
     .eq("judging_round_user.user_id", userId)
     .lte("start_date", nowKstIsoString)
-    .gte("end_date", nowKstIsoString)
-    .order("id");
+    .gte("end_date", nowKstIsoString);
 
   if (error) {
     console.error("Error fetching screenings:", error);
@@ -276,27 +275,29 @@ export async function getScreenings(): Promise<any> {
       name: screening.program.name,
       description: screening.program.description,
     },
-    companies: screening.companies.map((company) => {
-      const key = `${screening.id}_${company.company.id}`;
-      const evaluation = evaluationMap[key] || {
-        status: "PENDING",
-        totalScore: 0,
-      };
-      return {
-        // judge_num: company.judge_num.toString(),
-        companyName: company.company.name,
-        description: company.company.description,
-        category: company.category,
-        status:
-          evaluation.status === "PENDING"
-            ? "심사 예정"
-            : evaluation.status === "ONGOING"
-            ? "심사 중"
-            : "심사 완료",
-        score: evaluation.totalScore, // Add total score here
-        companyId: company.company.id,
-      };
-    }),
+    companies: screening.companies
+      .map((company) => {
+        const key = `${screening.id}_${company.company.id}`;
+        const evaluation = evaluationMap[key] || {
+          status: "PENDING",
+          totalScore: 0,
+        };
+        return {
+          // judge_num: company.judge_num.toString(),
+          companyName: company.company.name,
+          description: company.company.description,
+          category: company.category,
+          status:
+            evaluation.status === "PENDING"
+              ? "심사 예정"
+              : evaluation.status === "ONGOING"
+              ? "심사 중"
+              : "심사 완료",
+          score: evaluation.totalScore, // Add total score here
+          companyId: company.company.id,
+        };
+      })
+      .sort((a, b) => a.companyName.localeCompare(b.companyName)),
   }));
 
   return result;
