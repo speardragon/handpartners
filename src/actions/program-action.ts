@@ -276,6 +276,7 @@ export async function getScreenings(): Promise<any> {
       description: screening.program.description,
     },
     companies: screening.companies
+      .sort((a, b) => a.judge_num - b.judge_num)
       .map((company) => {
         const key = `${screening.id}_${company.company.id}`;
         const evaluation = evaluationMap[key] || {
@@ -296,8 +297,8 @@ export async function getScreenings(): Promise<any> {
           score: evaluation.totalScore, // Add total score here
           companyId: company.company.id,
         };
-      })
-      .sort((a, b) => a.companyName.localeCompare(b.companyName)),
+      }),
+    // .sort((a, b) => a.companyName.localeCompare(b.companyName)),
   }));
 
   return result;
