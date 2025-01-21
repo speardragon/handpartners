@@ -98,7 +98,7 @@ export default function Home() {
                     <div className="mb-4">
                       <div className="flex w-full justify-between">
                         <div className="text-xl font-bold">
-                          {screening.name}
+                          프로그램: {screening.program.name}
                         </div>
                         <div className="flex gap-2 p-2">
                           <DropdownMenu>
@@ -148,7 +148,7 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="text-gray-600">
-                        {screening.program.description}
+                        설명: {screening.program.description}
                       </div>
                       <div className="mt-4">
                         <div className="font-bold">-점수 분포 현황-</div>
