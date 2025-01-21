@@ -36,12 +36,16 @@ const Page = () => {
 
   return (
     <div
-      className={`flex w-full h-screen ${
+      className={`flex w-full h-full ${
         isFull ? "flex-col overflow-hidden" : "flex-row"
       }`}
     >
       {/* 왼쪽 영역: EvaluateTable - 전체화면일 때는 숨김 처리 */}
-      <div className={`flex flex-col ${isFull ? "hidden" : "w-1/2 p-4"}`}>
+      <div
+        className={`flex flex-col overflow-y-auto ${
+          isFull ? "hidden" : "w-1/2 p-4"
+        }`}
+      >
         <div className="space-y-2 text-gray-600">
           <p className="text-gray-700 text-lg font-semibold">
             {judgeRound.program.name}

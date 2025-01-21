@@ -283,7 +283,7 @@ export default function JudgeEditForm({
 
       const result = await updateJudgeCompany2(payload);
 
-      if (result.success) {
+      if (result?.success) {
         setTargetList(updatedList); // state 갱신
         queryClient.invalidateQueries({
           queryKey: ["judging_round_companies"],
