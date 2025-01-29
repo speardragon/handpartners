@@ -143,11 +143,15 @@ export async function registerUser(
   // const supabase = await createServerSupabaseClient(cookies(), true);
   const supabase = await createServerSupabaseAdminClient();
 
+  const { data: session } = await supabase.auth.getSession();
+  console.log(session);
+
   // 먼저 Supabase Auth에 사용자 생성
   const { data: signUpData, error: signUpError } =
     await supabase.auth.admin.createUser({
       email: userData.email,
       password: userData.password,
+      email_confirm: true,
     });
 
   if (signUpError) {

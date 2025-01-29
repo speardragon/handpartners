@@ -15,9 +15,13 @@ import {
 
 type Props = {
   judgingRoundId: number;
+  className?: string;
 };
 
-export default function ScoreToExcelButton({ judgingRoundId }: Props) {
+export default function ScoreToExcelButton({
+  className,
+  judgingRoundId,
+}: Props) {
   // 심사 점수 쿼리
   const { data, isLoading, isError, refetch } = useScoresQuery(
     judgingRoundId,
@@ -62,13 +66,9 @@ export default function ScoreToExcelButton({ judgingRoundId }: Props) {
   };
 
   return (
-    <Button
-      className="flex w-full justify-evenly bg-blue-600 gap-2 hover:bg-blue-700"
-      onClick={handleExport}
-      disabled={isLoading}
-    >
-      <FileDigit size={18} />
+    <button className={className} onClick={handleExport} disabled={isLoading}>
+      <FileDigit size={16} />
       {isLoading ? "Loading..." : "결과 점수 저장(.xlsx)"}
-    </Button>
+    </button>
   );
 }

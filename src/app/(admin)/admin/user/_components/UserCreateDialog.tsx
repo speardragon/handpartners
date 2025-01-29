@@ -33,6 +33,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 export default function UserCreateDialog() {
   const { createOpen, setCreateOpen } = useDialogOpenStore((state) => state);
@@ -60,6 +67,7 @@ export default function UserCreateDialog() {
       await registerUser(userData);
       queryClient.invalidateQueries({ queryKey: ["users"] });
       setCreateOpen(false);
+      form.reset();
       toast.success("새로운 사용자가 추가되었습니다.");
     } catch (error) {
       // 에러 처리 로직
@@ -130,7 +138,18 @@ export default function UserCreateDialog() {
                       구분 <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="구분을 입력해주세요." {...field} />
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="구분을 선택해주세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="심사자">심사자</SelectItem>
+                          <SelectItem value="관리자">관리자</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

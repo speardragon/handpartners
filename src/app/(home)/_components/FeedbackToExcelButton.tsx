@@ -13,9 +13,13 @@ import { FileSpreadsheet } from "lucide-react";
 
 type Props = {
   judgingRoundId: number;
+  className?: string;
 };
 
-export default function FeedbackToExcelButton({ judgingRoundId }: Props) {
+export default function FeedbackToExcelButton({
+  judgingRoundId,
+  className,
+}: Props) {
   // React Query 훅 사용
   const { data, isLoading, isError, refetch } = useFeedbacksQuery(
     judgingRoundId,
@@ -62,12 +66,9 @@ export default function FeedbackToExcelButton({ judgingRoundId }: Props) {
   };
 
   return (
-    <Button
-      className="flex justify-evenly w-full bg-green-600 gap-2 hover:bg-green-700"
-      onClick={handleExport}
-    >
-      <FileSpreadsheet size={18} />
+    <button className={className} onClick={handleExport}>
+      <FileSpreadsheet size={16} />
       {isLoading ? "Loading..." : "피드백 저장(.xlsx)"}
-    </Button>
+    </button>
   );
 }

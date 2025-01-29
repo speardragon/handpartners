@@ -91,7 +91,7 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
 
   return (
     <div
-      className="flex flex-col h-full items-center justify-center gap-2"
+      className="flex flex-col h-full items-center justify-center gap-2 mt-16"
       ref={setContainerRef}
     >
       <Document

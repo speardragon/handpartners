@@ -10,6 +10,8 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useEvaluationQuery } from "../_hooks/useEvaluationQuery";
 import { useQueryClient } from "@tanstack/react-query";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { useEvaluationMutation } from "../_hooks/useEvaluationMutation";
 
 type Props = {
   judgeRoundId: number;
@@ -23,6 +25,8 @@ export default function EvaluateTable({ judgeRoundId, companyId }: Props) {
   const { data: judgeRound, isLoading } = useJudgeQuery(judgeRoundId);
   const { data: existEvaluation, isLoading: isEvaluationLoading } =
     useEvaluationQuery(judgeRoundId, companyId);
+
+  const { mutate: submitEvaluation, isPending } = useEvaluationMutation();
 
   const [feedback, setFeedback] = useState<string>("");
   const [evaluations, setEvaluations] = useState<
@@ -91,40 +95,8 @@ export default function EvaluateTable({ judgeRoundId, companyId }: Props) {
     router.push("/");
   };
 
-  const handleReset = () => {
-    if (judgeRound && judgeRound.criterias) {
-      setEvaluations(
-        judgeRound.criterias.map((item) => ({
-          ...item,
-          grade: 0,
-        }))
-      );
-    }
-  };
-
   const handleSubmit = async () => {
-    const evaluationRecords = evaluations.map((item) => ({
-      // judging_round_id: judgeRoundId,
-      // company_id: companyId,
-      evaluation_criterion_id: item.id,
-      grade: item.grade,
-      user_id: "",
-      status: "DONE",
-      feedback,
-      created_at: new Date().toISOString(),
-    }));
-    try {
-      await createEvaluation(judgeRoundId, companyId, evaluationRecords);
-      toast.success("평가와 피드백이 성공적으로 저장되었습니다!", {
-        position: "top-center",
-      });
-
-      queryClient.invalidateQueries();
-      router.push("/");
-    } catch (error) {
-      toast.error("저장 중 문제가 발생했습니다.");
-      console.error(error);
-    }
+    submitEvaluation({ judgeRoundId, companyId, feedback, evaluations });
   };
 
   return (
@@ -176,9 +148,13 @@ export default function EvaluateTable({ judgeRoundId, companyId }: Props) {
         <Button variant="outline" onClick={handleSave}>
           닫기
         </Button>
-        <Button className="bg-blue-500 text-white" onClick={handleSubmit}>
+        <LoadingButton
+          loading={isPending}
+          className="bg-blue-500 text-white"
+          onClick={handleSubmit}
+        >
           제출
-        </Button>
+        </LoadingButton>
       </div>
       <p className="text-center mt-2 text-sm text-gray-500">
         점수 입력이나 수정 후 반드시 저장해 주십시오.

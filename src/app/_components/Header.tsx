@@ -16,7 +16,6 @@ export default function Header() {
   // 로그아웃 처리
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    // useAuth 훅에서 user 상태가 자동으로 null로 업데이트됩니다.
   };
 
   return (

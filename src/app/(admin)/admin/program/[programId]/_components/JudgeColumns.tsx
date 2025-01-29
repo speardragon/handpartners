@@ -26,7 +26,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { EllipsisVertical, Pencil, Trash } from "lucide-react";
+import { EllipsisVertical, NotepadText, Pencil, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";
@@ -36,6 +36,10 @@ import {
   JudgingRoundRow,
 } from "@/actions/judging_round-action";
 import JudgeEditForm from "./JudgeEditForm";
+import { useRouter } from "next/navigation";
+import FeedbackToExcelButton from "@/app/(home)/_components/FeedbackToExcelButton";
+import PdfDownloadButton from "@/app/(home)/_components/PdfDownloadButton";
+import ScoreToExcelButton from "@/app/(home)/_components/ScoreToExcelButton";
 
 export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
   {
@@ -90,6 +94,7 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
       const [openMenu, setOpenMenu] = useState(false);
 
       const queryClient = useQueryClient();
+      const router = useRouter();
 
       const deleteHandler = async (judgingRoundId: number) => {
         const result = await deleteJudgingRound(judgingRoundId);
@@ -143,7 +148,7 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
           </AlertDialog>
 
           <DropdownMenu open={openMenu} onOpenChange={setOpenMenu}>
-            <DropdownMenuTrigger className="border border-gray-300 p-2 rounded-lg hover:border hover:border-gray-400">
+            <DropdownMenuTrigger className="p-2 border border-gray-300 rounded-lg hover:border hover:border-gray-400">
               <EllipsisVertical size={14} />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-48">
@@ -151,13 +156,44 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
               <DropdownMenuSeparator />
 
               <DropdownMenuItem
-                className="text-gray-700 hover:text-black"
+                className="text-gray-700 cursor-pointer hover:text-black"
                 onClick={() => {
                   setOpenEdit(true);
                   setOpenMenu(false);
                 }}
               >
                 <Pencil /> 심사 수정
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                className="text-gray-700 cursor-pointer hover:text-black"
+                onClick={() => {
+                  router.push(`/admin/${judgingRoundId}`);
+                }}
+              >
+                <NotepadText /> 심사 결과 확인
+              </DropdownMenuItem>
+
+              <DropdownMenuItem className="p-0 text-gray-700 hover:text-black">
+                <FeedbackToExcelButton
+                  className="flex items-center justify-start w-full gap-2 p-2 text-sm text-gray-700 bg-white rounded-md hover:bg-gray-100 hover:text-black"
+                  judgingRoundId={judgingRoundId}
+                />
+              </DropdownMenuItem>
+
+              <DropdownMenuItem className="p-0 text-gray-700 hover:text-black">
+                <ScoreToExcelButton
+                  className="flex items-center justify-start w-full gap-2 p-2 text-sm text-gray-700 bg-white rounded-md hover:bg-gray-100 hover:text-black"
+                  judgingRoundId={judgingRoundId}
+                />
+              </DropdownMenuItem>
+
+              <DropdownMenuItem className="p-0 text-gray-700 hover:text-black">
+                <PdfDownloadButton
+                  className="flex items-center justify-start w-full gap-2 p-2 text-sm text-gray-700 bg-white rounded-md hover:bg-gray-100 hover:text-black"
+                  programId={programId}
+                  judgingRoundId={judgingRoundId}
+                />
               </DropdownMenuItem>
 
               <DropdownMenuItem

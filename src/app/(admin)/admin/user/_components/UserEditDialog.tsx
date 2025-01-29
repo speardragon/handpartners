@@ -205,7 +205,6 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
               />
 
               <div className="flex w-full justify-between">
-                <Button type="submit">수정하기</Button>
                 <Button
                   onClick={() => deleteHandler(userId)}
                   type="button"
@@ -213,6 +212,7 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
                 >
                   삭제하기
                 </Button>
+                <Button type="submit">수정하기</Button>
               </div>
             </form>
           </Form>

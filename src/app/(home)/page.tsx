@@ -62,12 +62,12 @@ export default function Home() {
 
   return (
     <main className="w-full h-full overflow-y-auto">
-      <div className="flex flex-col w-full h-full items-center p-4 space-y-4 px-16">
-        <div className="text-center text-2xl font-bold">
+      <div className="flex flex-col items-center w-full h-full p-4 px-16 space-y-4">
+        <div className="text-2xl font-bold text-center">
           현재 진행 중인 심사
         </div>
         {data.length === 0 ? (
-          <div className="text-center mt-4">
+          <div className="mt-4 text-center">
             현재 진행 중인 심사가 없습니다. 🤔
           </div>
         ) : (
@@ -87,7 +87,7 @@ export default function Home() {
 
               return (
                 <AccordionItem
-                  className="border w-full border-gray-300 p-2 rounded-lg"
+                  className="w-full p-2 border border-gray-300 rounded-lg"
                   key={screening.id}
                   value={`${screening.id}`}
                 >
@@ -96,7 +96,7 @@ export default function Home() {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="mb-4">
-                      <div className="flex w-full justify-between">
+                      <div className="flex justify-between w-full">
                         <div className="text-xl font-bold">
                           프로그램: {screening.program.name}
                         </div>
@@ -108,15 +108,13 @@ export default function Home() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-56">
-                              <DropdownMenuLabel>
-                                내 이력서 관리
-                              </DropdownMenuLabel>
+                              <DropdownMenuLabel>심사 관리</DropdownMenuLabel>
                               <DropdownMenuSeparator />
                               <DropdownMenuGroup>
                                 {user && (
                                   <DropdownMenuItem>
                                     <Button
-                                      className="flex justify-evenly w-full"
+                                      className="flex w-full justify-evenly"
                                       onClick={() => {
                                         router.push(`/admin/${screening.id}`);
                                       }}
@@ -128,16 +126,19 @@ export default function Home() {
                                 )}
                                 <DropdownMenuItem>
                                   <ScoreToExcelButton
+                                    className="flex w-full gap-2 bg-blue-600 justify-evenly hover:bg-blue-700"
                                     judgingRoundId={screening.id}
                                   />
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>
                                   <FeedbackToExcelButton
+                                    className="flex w-full gap-2 bg-green-600 justify-evenly hover:bg-green-700"
                                     judgingRoundId={screening.id}
                                   />
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>
                                   <PdfDownloadButton
+                                    className="flex w-full gap-2 pr-6 text-sm bg-red-500 justify-evenly hover:bg-red-700"
                                     programId={screening.program.id}
                                     judgingRoundId={screening.id}
                                   />
@@ -152,39 +153,39 @@ export default function Home() {
                       </div>
                       <div className="mt-4">
                         <div className="font-bold">-점수 분포 현황-</div>
-                        <table className="table-auto border-collapse border border-gray-300 w-full mt-2">
+                        <table className="w-full mt-2 border border-collapse border-gray-300 table-auto">
                           <tbody>
-                            <tr className="border border-gray-300 bg-gray-100 font-semibold">
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                            <tr className="font-semibold bg-gray-100 border border-gray-300">
+                              <td className="px-4 py-2 text-center border border-gray-300">
                                 90점 이상
                               </td>
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              <td className="px-4 py-2 text-center border border-gray-300">
                                 80점 이상
                               </td>
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              <td className="px-4 py-2 text-center border border-gray-300">
                                 70점 이상
                               </td>
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              <td className="px-4 py-2 text-center border border-gray-300">
                                 60점 이상
                               </td>
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              <td className="px-4 py-2 text-center border border-gray-300">
                                 60점 미만
                               </td>
                             </tr>
                             <tr className="border border-gray-300">
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              <td className="px-4 py-2 text-center border border-gray-300">
                                 {scoreDistribution["90점 이상"]}개
                               </td>
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              <td className="px-4 py-2 text-center border border-gray-300">
                                 {scoreDistribution["80점 이상"]}개
                               </td>
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              <td className="px-4 py-2 text-center border border-gray-300">
                                 {scoreDistribution["70점 이상"]}개
                               </td>
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              <td className="px-4 py-2 text-center border border-gray-300">
                                 {scoreDistribution["60점 이상"]}개
                               </td>
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              <td className="px-4 py-2 text-center border border-gray-300">
                                 {scoreDistribution["60점 미만"]}개
                               </td>
                             </tr>
@@ -193,27 +194,27 @@ export default function Home() {
                       </div>
                       <div className="mt-4">
                         <div className="font-bold">-심사 상태 분포-</div>
-                        <table className="table-auto border-collapse border border-gray-300 w-full mt-2">
+                        <table className="w-full mt-2 border border-collapse border-gray-300 table-auto">
                           <tbody>
-                            <tr className="border border-gray-300 bg-gray-100 font-semibold">
-                              <td className="border border-gray-300 text-red-400 px-4 py-2 text-center">
+                            <tr className="font-semibold bg-gray-100 border border-gray-300">
+                              <td className="px-4 py-2 text-center text-red-400 border border-gray-300">
                                 심사 예정
                               </td>
-                              {/* <td className="border border-gray-300 px-4 py-2 text-center">
+                              {/* <td className="px-4 py-2 text-center border border-gray-300">
                                 심사 중
                               </td> */}
-                              <td className="border border-gray-300 text-green-600 px-4 py-2 text-center">
+                              <td className="px-4 py-2 text-center text-green-600 border border-gray-300">
                                 심사 완료
                               </td>
                             </tr>
                             <tr className="border border-gray-300">
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              <td className="px-4 py-2 text-center border border-gray-300">
                                 {statusDistribution["심사 예정"]}개
                               </td>
-                              {/* <td className="border border-gray-300 px-4 py-2 text-center">
+                              {/* <td className="px-4 py-2 text-center border border-gray-300">
                                 {statusDistribution["심사 중"]}개
                               </td> */}
-                              <td className="border border-gray-300 px-4 py-2 text-center">
+                              <td className="px-4 py-2 text-center border border-gray-300">
                                 {statusDistribution["심사 완료"]}개
                               </td>
                             </tr>

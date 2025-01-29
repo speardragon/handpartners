@@ -58,8 +58,8 @@ const Page = () => {
 
       {/* 오른쪽 영역: PdfViewer - 전체화면일 때는 이 영역이 전부 */}
       <div
-        className={`flex flex-col h-screen bg-gray-50 ${
-          isFull ? "w-full h-full overflow-y-auto" : "w-1/2 p-4"
+        className={`flex flex-col h-full overflow-y-auto bg-gray-50 ${
+          isFull ? "w-full h-full " : "w-1/2 p-4"
         }`}
       >
         <PdfViewer
