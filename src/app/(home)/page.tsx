@@ -126,19 +126,19 @@ export default function Home() {
                                 )}
                                 <DropdownMenuItem>
                                   <ScoreToExcelButton
-                                    className="flex w-full gap-2 bg-blue-600 justify-evenly hover:bg-blue-700"
+                                    className="flex w-full p-2 rounded-md text-white gap-2 bg-blue-600 justify-evenly hover:bg-blue-700"
                                     judgingRoundId={screening.id}
                                   />
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>
                                   <FeedbackToExcelButton
-                                    className="flex w-full gap-2 bg-green-600 justify-evenly hover:bg-green-700"
+                                    className="flex w-full p-2 rounded-md text-white gap-2 bg-green-600 justify-evenly hover:bg-green-700"
                                     judgingRoundId={screening.id}
                                   />
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>
                                   <PdfDownloadButton
-                                    className="flex w-full gap-2 pr-6 text-sm bg-red-500 justify-evenly hover:bg-red-700"
+                                    className="flex w-full p-2 rounded-md text-white gap-2 pr-6 text-sm bg-red-500 justify-evenly hover:bg-red-700"
                                     programId={screening.program.id}
                                     judgingRoundId={screening.id}
                                   />

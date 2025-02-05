@@ -40,6 +40,14 @@ import { useRouter } from "next/navigation";
 import FeedbackToExcelButton from "@/app/(home)/_components/FeedbackToExcelButton";
 import PdfDownloadButton from "@/app/(home)/_components/PdfDownloadButton";
 import ScoreToExcelButton from "@/app/(home)/_components/ScoreToExcelButton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import JudgingRoundDetailDialogContent from "./JudgingRoundDetailDialogContent";
 
 export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
   {
@@ -51,6 +59,22 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
     accessorKey: "name",
     header: "심사 이름",
     size: 300,
+    cell: ({ row, getValue }) => {
+      const judgingRoundId = Number(row.original.id);
+      return (
+        <Dialog>
+          <DialogTrigger className="cursor-pointer text-blue-600 hover:underline text-left break-all">
+            {`${getValue()}`}
+          </DialogTrigger>
+          <DialogContent className="min-w-[80vw] h-[80vh]">
+            <DialogHeader>
+              <DialogTitle>{`${getValue()}`}</DialogTitle>
+            </DialogHeader>
+            <JudgingRoundDetailDialogContent judgingRoundId={judgingRoundId} />
+          </DialogContent>
+        </Dialog>
+      );
+    },
   },
   {
     accessorKey: "number_of_companies",
