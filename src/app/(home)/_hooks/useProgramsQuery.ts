@@ -20,5 +20,6 @@ export const useProgramsQuery = (options?: { enabled?: boolean }) => {
   return useQuery<Screening[]>({
     queryKey: ["programs"],
     queryFn: () => getPrograms(),
+    staleTime: 0, // 10 minutes
   });
 };

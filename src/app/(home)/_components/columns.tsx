@@ -1,7 +1,9 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ColumnDef } from "@tanstack/react-table";
+import { CircleCheck, Loader } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 
@@ -31,10 +33,6 @@ export const columns: ColumnDef<ReviewStatus>[] = [
     header: "아이디어/창업아이템 명",
   },
   {
-    accessorKey: "category",
-    header: "지원분야",
-  },
-  {
     accessorKey: "status",
     header: "",
     cell: ({ row }) => {
@@ -52,7 +50,19 @@ export const columns: ColumnDef<ReviewStatus>[] = [
         }
       };
 
-      return <div className={`${getColorClass(answerType)}`}>{answerType}</div>;
+      return (
+        <Badge variant="outline" className="flex gap-2 px-1.5 justify-center">
+          {answerType === "심사 완료" ? (
+            <CircleCheck
+              size={12}
+              className="fill-green-500 dark:fill-green-400 text-white"
+            />
+          ) : (
+            <Loader size={12} />
+          )}
+          {answerType}
+        </Badge>
+      );
     },
     meta: {
       filterVariant: "select",
@@ -69,7 +79,7 @@ export const columns: ColumnDef<ReviewStatus>[] = [
         <Link href={`/grading/${judgeRoundId}/company/${companyId}`}>
           <Button
             variant="secondary"
-            className="px-4 space-x-2 border border-gray-200"
+            className="flex w-full px-4 border border-gray-200 hover:bg-gray-200"
           >
             심사하기
           </Button>
@@ -77,22 +87,4 @@ export const columns: ColumnDef<ReviewStatus>[] = [
       );
     },
   },
-  // {
-  //   accessorKey: "companyId",
-  //   header: "",
-  //   cell: ({ row }) => {
-  //     return (
-  //       <Link href={`/grading/${row.getValue("com")}`}>
-  //         <Button
-  //           variant="secondary"
-  //           className="px-4 space-x-2 border border-gray-200 hover:bg-gray-300"
-  //           onClick={() => {}}
-  //         >
-  //           심사하기
-  //         </Button>
-  //       </Link>
-  //     );
-  //   },
-  //   enableHiding: false,
-  // },
 ];

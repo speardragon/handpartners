@@ -27,7 +27,7 @@ export const Filter = React.memo(
 
     return filterVariant === "select" ? (
       <select
-        className="w-full text-center"
+        className="w-full text-center rounded-md border border-gray-200"
         onChange={(e) => column.setFilterValue(e.target.value)}
         value={columnFilterValue?.toString()}
       >

@@ -46,13 +46,16 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="rounded-md border overflow-y-auto">
-      <Table className="overflow-y-auto">
+      <Table>
         <TableHeader className="sticky top-0 bg-gray-100">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 return (
-                  <TableHead className="font-semibold" key={header.id}>
+                  <TableHead
+                    className="font-semibold text-gray-700"
+                    key={header.id}
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -60,9 +63,7 @@ export function DataTable<TData, TValue>({
                           header.getContext()
                         )}
                     {header.column.getCanFilter() ? (
-                      <div>
-                        <Filter column={header.column} />
-                      </div>
+                      <Filter column={header.column} />
                     ) : null}
                   </TableHead>
                 );

@@ -20,7 +20,7 @@
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-select": "^2.1.5",
     "@radix-ui/react-separator": "^1.1.0",
-    "@radix-ui/react-slot": "^1.1.1",
+    "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tooltip": "^1.1.4",
     "@react-pdf/renderer": "^4.1.5",
     "@supabase-cache-helpers/postgrest-react-query": "^1.11.4",
