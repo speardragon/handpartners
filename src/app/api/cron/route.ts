@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = Number(searchParams.get("page") || 1);
   const size = Number(searchParams.get("size") || 10);
-
+  console.log("/api/cron 실행", { page, size });
   try {
     const companies = await getUsers(page, size);
     return NextResponse.json(companies);
