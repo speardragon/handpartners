@@ -1,7 +1,33 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  MutationCache,
+  Query,
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { toast } from "sonner";
+
+const handleReactQueryError = (
+  err: Error,
+  query?: Query<unknown, unknown, unknown>
+) => {
+  const meta = query?.meta ?? {};
+
+  if ("preventGlobalError" in meta && meta.preventGlobalError) {
+    return;
+  }
+
+  if (meta?.errorMessage) {
+    toast.error(meta.errorMessage as string);
+  } else if (err.message) {
+    toast.error(err.message);
+  } else {
+    toast.error("요청을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+  }
+};
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,6 +42,16 @@ export const queryClient = new QueryClient({
       gcTime: 1000 * 60 * 60,
     },
   },
+  queryCache: new QueryCache({
+    onError: (err, query) => {
+      handleReactQueryError(err, query);
+    },
+  }),
+  // mutationCache: new MutationCache({
+  //   onError: (err) => {
+  //     handleReactQueryError(err);
+  //   },
+  // }),
 });
 
 export default function ReactQueryClientProvider({

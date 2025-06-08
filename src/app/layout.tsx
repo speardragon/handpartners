@@ -2,11 +2,8 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "sonner";
-import ReactQueryClientProvider from "@/config/ReactQueryClientProvider2";
-import AuthProvider from "./_components/AuthProvider";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import ReactQueryClientProvider from "@/config/ReactQueryClientProvider";
 import "core-js/full/promise/with-resolvers";
-import { PrimeReactProvider } from "primereact/api";
 
 const pretendard = localFont({
   src: "./fonts/PretendardVariable.woff2",
@@ -16,8 +13,8 @@ const pretendard = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "핸드파트너스",
-  description: "핸드파트너스 심사 시스템",
+  title: "스타트업 파트너스",
+  description: "스타트업 파트너스 심사 시스템",
 };
 
 export default async function RootLayout({
@@ -25,13 +22,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createServerSupabaseClient();
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  // console.log(session);
-
   return (
     <html lang="en" className={`${pretendard.variable}`}>
       <head>
@@ -44,10 +34,12 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${pretendard.className} antialiased`}>
-        <AuthProvider accessToken={session?.access_token}>
-          <Toaster richColors />
-          <ReactQueryClientProvider>{children}</ReactQueryClientProvider>
-        </AuthProvider>
+        <ReactQueryClientProvider>
+          <>
+            <Toaster richColors />
+            {children}
+          </>
+        </ReactQueryClientProvider>
       </body>
     </html>
   );

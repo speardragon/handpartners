@@ -1,9 +1,8 @@
-// src/app/_hooks/useAuth.ts
 "use client";
 
 import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
-import { Session, User } from "@supabase/supabase-js";
+import { User } from "@supabase/supabase-js";
 
 /**
  * 사용자 인증 정보를 관리하는 커스텀 훅

@@ -1,5 +1,5 @@
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -10,28 +10,30 @@ type LoginRequest = {
 
 export function useLoginMutation() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const supabase = createBrowserSupabaseClient();
 
   return useMutation({
     mutationKey: ["login"],
     mutationFn: async ({ email, password }: LoginRequest) => {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        throw new Error(error.message);
+        console.error(error);
+        throw new Error(error.code);
       }
     },
-    onSuccess: (data) => {
-      // queryClient.invalidateQueries({queryKey: ["users"]});
-      // queryClient.invalidateQueries({queryKey: ["users"]});
-      router.push("/");
+    onSuccess: () => {
+      router.refresh();
     },
     onError: (error: any) => {
-      toast.error(JSON.stringify(error));
+      if (error.message === "invalid_credentials") {
+        toast.error("이메일 또는 비밀번호가 잘못되었습니다");
+        return;
+      }
+      toast.error("로그인에 실패했습니다");
     },
   });
 }
