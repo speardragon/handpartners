@@ -36,8 +36,13 @@ function handleError(error) {
 interface JudgingRound extends JudgingRoundRow {
   program: { name: string };
 }
+export interface JudgingRoundWithCounts extends JudgingRoundRow {
+  program: { name: string };
+  number_of_companies: number;
+  number_of_users: number;
+}
 export interface JudgingRoundPaginationResult {
-  result: JudgingRoundRow[];
+  result: JudgingRoundWithCounts[];
   total: number;
   currentPage: number;
   totalPages: number;
