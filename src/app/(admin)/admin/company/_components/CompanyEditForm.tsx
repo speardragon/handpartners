@@ -43,11 +43,11 @@ export default function CompanyEditForm({ companyId, companyInfo }: Props) {
     formState: { dirtyFields },
   } = form;
 
-  const onSubmit = async (data: CompanyCreateFormType) => {
+  const onSubmit = async (data: z.infer<typeof CompanyUpdateFormSchema>) => {
     const updatedData: any = {};
 
     Object.keys(dirtyFields).forEach((key) => {
-      const fieldKey = key as keyof CompanyCreateFormType; // 'key'를 'UserData'의 키로 타입 단언
+      const fieldKey = key as keyof z.infer<typeof CompanyUpdateFormSchema>; // 'key'를 'UserData'의 키로 타입 단언
       if (dirtyFields[fieldKey] && data[fieldKey] !== undefined) {
         updatedData[fieldKey] = data[fieldKey];
       }
@@ -56,7 +56,7 @@ export default function CompanyEditForm({ companyId, companyInfo }: Props) {
     if (Object.keys(updatedData).length > 0) {
       const result = await updateCompany({ ...updatedData, id: companyId });
       queryClient.invalidateQueries({ queryKey: ["companies"] });
-      toast.success("프로그램 정보를 수정하였습니다.", result);
+      toast.success("프로그램 정보를 수정하였습니다.");
     } else {
       toast.error("수정사항이 존재하지 않습니다.");
     }

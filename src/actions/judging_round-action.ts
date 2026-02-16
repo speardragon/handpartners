@@ -1,7 +1,7 @@
 "use server";
 
 import { Database } from "types_db";
-import { createServerSupabaseClient } from "../utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { v4 as uuidv4 } from "uuid";
 
 export type JudgingRoundRow =
@@ -25,7 +25,7 @@ export type JudgingRoundUserInsert =
 export type JudgingRoundUserUpdate =
   Database["public"]["Tables"]["judging_round_user"]["Update"];
 
-function handleError(error) {
+function handleError(error: any) {
   console.error(error);
   throw new Error(error.message);
 }
@@ -33,9 +33,6 @@ function handleError(error) {
 /**
  * programId로 심사 라운드(judging_round) 조회
  */
-interface JudgingRound extends JudgingRoundRow {
-  program: { name: string };
-}
 export interface JudgingRoundWithCounts extends JudgingRoundRow {
   program: { name: string };
   number_of_companies: number;
@@ -53,7 +50,7 @@ export async function getJudgingRoundsByProgramId(
   page: number,
   size: number
 ): Promise<JudgingRoundPaginationResult> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const start = (page - 1) * size;
   const end = start + (size - 1);
@@ -154,7 +151,7 @@ export async function getJudgingRoundsByProgramId(
 }
 
 export async function createJudgingRound(judgingRound: JudgingRoundRowInsert) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase.from("judging_round").insert({
     ...judgingRound,
@@ -169,14 +166,14 @@ export async function createJudgingRound(judgingRound: JudgingRoundRowInsert) {
 }
 
 export async function updateJudgingRound(judgingRound: JudgingRoundRowUpdate) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("judging_round")
     .update({
       ...judgingRound,
     })
-    .eq("id", judgingRound.id);
+    .eq("id", judgingRound.id!);
 
   if (error) {
     handleError(error);
@@ -186,7 +183,7 @@ export async function updateJudgingRound(judgingRound: JudgingRoundRowUpdate) {
 }
 
 export async function deleteJudgingRound(judgingRoundId: number) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("judging_round")
@@ -214,7 +211,7 @@ export interface JudgingRoundWithCriterias extends JudgingRoundRow {
   }[];
 }
 export async function getJudgeById(judgeRoundId: number): Promise<any> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data: judgingRoundData, error: judgingRoundError } = await supabase
     .from("judging_round")
@@ -271,7 +268,7 @@ export interface JudgeCreateData {
 }
 
 export async function updateJudge(formData: FormData) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   try {
     // 1) 문자열 필드 꺼내기
@@ -359,7 +356,7 @@ export async function updateJudge(formData: FormData) {
         const filePath = `judging-round-pdfs/${fileName}`;
 
         // Supabase Storage에 업로드
-        const { data: storageData, error: storageError } =
+        const { error: storageError } =
           await supabase.storage
             .from("handpartners") // 실제 버킷명
             .upload(filePath, file, {
@@ -428,7 +425,7 @@ export interface JudgeBasicData {
  * 기존 updateJudge의 일부(기본 정보)만 따로 분리.
  */
 export async function updateJudgeBasic(data: JudgeBasicData) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
   const { judgingRoundId, name, description, start_date, end_date } = data;
 
   try {
@@ -486,7 +483,7 @@ export type JudgingRoundDetail = {
 export async function getJudgingRoundDetails(
   judgingRoundId: number
 ): Promise<JudgingRoundDetail> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   // 1) 심사 라운드 기본 정보
   const { data: roundData, error: roundError } = await supabase
@@ -537,11 +534,14 @@ export async function getJudgingRoundDetails(
     throw new Error(companyError.message);
   }
 
-  const companyList = companyData?.map((c) => ({
-    company_id: c.company_id,
-    company_name: c.company.name,
-    description: c.company.description,
-  }));
+  const companyList = companyData?.map((c) => {
+    const company = c.company as unknown as { name: string; description: string };
+    return {
+      company_id: c.company_id,
+      company_name: company.name,
+      description: company.description,
+    };
+  });
 
   // 4) evaluation(평가) JOIN user
   //    -> user:user_id (username)를 함께 가져온다.
@@ -583,13 +583,13 @@ export async function getJudgingRoundDetails(
 
     // 유저별로 그룹핑이 이미 되어 있는지 확인
     let userEval = companyEntry.evaluations.find(
-      (u) => u.user_id === evalItem.user_id
+      (u: any) => u.user_id === evalItem.user_id
     );
     if (!userEval) {
       // 없다면 새로 삽입
       userEval = {
         user_id: evalItem.user_id,
-        username: evalItem.user?.username ?? "(이름 없음)",
+        username: (evalItem.user as unknown as { username: string })?.username ?? "(이름 없음)",
         feedback: evalItem.feedback, // 동일한 피드백이 들어오므로 일단 첫 레코드 feedback만 저장
         criteriaScores: [] as {
           evaluation_criterion_id: number;
@@ -619,7 +619,7 @@ export async function getJudgingRoundDetails(
     name: roundData.name,
     start_date: roundData.start_date,
     end_date: roundData.end_date,
-    program_name: roundData.program.name,
+    program_name: (roundData.program as unknown as { name: string }).name,
     criteriaList: criteriaData || [],
     companies: finalCompanies,
   };
@@ -630,7 +630,7 @@ export async function getJudgingRoundDetails(
  * 회사별(Company.name) 모든 feedback을 배열 형태로 모아서 반환
  */
 export async function getCompanyFeedbacksByRoundId(judging_round_id: number) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("evaluation")
@@ -651,7 +651,7 @@ export async function getCompanyFeedbacksByRoundId(judging_round_id: number) {
   const feedbackMap = new Map<string, Set<string>>();
 
   data?.forEach((row) => {
-    const companyName = row.company?.name;
+    const companyName = (row.company as unknown as { name: string })?.name;
     const feedback = row.feedback;
 
     if (!companyName || !feedback) return;
@@ -693,7 +693,7 @@ export interface CompanyScoreResult {
 export async function getCompanyScoresByRoundId(
   judging_round_id: number
 ): Promise<{ companies: CompanyScoreResult[] }> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   // 1) evaluation + company + user 조인
   // - grade: 심사 기준별 점수
@@ -755,8 +755,8 @@ export async function getCompanyScoresByRoundId(
   >();
 
   evaluationRows?.forEach((row) => {
-    const companyName = row.company?.name;
-    const userName = row.user?.username;
+    const companyName = (row.company as unknown as { name: string })?.name;
+    const userName = (row.user as unknown as { username: string })?.username;
     const grade = row.grade;
 
     // 유효성 체크

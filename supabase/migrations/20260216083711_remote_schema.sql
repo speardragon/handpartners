@@ -12,7 +12,7 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 
-CREATE EXTENSION IF NOT EXISTS "pgsodium" WITH SCHEMA "pgsodium";
+CREATE EXTENSION IF NOT EXISTS "pgsodium";
 
 
 
@@ -466,7 +466,7 @@ ALTER TABLE ONLY "public"."evaluation"
 
 
 ALTER TABLE ONLY "public"."evaluation_criteria"
-    ADD CONSTRAINT "evaluation_criteria_judging_round_id_fkey" FOREIGN KEY ("judging_round_id") REFERENCES "public"."judging_round"("id");
+    ADD CONSTRAINT "evaluation_criteria_judging_round_id_fkey" FOREIGN KEY ("judging_round_id") REFERENCES "public"."judging_round"("id") ON DELETE CASCADE;
 
 
 
@@ -491,17 +491,17 @@ ALTER TABLE ONLY "public"."judging_round_company"
 
 
 ALTER TABLE ONLY "public"."judging_round_company"
-    ADD CONSTRAINT "judging_round_company_judging_round_id_fkey" FOREIGN KEY ("judging_round_id") REFERENCES "public"."judging_round"("id");
+    ADD CONSTRAINT "judging_round_company_judging_round_id_fkey" FOREIGN KEY ("judging_round_id") REFERENCES "public"."judging_round"("id") ON DELETE CASCADE;
 
 
 
 ALTER TABLE ONLY "public"."judging_round"
-    ADD CONSTRAINT "judging_round_program_id_fkey" FOREIGN KEY ("program_id") REFERENCES "public"."program"("id");
+    ADD CONSTRAINT "judging_round_program_id_fkey" FOREIGN KEY ("program_id") REFERENCES "public"."program"("id") ON DELETE CASCADE;
 
 
 
 ALTER TABLE ONLY "public"."judging_round_user"
-    ADD CONSTRAINT "judging_round_user_judging_round_id_fkey" FOREIGN KEY ("judging_round_id") REFERENCES "public"."judging_round"("id");
+    ADD CONSTRAINT "judging_round_user_judging_round_id_fkey" FOREIGN KEY ("judging_round_id") REFERENCES "public"."judging_round"("id") ON DELETE CASCADE;
 
 
 
@@ -516,7 +516,7 @@ ALTER TABLE ONLY "public"."program_company"
 
 
 ALTER TABLE ONLY "public"."program_company"
-    ADD CONSTRAINT "program_company_program_id_fkey" FOREIGN KEY ("program_id") REFERENCES "public"."program"("id");
+    ADD CONSTRAINT "program_company_program_id_fkey" FOREIGN KEY ("program_id") REFERENCES "public"."program"("id") ON DELETE CASCADE;
 
 
 
@@ -735,6 +735,15 @@ GRANT ALL ON FUNCTION "public"."get_unique_evaluations"("judging_round" integer)
 
 
 
+
+
+
+
+
+
+
+
+
 GRANT ALL ON TABLE "public"."company" TO "anon";
 GRANT ALL ON TABLE "public"."company" TO "authenticated";
 GRANT ALL ON TABLE "public"."company" TO "service_role";
@@ -837,6 +846,12 @@ GRANT ALL ON TABLE "public"."user" TO "service_role";
 
 
 
+
+
+
+
+
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "postgres";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "anon";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "authenticated";
@@ -891,4 +906,42 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 
 
-RESET ALL;
+drop extension if exists "pg_net";
+
+
+  create policy "anonymous_user_crud 1dxsra2_0"
+  on "storage"."objects"
+  as permissive
+  for select
+  to public
+using ((bucket_id = 'handpartners'::text));
+
+
+
+  create policy "anonymous_user_crud 1dxsra2_1"
+  on "storage"."objects"
+  as permissive
+  for update
+  to public
+using ((bucket_id = 'handpartners'::text));
+
+
+
+  create policy "anonymous_user_crud 1dxsra2_2"
+  on "storage"."objects"
+  as permissive
+  for delete
+  to public
+using ((bucket_id = 'handpartners'::text));
+
+
+
+  create policy "anonymous_user_crud 1dxsra2_3"
+  on "storage"."objects"
+  as permissive
+  for insert
+  to public
+with check ((bucket_id = 'handpartners'::text));
+
+
+

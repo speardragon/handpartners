@@ -65,7 +65,7 @@ const Page = () => {
         <PdfViewer
           isFull={isFull}
           handleFullButton={handleFullButton}
-          pdfPath={existEvaluation?.pdfPath}
+          pdfPath={existEvaluation?.pdfPath ?? ""}
         />
       </div>
     </div>

@@ -46,7 +46,7 @@ export default function EvaluateTable({ judgeRoundId, companyId }: Props) {
       existEvaluation &&
       existEvaluation.evaluations
     ) {
-      const initialEvaluations = judgeRound.criterias.map((item) => {
+      const initialEvaluations = judgeRound.criterias.map((item: any) => {
         const existingEvaluation = existEvaluation.evaluations.find(
           (evalItem) => evalItem.evaluation_criterion_id === item.id
         );

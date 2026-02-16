@@ -2,12 +2,11 @@
 
 import { Database } from "types_db";
 import {
-  createServerSupabaseAdminClient,
-  createServerSupabaseClient,
-} from "../utils/supabase/server";
+  createAdminClient,
+  createClient,
+} from "@/lib/supabase/server";
 import { ProfileCreateFormSchema } from "@/app/(admin)/admin/user/_lib/ProfileFormSchema";
 import { z } from "zod";
-import { cookies } from "next/headers";
 
 export type UserRow = Database["public"]["Tables"]["user"]["Row"];
 export type UserRowInsert = Database["public"]["Tables"]["user"]["Insert"];
@@ -20,7 +19,7 @@ export interface UserResult {
   result: UserRow[];
 }
 
-function handleError(error) {
+function handleError(error: any) {
   console.error(error);
   throw new Error(error.message);
 }
@@ -30,7 +29,7 @@ export async function getUsers(
   size: number
   // username?: string
 ): Promise<UserResult> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
   let query = supabase.from("user").select("*", { count: "exact" });
 
   const { data, error, count } = await query.range(
@@ -55,7 +54,7 @@ export async function getUsers(
 }
 
 export async function createUser(user: UserRowInsert) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase.from("user").insert({
     ...user,
@@ -69,7 +68,7 @@ export async function createUser(user: UserRowInsert) {
 }
 
 export async function updateUser(user: UserRowUpdate) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("user")
@@ -77,7 +76,7 @@ export async function updateUser(user: UserRowUpdate) {
       ...user,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", user.id);
+    .eq("id", user.id!);
 
   if (error) {
     handleError(error);
@@ -86,7 +85,7 @@ export async function updateUser(user: UserRowUpdate) {
 }
 
 export async function deleteUser(userId: string) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase.from("user").delete().eq("id", userId);
   await supabase.auth.admin.deleteUser(userId);
@@ -110,11 +109,11 @@ type UserProfile = {
   phone_number: string | null;
 };
 export async function getUserProfile(): Promise<UserProfile | null> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
-  // 현재 세션 정보 가져오기
-  const session = await supabase.auth.getSession();
-  const userId = session.data?.session?.user?.id;
+  // 인증된 사용자 정보 가져오기
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
   if (!userId) {
     throw new Error("User not authenticated");
@@ -141,10 +140,7 @@ export async function registerUser(
   userData: z.infer<typeof ProfileCreateFormSchema>
 ) {
   // const supabase = await createServerSupabaseClient(cookies(), true);
-  const supabase = await createServerSupabaseAdminClient();
-
-  const { data: session } = await supabase.auth.getSession();
-  console.log(session);
+  const supabase = await createAdminClient();
 
   // 먼저 Supabase Auth에 사용자 생성
   const { data: signUpData, error: signUpError } =

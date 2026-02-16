@@ -39,7 +39,7 @@ export default function JudgeCompanySelect({
   // 1) 처음 로드 시, judgingRoundCompanies 로 targetList를 초기화
   useEffect(() => {
     if (judgingRoundCompanies && judgingRoundCompanies.length > 0) {
-      const mapped = judgingRoundCompanies.map((item) => ({
+      const mapped = judgingRoundCompanies.map((item: any) => ({
         id: item.company_id,
         name: item.company?.name || "",
         pdf_path: item.pdf_path,

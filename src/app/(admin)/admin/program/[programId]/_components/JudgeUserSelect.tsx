@@ -11,7 +11,7 @@ import { isEqual } from "lodash";
 interface User {
   id: string;
   name: string;
-  affiliation: string;
+  affiliation: string | null;
 }
 
 interface JudgeUserSelectProps {
@@ -39,7 +39,7 @@ function JudgeUserSelect({
   // 1) 처음 로드 시, judgingRoundUsers 로 targetList를 초기화
   useEffect(() => {
     if (judgingRoundUsers && judgingRoundUsers.length > 0) {
-      const mapped = judgingRoundUsers.map((item) => ({
+      const mapped = judgingRoundUsers.map((item: any) => ({
         id: item.user_id,
         name: item.user.username || "",
         affiliation: item.user?.affiliation || "",

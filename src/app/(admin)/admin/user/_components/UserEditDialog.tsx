@@ -206,7 +206,7 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
 
               <div className="flex w-full justify-between">
                 <Button
-                  onClick={() => deleteHandler(userId)}
+                  onClick={() => deleteHandler(userId ?? "")}
                   type="button"
                   className="bg-red-500"
                 >

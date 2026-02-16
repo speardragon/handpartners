@@ -1,6 +1,5 @@
 "use client";
 
-import type { Metadata } from "next";
 import "../../globals.css";
 import SideNav from "./_components/side-nav";
 import { useUserProfileQuery } from "@/app/_hooks/useUserQuery";
@@ -20,7 +19,7 @@ export default function Layout({
   }, [userProfile]);
 
   return (
-    <div className="flex flex-row min-h-screen">
+    <div className="flex min-h-screen flex-row">
       <SideNav />
       {children}
     </div>

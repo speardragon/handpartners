@@ -3,13 +3,13 @@
 // -----------------------------------
 // /actions/judging_round_criteria-action.ts
 // -----------------------------------
-import { createServerSupabaseClient } from "../utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * 특정 judgingRoundId에 대한 evaluation_criteria 목록 조회
  */
 export async function getJudgingCriteriaByRound(judgingRoundId: number) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("evaluation_criteria")
@@ -41,7 +41,7 @@ export interface UpdateJudgeCriteriaData {
  *   - 새 목록과 비교 → 삽입/삭제/업데이트
  */
 export async function updateJudgeCriteria(data: UpdateJudgeCriteriaData) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
   const { judgingRoundId, criteriaList } = data;
 
   try {

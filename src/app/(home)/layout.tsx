@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import Header from "../_components/Header";
 import "../globals.css";
 import Login from "./login/_components/Login";
@@ -8,7 +8,7 @@ export default async function HomeLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data } = await supabase.auth.getUser();
 

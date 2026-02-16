@@ -122,7 +122,7 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
 
       const deleteHandler = async (judgingRoundId: number) => {
         const result = await deleteJudgingRound(judgingRoundId);
-        toast.success("프로그램이 삭제되었습니다.", result);
+        toast.success("프로그램이 삭제되었습니다.");
         queryClient.invalidateQueries({ queryKey: ["judging_rounds"] });
       };
 

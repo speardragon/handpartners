@@ -35,7 +35,7 @@ export default function CompanySelectForModify({
     refetch,
   } = useCompanyInfiniteQuery(search);
 
-  const { data: allCompanies, isLoading } = useProgramCompanyQuery(programId);
+  const { data: allCompanies, isLoading } = useProgramCompanyQuery(programId ?? 0);
   const sourceList = data?.pages.flatMap((page) => page.result) ?? [];
 
   useEffect(() => {

@@ -27,7 +27,7 @@ import { updateJudgeUser } from "@/actions/judging_round_user-action";
 import JudgeCriteriaSelect from "./JudgeCriteriaSelect";
 import { updateJudgeCriteria } from "@/actions/evaluation_criteria-action";
 import { Database } from "types_db";
-import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 
 // (참고) 기존 sanitizeFileName 등 필요한 함수/타입들
 function sanitizeFileName(originalName: string) {
@@ -51,7 +51,7 @@ export interface SimpleCompany {
 export interface SimpleUser {
   id: string;
   name: string;
-  affiliation: string;
+  affiliation: string | null;
   group_name?: string;
 }
 
@@ -69,7 +69,7 @@ export default function JudgeEditForm({
   judgingRoundInfo,
   setOpenEdit,
 }: Props) {
-  const supabaseClient = createBrowserSupabaseClient();
+  const supabaseClient = createClient();
   const queryClient = useQueryClient();
 
   const [targetList, setTargetList] = useState<SimpleCompany[]>([]);
@@ -421,7 +421,7 @@ export default function JudgeEditForm({
       <div className="flex flex-col space-y-2">
         <div className="font-medium mb-2">심사 참여 기업</div>
         <JudgeCompanySelect
-          judgingRoundId={judgingRoundId}
+          judgingRoundId={judgingRoundId ?? 0}
           programId={programId}
           targetList={targetList}
           onTargetListChange={setTargetList}
@@ -496,7 +496,7 @@ export default function JudgeEditForm({
       <div className="flex flex-col space-y-2">
         <div className="font-medium mb-2">심사자 정보</div>
         <JudgeUserSelect
-          judgingRoundId={judgingRoundId}
+          judgingRoundId={judgingRoundId ?? 0}
           targetList={targetUserList}
           onTargetListChange={handleUserListChange}
         />

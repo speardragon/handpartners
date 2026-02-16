@@ -18,7 +18,7 @@ export default function Page() {
     <div className="flex flex-col space-y-2 justify-center w-full min-h-screen p-10 px-24 bg-gray-50">
       <div className="text-xl font-semibold">기업</div>
       <CompanyDataTable
-        totalPages={companies?.totalPages}
+        totalPages={companies?.totalPages ?? 0}
         pagination={pagination}
         setPagination={setPagination}
         data={companies?.result || []}

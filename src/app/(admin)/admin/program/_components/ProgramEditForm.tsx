@@ -54,7 +54,7 @@ export default function ProgramEditForm({
 
   const onSubmit = async (data: z.infer<typeof ProgramUpdateFormSchema>) => {
     const result = await updateProgramAndCompanies(
-      programId,
+      programId ?? 0,
       data,
       targetList.map((company) => company.id)
     );

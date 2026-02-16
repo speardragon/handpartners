@@ -1,7 +1,7 @@
 "use server";
 
 import { Database } from "types_db";
-import { createServerSupabaseClient } from "../utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import {
   CompanyInfo,
   EvaluationItem,
@@ -37,10 +37,13 @@ export async function createEvaluation(
   companyId: number,
   data: EvaluationUpsert[]
 ) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
-  const session = await supabase.auth.getSession();
-  const userId = session.data?.session?.user?.id;
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
+  if (!userId) {
+    throw new Error("User not authenticated");
+  }
 
   // Upsert 데이터에 user_id, judgeRoundId, companyId 추가
   const dataWithKeys = data.map((item) => ({
@@ -73,16 +76,19 @@ type EvaluationRecord = {
   grade: number;
   user_id: string;
   created_at: string;
-  feedback: string;
+  feedback: string | null;
 };
 export async function getEvaluationByUser(
   judgeRoundId: number,
   companyId: number
 ): Promise<{ evaluations: EvaluationRecord[]; pdfPath: string | null }> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
-  const session = await supabase.auth.getSession();
-  const userId = session.data?.session?.user?.id;
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
+  if (!userId) {
+    throw new Error("User not authenticated");
+  }
 
   // 평가 데이터 가져오기
   const { data: evaluations, error: evaluationError } = await supabase
@@ -121,11 +127,11 @@ export async function getEvaluationByUser(
 export async function getDetailedEvaluationsByUser(
   judgingRoundId: number
 ): Promise<FinalResult[]> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
-  // 1. 세션을 통해 현재 사용자 ID 가져오기
-  const session = await supabase.auth.getSession();
-  const userId = session.data?.session?.user?.id;
+  // 1. 인증된 사용자 ID 가져오기
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
   if (!userId) {
     throw new Error("User not authenticated");
   }
@@ -178,7 +184,7 @@ export async function getDetailedEvaluationsByUser(
   }
 
   const jrcData = jrc as any;
-  const companyIds = jrcData?.map((c) => c.company_id) || [];
+  const companyIds = jrcData?.map((c: any) => c.company_id) || [];
 
   // 회사가 없으면 빈 배열 반환
   if (companyIds.length === 0) {

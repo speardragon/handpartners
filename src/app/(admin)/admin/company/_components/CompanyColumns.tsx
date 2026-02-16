@@ -72,7 +72,7 @@ export const companyColumns: ColumnDef<Partial<CompanyRow>>[] = [
 
       const deleteHandler = async (companyId: number) => {
         const result = await deleteCompany(companyId);
-        toast.success("기업이 삭제되었습니다.", result);
+        toast.success("기업이 삭제되었습니다.");
         queryClient.invalidateQueries({ queryKey: ["companies"] });
       };
 

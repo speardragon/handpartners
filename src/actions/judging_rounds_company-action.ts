@@ -2,7 +2,7 @@
 
 import { v4 as uuidv4 } from "uuid";
 import { Database } from "types_db";
-import { createServerSupabaseClient } from "../utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export type JudgingRoundRow =
   Database["public"]["Tables"]["judging_round"]["Row"];
@@ -18,7 +18,7 @@ export type JudgingRoundCompanyInsert =
 export type JudgingRoundCompanyUpdate =
   Database["public"]["Tables"]["judging_round_company"]["Update"];
 
-function handleError(error) {
+function handleError(error: any) {
   console.error(error);
   throw new Error(error.message);
 }
@@ -26,7 +26,7 @@ function handleError(error) {
 export async function getJudgingRoundCompaniesById(
   judgingRoundId: number
 ): Promise<any> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("judging_round_company")
@@ -61,7 +61,7 @@ interface CompanyPayload {
  * 3) pdf_file 있으면 Supabase Storage에 업로드 후 pdf_path 업데이트
  */
 export async function updateJudgeCompany(formData: FormData) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   try {
     // 1) 기본 데이터 파싱
@@ -98,9 +98,9 @@ export async function updateJudgeCompany(formData: FormData) {
     //    companies:     { company_id, group_name }[]
     // (1) 새 companies에 있는 company_id들을 Map으로 만들기 (key: company_id, value: group_name)
     const newMap = new Map<number, { group_name: string }>();
-    companies.forEach((c, index) => {
+    companies.forEach((c) => {
       newMap.set(c.company_id, {
-        group_name: c.group_name.length === 0 ? "A" : c.group_name,
+        group_name: !c.group_name || c.group_name.length === 0 ? "A" : c.group_name,
       });
     });
 
@@ -189,7 +189,7 @@ export async function updateJudgeCompany(formData: FormData) {
           judging_round_id: judgingRoundId,
           company_id: insertion.company_id,
           group_name:
-            insertion.group_name.length === 0 ? "A" : insertion.group_name,
+            !insertion.group_name || insertion.group_name.length === 0 ? "A" : insertion.group_name,
           pdf_path: pdfPath,
         });
       }
@@ -262,7 +262,7 @@ export async function updateJudgeCompany(formData: FormData) {
       const { error: updateError } = await supabase
         .from("judging_round_company")
         .update({
-          group_name: c.group_name.length === 0 ? "A" : c.group_name,
+          group_name: !c.group_name || c.group_name.length === 0 ? "A" : c.group_name,
           pdf_path: pdfPath,
         })
         .eq("id", rowId);
@@ -294,7 +294,7 @@ export async function updateJudgeCompany2(args: {
   judgingRoundId: number;
   companies: CompanyPayload2[];
 }) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   try {
     const { judgingRoundId, companies } = args;

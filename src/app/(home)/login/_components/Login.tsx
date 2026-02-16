@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "src/components/ui/button";
-import { Checkbox } from "src/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -10,13 +10,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "src/components/ui/form";
+} from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Image from "next/image";
 import HandPartnersLogo from "../../../../../public/images/handpartners_logo.png";
-import { Input } from "src/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { useLoginMutation } from "../_hooks/useLoginMutation";
 
 const FormSchema = z.object({

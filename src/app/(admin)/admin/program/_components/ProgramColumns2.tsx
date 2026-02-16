@@ -100,7 +100,7 @@ export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
 
       const deleteHandler = async (programId: number) => {
         const result = await deleteProgram(programId);
-        toast.success("프로그램이 삭제되었습니다.", result);
+        toast.success("프로그램이 삭제되었습니다.");
         queryClient.invalidateQueries({ queryKey: ["programs"] });
       };
 

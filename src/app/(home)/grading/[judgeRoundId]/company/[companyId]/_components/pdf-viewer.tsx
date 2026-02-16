@@ -105,7 +105,7 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
           pageNumber={pageNumber}
           width={
             isFull
-              ? (8 * containerWidth) / 11
+              ? (8 * (containerWidth ?? maxWidth)) / 11
               : containerWidth
               ? containerWidth
               : maxWidth
@@ -151,7 +151,7 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
             <TooltipTrigger>
               <div
                 className="ml-auto px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                onClick={() => handleFullButton()}
+                onClick={() => handleFullButton?.()}
               >
                 {"<>"}
               </div>

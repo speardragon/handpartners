@@ -41,7 +41,7 @@ export default function Page({ params }: Props) {
       <JudgeDataTable
         isPending={isPending}
         programId={programId}
-        totalPages={data?.totalPages}
+        totalPages={data?.totalPages ?? 0}
         pagination={pagination}
         setPagination={setPagination}
         data={data?.result || []}

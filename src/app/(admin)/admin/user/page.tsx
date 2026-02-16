@@ -23,7 +23,7 @@ export default function Page() {
     <div className="flex flex-col space-y-2 justify-center w-full min-h-screen p-10">
       <div className="text-xl font-semibold">유저</div>
       <UserDataTable
-        totalPages={users?.totalPages}
+        totalPages={users?.totalPages ?? 0}
         pagination={pagination}
         setPagination={setPagination}
         data={users?.result || []}
