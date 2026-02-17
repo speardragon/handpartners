@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -16,6 +17,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { z } from "zod";
 import useDialogOpenStore from "@/store/useDialogOpenStore";
 import { useForm } from "react-hook-form";
@@ -26,6 +34,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { Trash2 } from "lucide-react";
 
 type Props = {
   userId?: string;
@@ -57,10 +66,10 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
 
   const onSubmit = async (data: z.infer<typeof ProfileUpdateFormSchema>) => {
     type UserData = z.infer<typeof ProfileUpdateFormSchema>;
-    const updatedData: any = {};
+    const updatedData: Record<string, string | undefined> = {};
 
     Object.keys(dirtyFields).forEach((key) => {
-      const fieldKey = key as keyof UserData; // 'key'를 'UserData'의 키로 타입 단언
+      const fieldKey = key as keyof UserData;
       if (dirtyFields[fieldKey] && data[fieldKey] !== undefined) {
         updatedData[fieldKey] = data[fieldKey];
       }
@@ -78,11 +87,9 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
 
   const deleteHandler = async (userId: string) => {
     const confirmation = window.confirm("정말로 이 사용자를 삭제하시겠습니까?");
-    if (!confirmation) {
-      return; // 사용자가 취소를 눌렀을 경우 삭제 로직을 실행하지 않습니다.
-    }
+    if (!confirmation) return;
 
-    const result = await deleteUser(userId);
+    await deleteUser(userId);
     toast.success("사용자가 삭제되었습니다.");
     setOpen(false);
     queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -90,34 +97,35 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] max-w-md overflow-y-auto sm:w-full">
         <DialogHeader>
-          <DialogTitle>유저 정보 수정</DialogTitle>
-          <DialogDescription>유저 정보를 수정하세요.</DialogDescription>
-          <Form {...form}>
-            <form
-              autoComplete="off"
-              autoFocus={false}
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="items-start w-full space-y-6"
-            >
+          <DialogTitle className="text-lg">사용자 정보 수정</DialogTitle>
+          <DialogDescription>사용자의 정보를 수정합니다.</DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form
+            autoComplete="off"
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4"
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-bold">
+                    <FormLabel className="text-sm font-medium text-neutral-700">
                       이름 <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
-                        autoFocus={false}
                         autoComplete="off"
-                        placeholder="이름을 입력해주세요."
+                        placeholder="이름"
                         {...field}
                       />
                     </FormControl>
-                    {/* <FormMessage /> */}
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -127,44 +135,61 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-bold">
+                    <FormLabel className="text-sm font-medium text-neutral-700">
                       구분 <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="구분을 입력해주세요." {...field} />
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          form.trigger("role");
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="구분을 선택해주세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="심사자">심사자</SelectItem>
+                          <SelectItem value="관리자">관리자</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </FormControl>
-                    {/* <FormMessage /> */}
+                    <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
 
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base font-bold">
-                      이메일 <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="이메일을 입력해주세요." {...field} />
-                    </FormControl>
-                    {/* <FormMessage /> */}
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium text-neutral-700">
+                    이메일
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="이메일" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="affiliation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-bold text-black">
-                      소속 <span className="text-red-500">*</span>
+                    <FormLabel className="text-sm font-medium text-neutral-700">
+                      소속
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="소속을 입력해주세요." {...field} />
+                      <Input placeholder="소속" {...field} />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -174,49 +199,63 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
                 name="position"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-bold">
-                      직급 <span className="text-red-500">*</span>
+                    <FormLabel className="text-sm font-medium text-neutral-700">
+                      직급
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="직급을 입력해주세요." {...field} />
+                      <Input placeholder="직급" {...field} />
                     </FormControl>
-                    {/* <FormMessage /> */}
+                    <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
 
-              <FormField
-                control={form.control}
-                name="phone_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base font-bold">
-                      전화번호 <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="전화번호를 입력해주세요."
-                        {...field}
-                      />
-                    </FormControl>
-                    {/* <FormMessage /> */}
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="phone_number"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium text-neutral-700">
+                    전화번호
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="전화번호" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <div className="flex w-full justify-between">
+            <div className="border-t border-neutral-100 pt-4">
+              <DialogFooter className="flex-row justify-between gap-2 sm:justify-between">
                 <Button
                   onClick={() => deleteHandler(userId ?? "")}
                   type="button"
-                  className="bg-red-500"
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-red-500 hover:bg-red-50 hover:text-red-600"
                 >
-                  삭제하기
+                  <Trash2 className="h-4 w-4" />
+                  삭제
                 </Button>
-                <Button type="submit">수정하기</Button>
-              </div>
-            </form>
-          </Form>
-        </DialogHeader>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setOpen(false)}
+                  >
+                    취소
+                  </Button>
+                  <Button type="submit" size="sm">
+                    수정하기
+                  </Button>
+                </div>
+              </DialogFooter>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

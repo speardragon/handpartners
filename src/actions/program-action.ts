@@ -62,12 +62,11 @@ export async function getProgramById(programId: number) {
 
 export async function getPrograms(page: number, size: number): Promise<Result> {
   const supabase = await createClient();
-  let query = supabase.from("program").select("*", { count: "exact" });
-
-  const { data, error, count } = await query.range(
-    (page - 1) * size,
-    page * size - 1
-  );
+  const { data, error, count } = await supabase
+    .from("program")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range((page - 1) * size, page * size - 1);
 
   if (error) {
     handleError(error);
@@ -175,15 +174,38 @@ export interface AllScreeningsResult {
   totalElements: number;
 }
 
+export async function checkParticipation(
+  judgingRoundId: number
+): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data } = await supabase
+    .from("judging_round_user")
+    .select("id")
+    .eq("judging_round_id", judgingRoundId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  return !!data;
+}
+
 export async function getAllScreenings(
   page: number,
   size: number,
   isAdmin: boolean,
-  judgingRoundId?: number
+  judgingRoundId?: number,
+  isParticipating?: boolean
 ): Promise<AllScreeningsResult> {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   const userId = user?.id;
 
   if (authError || !userId) {
@@ -193,6 +215,9 @@ export async function getAllScreenings(
   const nowUtc = new Date();
   const nowKst = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
   const nowKstIsoString = nowKst.toISOString();
+
+  // 관리자+참여 시 심사자와 동일한 데이터 로직 사용
+  const useJudgeLogic = !isAdmin || (isAdmin && isParticipating);
 
   // Step 1: judging_round 쿼리 (날짜 필터 없이)
   let query = supabase
@@ -218,7 +243,7 @@ export async function getAllScreenings(
           description
         )
       ),
-      judging_round_user${isAdmin ? "" : "!inner"}(
+      judging_round_user${useJudgeLogic ? "!inner" : ""}(
         user_id,
         group_name
       )
@@ -227,8 +252,8 @@ export async function getAllScreenings(
     )
     .order("start_date", { ascending: false });
 
-  // 일반 유저: 본인 참여 심사만 필터
-  if (!isAdmin) {
+  // 심사자 로직: 본인 참여 심사만 필터
+  if (useJudgeLogic) {
     query = query.eq("judging_round_user.user_id", userId);
   }
 
@@ -246,8 +271,8 @@ export async function getAllScreenings(
     throw new Error(error.message);
   }
 
-  // 관리자가 아닌 경우: 해당 심사자의 group_name에 할당된 company만 필터링
-  if (!isAdmin) {
+  // 심사자 로직: 해당 심사자의 group_name에 할당된 company만 필터링
+  if (useJudgeLogic) {
     screenings.forEach((screening: any) => {
       const userGroupName = screening.judging_round_user?.[0]?.group_name;
       screening.companies = screening.companies.filter(
@@ -257,7 +282,10 @@ export async function getAllScreenings(
   }
 
   // Step 2: (judging_round_id, company_id) 쌍을 만든다.
-  const judgingCompanyPairs: { judging_round_id: number; company_id: number }[] = [];
+  const judgingCompanyPairs: {
+    judging_round_id: number;
+    company_id: number;
+  }[] = [];
   screenings.forEach((screening: any) => {
     screening.companies.forEach((companyEntry: any) => {
       judgingCompanyPairs.push({
@@ -268,7 +296,8 @@ export async function getAllScreenings(
   });
 
   // Step 3: 각 쌍에 대해 evaluation status와 score를 가져온다.
-  let evaluationMap: Record<string, { status: string; totalScore: number }> = {};
+  let evaluationMap: Record<string, { status: string; totalScore: number }> =
+    {};
 
   if (judgingCompanyPairs.length > 0) {
     let evalQuery = supabase
@@ -283,8 +312,8 @@ export async function getAllScreenings(
         judgingCompanyPairs.map((pair) => pair.company_id)
       );
 
-    // 일반 유저는 자기 평가만, 관리자는 전체 평가
-    if (!isAdmin) {
+    // 심사자 로직: 자기 평가만, 관리자 비참여: 전체 평가
+    if (useJudgeLogic) {
       evalQuery = evalQuery.eq("user_id", userId);
     }
 
@@ -346,8 +375,8 @@ export async function getAllScreenings(
               evaluation.status === "PENDING"
                 ? "심사 예정"
                 : evaluation.status === "ONGOING"
-                ? "심사 중"
-                : "심사 완료",
+                  ? "심사 중"
+                  : "심사 완료",
             score: evaluation.totalScore,
             companyId: company.company.id,
           };
@@ -369,7 +398,9 @@ export async function getAllScreenings(
 export async function getScreenings(): Promise<any> {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const userId = user?.id;
   if (!userId) {
     throw new Error("User not authenticated");
@@ -427,7 +458,10 @@ export async function getScreenings(): Promise<any> {
   });
 
   // Step 2: (judging_round_id, company_id) 쌍을 만든다.
-  const judgingCompanyPairs: { judging_round_id: number; company_id: number }[] = [];
+  const judgingCompanyPairs: {
+    judging_round_id: number;
+    company_id: number;
+  }[] = [];
   screenings.forEach((screening) => {
     screening.companies.forEach((companyEntry: any) => {
       judgingCompanyPairs.push({
@@ -457,7 +491,8 @@ export async function getScreenings(): Promise<any> {
   }
 
   // Step 4: Group evaluations by judging_round_id and company_id, calculate total score
-  const evaluationMap: Record<string, { status: string; totalScore: number }> = {};
+  const evaluationMap: Record<string, { status: string; totalScore: number }> =
+    {};
   evaluations.forEach((evaluation) => {
     const key = `${evaluation.judging_round_id}_${evaluation.company_id}`;
     if (!evaluationMap[key]) {
@@ -476,8 +511,16 @@ export async function getScreenings(): Promise<any> {
     start_date: screening.start_date,
     end_date: screening.end_date,
     program: (() => {
-      const program = screening.program as unknown as { id: number; name: string; description: string };
-      return { id: program.id, name: program.name, description: program.description };
+      const program = screening.program as unknown as {
+        id: number;
+        name: string;
+        description: string;
+      };
+      return {
+        id: program.id,
+        name: program.name,
+        description: program.description,
+      };
     })(),
     companies: screening.companies
       .sort((a: any, b: any) => a.judge_num - b.judge_num)
@@ -496,8 +539,8 @@ export async function getScreenings(): Promise<any> {
             evaluation.status === "PENDING"
               ? "심사 예정"
               : evaluation.status === "ONGOING"
-              ? "심사 중"
-              : "심사 완료",
+                ? "심사 중"
+                : "심사 완료",
           score: evaluation.totalScore, // Add total score here
           companyId: company.company.id,
         };

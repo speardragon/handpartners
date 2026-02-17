@@ -17,7 +17,7 @@ export const ProfileUpdateFormSchema = z.object({
 export const ProfileCreateFormSchema = z.object({
   username: z.string().min(1, "이름을 입력해주세요."),
   role: z.string().min(1, "구분을 입력해주세요."),
-  email: z.string().optional(),
+  email: z.string().min(1, "이메일을 입력해주세요.").email("올바른 이메일 형식이 아닙니다."),
   affiliation: z.string().optional(),
   position: z
     .string()

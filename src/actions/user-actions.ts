@@ -1,10 +1,7 @@
 "use server";
 
 import { Database } from "types_db";
-import {
-  createAdminClient,
-  createClient,
-} from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { ProfileCreateFormSchema } from "@/app/(admin)/admin/user/_lib/ProfileFormSchema";
 import { z } from "zod";
 
@@ -27,7 +24,6 @@ function handleError(error: any) {
 export async function getUsers(
   page: number,
   size: number
-  // username?: string
 ): Promise<UserResult> {
   const supabase = await createClient();
   let query = supabase.from("user").select("*", { count: "exact" });
@@ -112,7 +108,9 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   const supabase = await createClient();
 
   // 인증된 사용자 정보 가져오기
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const userId = user?.id;
 
   if (!userId) {

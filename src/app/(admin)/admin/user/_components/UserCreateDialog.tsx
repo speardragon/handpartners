@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -19,17 +20,9 @@ import { Input } from "@/components/ui/input";
 import { z } from "zod";
 import useDialogOpenStore from "@/store/useDialogOpenStore";
 import { useForm } from "react-hook-form";
-import {
-  ProfileCreateFormSchema,
-  ProfileUpdateFormSchema,
-} from "../_lib/ProfileFormSchema";
+import { ProfileCreateFormSchema } from "../_lib/ProfileFormSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  createUser,
-  registerUser,
-  updateUser,
-  UserRowInsert,
-} from "@/actions/user-actions";
+import { registerUser } from "@/actions/user-actions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -70,37 +63,37 @@ export default function UserCreateDialog() {
       form.reset();
       toast.success("새로운 사용자가 추가되었습니다.");
     } catch (error) {
-      // 에러 처리 로직
       toast.error("사용자 등록에 실패했습니다.");
-      console.error(error);
     }
   };
 
   return (
     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-      <DialogContent className="overflow-y-auto w-[1000px] h-3/4">
+      <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] max-w-md overflow-y-auto sm:w-full">
         <DialogHeader>
-          <DialogTitle>유저 추가</DialogTitle>
-          <DialogDescription>유저를 추가합니다.</DialogDescription>
-          <Form {...form}>
-            <form
-              autoComplete="off"
-              autoFocus={false}
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="items-start space-y-4"
-            >
+          <DialogTitle className="text-lg">사용자 추가</DialogTitle>
+          <DialogDescription>새로운 사용자를 등록합니다.</DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form
+            autoComplete="off"
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4"
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-bold">
+                    <FormLabel className="text-sm font-medium text-neutral-700">
                       이름 <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
                         autoComplete="off"
-                        placeholder="이름을 입력해주세요."
+                        placeholder="이름"
                         {...field}
                       />
                     </FormControl>
@@ -114,13 +107,14 @@ export default function UserCreateDialog() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-bold">
+                    <FormLabel className="text-sm font-medium text-neutral-700">
                       비밀번호 <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
                         autoComplete="off"
-                        placeholder="비밀번호 입력해주세요."
+                        type="password"
+                        placeholder="비밀번호"
                         {...field}
                       />
                     </FormControl>
@@ -128,61 +122,64 @@ export default function UserCreateDialog() {
                   </FormItem>
                 )}
               />
+            </div>
 
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base font-bold">
-                      구분 <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="구분을 선택해주세요" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="심사자">심사자</SelectItem>
-                          <SelectItem value="관리자">관리자</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium text-neutral-700">
+                    구분 <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="구분을 선택해주세요" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="심사자">심사자</SelectItem>
+                        <SelectItem value="관리자">관리자</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base font-bold">
-                      이메일 <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="이메일을 입력해주세요." {...field} />
-                    </FormControl>
-                    {/* <FormMessage /> */}
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium text-neutral-700">
+                    이메일 <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="이메일" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="affiliation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-bold text-black">
-                      소속 <span className="text-red-500">*</span>
+                    <FormLabel className="text-sm font-medium text-neutral-700">
+                      소속
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="소속을 입력해주세요." {...field} />
+                      <Input placeholder="소속" {...field} />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -192,43 +189,54 @@ export default function UserCreateDialog() {
                 name="position"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-bold">
-                      직급 <span className="text-red-500">*</span>
+                    <FormLabel className="text-sm font-medium text-neutral-700">
+                      직급
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="직급을 입력해주세요." {...field} />
+                      <Input placeholder="직급" {...field} />
                     </FormControl>
-                    {/* <FormMessage /> */}
+                    <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
 
-              <FormField
-                control={form.control}
-                name="phone_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base font-bold">
-                      전화번호 <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="전화번호를 입력해주세요."
-                        {...field}
-                      />
-                    </FormControl>
-                    {/* <FormMessage /> */}
-                  </FormItem>
-                )}
-              />
-              <div className="flex justify-end w-full">
-                <Button className="" type="submit">
+            <FormField
+              control={form.control}
+              name="phone_number"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium text-neutral-700">
+                    전화번호
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="전화번호" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="border-t border-neutral-100 pt-4">
+              <DialogFooter className="flex-row justify-end gap-2 sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCreateOpen(false);
+                    form.reset();
+                  }}
+                >
+                  취소
+                </Button>
+                <Button type="submit" size="sm">
                   생성하기
                 </Button>
-              </div>
-            </form>
-          </Form>
-        </DialogHeader>
+              </DialogFooter>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

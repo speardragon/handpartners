@@ -6,13 +6,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import usePdfPageStore from "@/store/usePdfPageStore";
 import { useResizeObserver } from "@wojtekmaj/react-hooks";
 import { memo, useCallback, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-// import "core-js/full/promise/with-resolvers.js";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
 
 type Props = {
   isFull: boolean;
@@ -32,11 +31,14 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
   const [containerRef, setContainerRef] = useState<HTMLElement | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>();
 
+  const [containerHeight, setContainerHeight] = useState<number>();
+
   const onResize = useCallback<ResizeObserverCallback>((entries) => {
     const [entry] = entries;
 
     if (entry) {
       setContainerWidth(entry.contentRect.width);
+      setContainerHeight(entry.contentRect.height);
     }
   }, []);
 
@@ -78,7 +80,6 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
     if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= numPages) {
       setPageNumber(pageNumber);
     } else {
-      // 잘못된 입력 값일 경우 현재 페이지를 다시 세팅
       setInputPage(pageNumber.toString());
     }
   };
@@ -91,73 +92,96 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
 
   return (
     <div
-      className="flex flex-col h-full items-center justify-center gap-2 mt-16"
+      className={`flex flex-col items-center gap-2 p-4 ${
+        isFull
+          ? "h-full overflow-hidden"
+          : "h-full justify-center overflow-y-auto"
+      }`}
       ref={setContainerRef}
     >
-      <Document
-        file={pdfPath} // 여기는 가지고 계신 pdf 주소
-        onLoadSuccess={onDocumentLoadSuccess}
-        className="shadow-lg"
+      <div
+        className={`${
+          isFull
+            ? "flex min-h-0 flex-1 items-center justify-center overflow-hidden"
+            : ""
+        }`}
       >
-        {/* height, width는 number 타입으로 vh, %는 먹지 않습니다. */}
-        <Page
-          className="flex justify-center"
-          pageNumber={pageNumber}
-          width={
-            isFull
-              ? (8 * (containerWidth ?? maxWidth)) / 11
-              : containerWidth
-              ? containerWidth
-              : maxWidth
-          }
-        />
-      </Document>
-      <div className="flex bg-gray-200 p-2 w-full justify-center space-x-2">
+        <Document
+          file={pdfPath}
+          onLoadSuccess={onDocumentLoadSuccess}
+          className="overflow-hidden rounded-lg shadow-lg"
+        >
+          <Page
+            className="flex justify-center"
+            loading={
+              <div className="flex h-96 items-center justify-center">
+                로딩 중...
+              </div>
+            }
+            pageNumber={pageNumber}
+            {...(isFull
+              ? {
+                  height: containerHeight ? containerHeight - 60 : undefined,
+                }
+              : {
+                  width: containerWidth ? containerWidth - 32 : maxWidth,
+                })}
+          />
+        </Document>
+      </div>
+
+      {/* 컨트롤바 */}
+      <div className="flex shrink-0 items-center gap-2 rounded-full border bg-white px-4 py-2 shadow-sm">
         <button
-          className={`px-2 rounded  border border-gray-300 ${
+          className={`rounded-full p-1 transition-colors ${
             pageNumber > 1
-              ? "bg-gray-200 hover:bg-gray-300 cursor-pointer"
-              : "bg-gray-100 cursor-not-allowed"
+              ? "cursor-pointer text-gray-700 hover:bg-gray-100"
+              : "cursor-not-allowed text-gray-300"
           }`}
           onClick={goToPreviousPage}
           disabled={pageNumber <= 1}
         >
-          {"<"}
+          <ChevronLeft size={18} />
         </button>
-        <div className="flex items-center">
+
+        <div className="flex items-center gap-1.5 text-sm">
           <input
             type="text"
             value={inputPage}
             onKeyDown={onKeyDown}
             onChange={onPageInputChange}
-            onBlur={onPageInputSubmit} // 포커스가 사라질 때 페이지 이동
-            className="w-12 px-2 border-4 border-gray-300 rounded-2xl text-center"
-          />{" "}
-          <span className="ml-2 text-sm text-gray-600">of {numPages}</span>
+            onBlur={onPageInputSubmit}
+            className="w-10 rounded-md border px-1 py-0.5 text-center text-sm font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <span className="text-muted-foreground">/ {numPages}</span>
         </div>
+
         <button
-          className={`px-2 rounded border border-gray-300 ${
+          className={`rounded-full p-1 transition-colors ${
             pageNumber < numPages
-              ? "bg-gray-200 hover:bg-gray-300 cursor-pointer"
-              : "bg-gray-100 cursor-not-allowed"
+              ? "cursor-pointer text-gray-700 hover:bg-gray-100"
+              : "cursor-not-allowed text-gray-300"
           }`}
           onClick={goToNextPage}
           disabled={pageNumber >= numPages}
         >
-          {">"}
+          <ChevronRight size={18} />
         </button>
+
+        <div className="mx-1 h-5 w-px bg-gray-200" />
+
         <TooltipProvider delayDuration={0}>
           <Tooltip>
-            <TooltipTrigger>
-              <div
-                className="ml-auto px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+            <TooltipTrigger asChild>
+              <button
+                className="cursor-pointer rounded-full p-1 text-gray-700 transition-colors hover:bg-gray-100"
                 onClick={() => handleFullButton?.()}
               >
-                {"<>"}
-              </div>
+                {isFull ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </button>
             </TooltipTrigger>
-            <TooltipContent className="text-base">
-              <p>전체화면</p>
+            <TooltipContent>
+              <p>{isFull ? "원래 크기" : "전체화면"}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

@@ -1,5 +1,5 @@
 import { getPrograms } from "@/actions/program-action";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 export const useProgramQuery = (pagination: {
   pageIndex: number;
@@ -8,5 +8,6 @@ export const useProgramQuery = (pagination: {
   return useQuery({
     queryKey: ["programs", pagination],
     queryFn: () => getPrograms(pagination.pageIndex + 1, pagination.pageSize),
+    placeholderData: keepPreviousData,
   });
 };

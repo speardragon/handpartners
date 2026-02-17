@@ -1,14 +1,20 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { screeningColumns } from "./_components/screening-columns";
-import { ScreeningDataTable } from "./_components/screening-data-table";
 import { useAllScreeningsQuery } from "./_hooks/useAllScreeningsQuery";
 import { ScreeningWithStatus } from "@/actions/program-action";
 import ProgramSkeleton from "./_components/ProgramSkeleton";
+import { ScreeningCard } from "./_components/screening-card";
 import { useRouter } from "next/navigation";
 import { useUserProfileQuery } from "../_hooks/useUserQuery";
-import { CalendarX2, Search } from "lucide-react";
+import {
+  CalendarX2,
+  Search,
+  ListChecks,
+  Play,
+  CheckCircle2,
+  Clock,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Pagination,
@@ -76,6 +82,17 @@ export default function Home() {
     [router],
   );
 
+  const stats = useMemo(() => {
+    if (!data) return null;
+    const all = data.result;
+    return {
+      total: data.totalElements,
+      active: all.filter((s) => s.screeningStatus === "진행 중").length,
+      completed: all.filter((s) => s.screeningStatus === "종료").length,
+      upcoming: all.filter((s) => s.screeningStatus === "진행 전").length,
+    };
+  }, [data]);
+
   const pageNumbers = useMemo(() => {
     if (!data) return [];
     const total = data.totalPages;
@@ -115,6 +132,46 @@ export default function Home() {
           {isAdmin ? "전체 심사 목록" : "나의 심사 목록"}
         </div>
 
+        {/* 요약 통계 */}
+        {stats && (
+          <div className="grid grid-cols-4 gap-3">
+            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
+              <ListChecks size={18} className="text-gray-400" />
+              <div>
+                <p className="text-xs text-muted-foreground">전체</p>
+                <p className="text-lg font-bold text-gray-900">{stats.total}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
+              <Play size={18} className="text-gray-400" />
+              <div>
+                <p className="text-xs text-muted-foreground">진행 중</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {stats.active}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
+              <CheckCircle2 size={18} className="text-gray-400" />
+              <div>
+                <p className="text-xs text-muted-foreground">종료</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {stats.completed}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
+              <Clock size={18} className="text-gray-400" />
+              <div>
+                <p className="text-xs text-muted-foreground">진행 전</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {stats.upcoming}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 심사 번호 검색 */}
         <div className="relative">
           <Search
@@ -143,12 +200,17 @@ export default function Home() {
           </div>
         )}
 
+        {/* 카드 그리드 */}
         {data.result.length > 0 && (
-          <ScreeningDataTable
-            columns={screeningColumns}
-            data={data.result}
-            onRowClick={handleRowClick}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {data.result.map((screening) => (
+              <ScreeningCard
+                key={screening.id}
+                screening={screening}
+                onClick={handleRowClick}
+              />
+            ))}
+          </div>
         )}
 
         {/* 페이지네이션 */}

@@ -46,6 +46,8 @@ type Props = {
 };
 
 const EvaluationDocument = ({ evaluationReport, programInfo }: Props) => {
+  console.log("EvaluationDocument props - evaluationReport:", evaluationReport);
+  console.log("EvaluationDocument props - programInfo:", programInfo);
   return (
     <Document>
       {evaluationReport.map((report, index) => {

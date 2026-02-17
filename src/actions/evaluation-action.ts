@@ -77,6 +77,7 @@ type EvaluationRecord = {
   user_id: string;
   created_at: string;
   feedback: string | null;
+  status: string | null;
 };
 export async function getEvaluationByUser(
   judgeRoundId: number,
@@ -270,4 +271,170 @@ export async function getDetailedEvaluationsByUser(
   }
 
   return finalResult;
+}
+
+/**
+ * 특정 userId의 평가 데이터를 조회하는 함수 (관리자용)
+ */
+export async function getDetailedEvaluationsByUserId(
+  judgingRoundId: number,
+  userId: string
+): Promise<FinalResult[]> {
+  const supabase = await createClient();
+
+  // 사용자 프로필 정보
+  const { data: userData, error: userError } = await supabase
+    .from("user")
+    .select("username, affiliation, position")
+    .eq("id", userId)
+    .single();
+
+  if (userError) {
+    handleError(userError);
+    throw new Error(`Failed to fetch user profile: ${userError.message}`);
+  }
+
+  const userProfile: UserProfile = {
+    name: userData.username,
+    affiliation: userData.affiliation,
+    position: userData.position,
+  };
+
+  // group_name 가져오기
+  const { data: jru, error: jruError } = await supabase
+    .from("judging_round_user")
+    .select("group_name")
+    .eq("judging_round_id", judgingRoundId)
+    .eq("user_id", userId)
+    .single();
+
+  if (jruError) {
+    handleError(jruError);
+    throw new Error(`Failed to fetch judging_round_user: ${jruError.message}`);
+  }
+
+  const userGroupName = (jru as any).group_name;
+
+  // 해당 group_name의 company_id 목록
+  const { data: jrc, error: jrcError } = await supabase
+    .from("judging_round_company")
+    .select("company_id, group_name")
+    .eq("judging_round_id", judgingRoundId)
+    .eq("group_name", userGroupName);
+
+  if (jrcError) {
+    throw new Error(
+      `Failed to fetch judging_round_company: ${jrcError.message}`
+    );
+  }
+
+  const companyIds = (jrc as any)?.map((c: any) => c.company_id) || [];
+
+  if (companyIds.length === 0) {
+    return [];
+  }
+
+  // 평가 데이터 조회
+  const { data: evaluations, error: evaluationsError } = await supabase
+    .from("evaluation")
+    .select(
+      `
+      grade,
+      feedback,
+      company:company_id(name, description),
+      evaluation_criterion:evaluation_criterion_id(item_name, description, points)
+    `
+    )
+    .eq("judging_round_id", judgingRoundId)
+    .eq("user_id", userId)
+    .in("company_id", companyIds);
+
+  if (evaluationsError) {
+    throw new Error(`Failed to fetch evaluations: ${evaluationsError.message}`);
+  }
+
+  const resultMap = new Map<
+    string,
+    { company: CompanyInfo; evaluations: EvaluationItem[] }
+  >();
+
+  const evaluationsData = evaluations as any;
+
+  for (const evalItem of evaluationsData || []) {
+    const companyKey = `${evalItem.company.name}`;
+
+    if (!resultMap.has(companyKey)) {
+      resultMap.set(companyKey, {
+        company: {
+          name: evalItem.company.name,
+          description: evalItem.company.description,
+        },
+        evaluations: [],
+      });
+    }
+
+    const currentGroup = resultMap.get(companyKey)!;
+    currentGroup.evaluations.push({
+      evaluation_criterion: {
+        item_name: evalItem.evaluation_criterion.item_name,
+        description: evalItem.evaluation_criterion.description,
+        points: evalItem.evaluation_criterion.points,
+      },
+      grade: evalItem.grade,
+      feedback: evalItem.feedback,
+    });
+  }
+
+  const finalResult: FinalResult[] = [];
+  for (const [, value] of resultMap) {
+    finalResult.push({
+      company: value.company,
+      evaluations: value.evaluations,
+      user_profile: userProfile,
+    });
+  }
+
+  return finalResult;
+}
+
+export type JudgeEvaluationResult = {
+  userId: string;
+  username: string;
+  evaluations: FinalResult[];
+};
+
+/**
+ * 해당 라운드의 모든 심사자 평가 데이터를 조회하는 함수 (관리자용)
+ */
+export async function getAllJudgeEvaluations(
+  judgingRoundId: number
+): Promise<JudgeEvaluationResult[]> {
+  const supabase = await createClient();
+
+  // 해당 라운드의 모든 심사자 조회
+  const { data: judges, error: judgesError } = await supabase
+    .from("judging_round_user")
+    .select("user_id, user:user_id(username)")
+    .eq("judging_round_id", judgingRoundId);
+
+  if (judgesError) {
+    throw new Error(`Failed to fetch judges: ${judgesError.message}`);
+  }
+
+  const results: JudgeEvaluationResult[] = [];
+
+  for (const judge of judges as any[]) {
+    const evaluations = await getDetailedEvaluationsByUserId(
+      judgingRoundId,
+      judge.user_id
+    );
+
+    results.push({
+      userId: judge.user_id,
+      username: judge.user.username,
+      evaluations,
+    });
+  }
+
+  return results;
 }

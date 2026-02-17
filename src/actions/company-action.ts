@@ -30,12 +30,10 @@ export async function getCompanies(
   const supabase = await createClient();
   let query = supabase.from("company").select("*", { count: "exact" });
 
-  // 검색
   if (search && search.trim() !== "") {
     query = query.ilike("name", `%${search}%`);
   }
 
-  // 페이지네이션
   const { data, error, count } = await query.range(
     (page - 1) * size,
     page * size - 1

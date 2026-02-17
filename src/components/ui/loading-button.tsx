@@ -8,13 +8,13 @@ type LoadingButtonProps = ButtonProps & {
 };
 
 const LoadingButton = forwardRef<HTMLButtonElement, LoadingButtonProps>(
-  function LoadingButton({ loading, children, ...props }, ref) {
+  function LoadingButton({ loading, disabled, children, ...props }, ref) {
     const { pending } = useFormStatus();
 
     const isLoading = loading ?? pending;
 
     return (
-      <Button ref={ref} disabled={isLoading} {...props}>
+      <Button ref={ref} disabled={isLoading || disabled} {...props}>
         <>
           {isLoading ? "" : children}
           {isLoading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}

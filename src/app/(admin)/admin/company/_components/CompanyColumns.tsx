@@ -1,6 +1,5 @@
 "use client";
 
-import { deleteProgram, ProgramRow } from "@/actions/program-action";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   DropdownMenu,
@@ -28,12 +27,11 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { EllipsisVertical, Map, Pencil, Trash } from "lucide-react";
+import { EllipsisVertical, Pencil, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { CompanyRow, deleteCompany } from "@/actions/company-action";
 import CompanyEditForm from "./CompanyEditForm";
 
@@ -46,7 +44,7 @@ export const companyColumns: ColumnDef<Partial<CompanyRow>>[] = [
   {
     accessorKey: "name",
     header: "기업명",
-    size: 140,
+    size: 160,
   },
   {
     accessorKey: "description",
@@ -54,14 +52,18 @@ export const companyColumns: ColumnDef<Partial<CompanyRow>>[] = [
     cell: ({ getValue }) => {
       const description = (getValue() ?? "").toString();
       return (
-        <div className="w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">
-          {description}
+        <div
+          className="max-w-[400px] truncate"
+          title={description}
+        >
+          {description || (
+            <span className="text-neutral-400">소개 없음</span>
+          )}
         </div>
       );
     },
   },
   {
-    // 드롭다운 메뉴 액션 컬럼
     id: "actions",
     cell: ({ row }) => {
       const [openEdit, setOpenEdit] = useState(false);
@@ -71,7 +73,7 @@ export const companyColumns: ColumnDef<Partial<CompanyRow>>[] = [
       const queryClient = useQueryClient();
 
       const deleteHandler = async (companyId: number) => {
-        const result = await deleteCompany(companyId);
+        await deleteCompany(companyId);
         toast.success("기업이 삭제되었습니다.");
         queryClient.invalidateQueries({ queryKey: ["companies"] });
       };
@@ -80,7 +82,7 @@ export const companyColumns: ColumnDef<Partial<CompanyRow>>[] = [
       return (
         <div className="flex w-full justify-end">
           <Sheet open={openEdit} onOpenChange={setOpenEdit}>
-            <SheetContent className="min-w-[600px]">
+            <SheetContent className="w-[calc(100%-2rem)] overflow-y-auto sm:min-w-[600px]">
               <SheetHeader>
                 <SheetTitle>기업 수정</SheetTitle>
                 <SheetDescription>{row.original.name}</SheetDescription>
@@ -97,7 +99,7 @@ export const companyColumns: ColumnDef<Partial<CompanyRow>>[] = [
           </Sheet>
 
           <AlertDialog open={openDelete} onOpenChange={setOpenDelete}>
-            <AlertDialogContent>
+            <AlertDialogContent className="w-[calc(100%-2rem)] max-w-md sm:w-full">
               <AlertDialogHeader>
                 <AlertDialogTitle>기업 삭제</AlertDialogTitle>
                 <AlertDialogDescription>
@@ -109,7 +111,7 @@ export const companyColumns: ColumnDef<Partial<CompanyRow>>[] = [
                 <AlertDialogCancel>취소</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => deleteHandler(companyId)}
-                  className="bg-red-500"
+                  className="bg-red-500 hover:bg-red-600"
                 >
                   삭제
                 </AlertDialogAction>
@@ -118,31 +120,34 @@ export const companyColumns: ColumnDef<Partial<CompanyRow>>[] = [
           </AlertDialog>
 
           <DropdownMenu open={openMenu} onOpenChange={setOpenMenu}>
-            <DropdownMenuTrigger className="border border-gray-300 p-2 rounded-lg hover:border hover:border-gray-400">
-              <EllipsisVertical size={14} />
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <EllipsisVertical className="h-4 w-4" />
+              </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48">
+            <DropdownMenuContent className="w-48" align="end">
               <DropdownMenuLabel>기업 작업</DropdownMenuLabel>
               <DropdownMenuSeparator />
 
               <DropdownMenuItem
-                className="text-gray-700 hover:text-black"
                 onClick={() => {
                   setOpenEdit(true);
                   setOpenMenu(false);
                 }}
               >
-                <Pencil /> 기업 수정
+                <Pencil className="mr-2 h-4 w-4" />
+                기업 수정
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                className="text-gray-700 hover:text-black"
+                className="text-red-600 focus:text-red-600"
                 onClick={() => {
                   setOpenDelete(true);
                   setOpenMenu(false);
                 }}
               >
-                <Trash color="red" /> 기업 삭제
+                <Trash className="mr-2 h-4 w-4" />
+                기업 삭제
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

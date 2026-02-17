@@ -55,7 +55,7 @@ export function useEvaluationMutation() {
       // 관련된 쿼리 재검증
       queryClient.invalidateQueries();
       // 다른 페이지로 이동
-      router.push("/");
+      router.back();
     },
     onError: (error: unknown) => {
       toast.error("저장 중 문제가 발생했습니다.");

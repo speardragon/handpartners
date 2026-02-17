@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { saveAs } from "file-saver";
 import { useEvaluationReportQuery } from "@/app/(home)/_hooks/useEvaluationReportQuery";
 import EvaluationDocument from "@/app/(home)/_components/EvaluationDocument";
 import { useProgramQuery } from "./_hooks/useProgramQuery";
 
 type Props = {
-  params: { judgingRoundId: string; programId: string };
+  params: Promise<{ judgingRoundId: string; programId: string }>;
 };
 
 export default function Page({ params }: Props) {
-  const judgingRoundId = parseInt(params.judgingRoundId);
-  const programId = parseInt(params.programId);
+  const { judgingRoundId: judgingRoundIdStr, programId: programIdStr } =
+    use(params);
+  const judgingRoundId = parseInt(judgingRoundIdStr);
+  const programId = parseInt(programIdStr);
 
   // useEvaluationReportQuery를 사용해 데이터 불러오기
   const { data, isLoading } = useEvaluationReportQuery(judgingRoundId, {
@@ -22,11 +24,23 @@ export default function Page({ params }: Props) {
     enabled: !!programId,
   });
 
+  console.log("심사 평가표 데이터:", data);
+
   // 중복 저장 방지 플래그
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     const savePDF = async () => {
+      console.log(
+        "savePDF called with - isLoading:",
+        isLoading,
+        "data:",
+        data,
+        "programInfo:",
+        programInfo,
+        "isSaved:",
+        isSaved
+      );
       if (!isLoading && data && !isSaved && programInfo) {
         try {
           const { pdf } = await import("@react-pdf/renderer");
@@ -52,7 +66,7 @@ export default function Page({ params }: Props) {
     };
 
     savePDF();
-  }, [isLoading, data]);
+  }, [isLoading, data, programInfo, isSaved]);
 
   if (isLoading || !data) {
     return <div>Loading...</div>;

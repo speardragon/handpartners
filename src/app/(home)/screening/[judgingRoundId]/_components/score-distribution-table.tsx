@@ -5,54 +5,38 @@ import { calculateScoreDistribution } from "@/app/(home)/_lib/lib";
 
 interface ScoreDistributionTableProps {
   companies: Company[];
+  isAdminView: boolean;
 }
+
+const SCORE_RANGES = [
+  "90점 이상",
+  "80점 이상",
+  "70점 이상",
+  "60점 이상",
+  "60점 미만",
+] as const;
 
 export default function ScoreDistributionTable({
   companies,
+  isAdminView,
 }: ScoreDistributionTableProps) {
   const scoreDistribution = calculateScoreDistribution(companies);
 
   return (
-    <div>
-      <div className="font-bold">* 점수 분포 현황</div>
-      <table className="w-full mt-2 border border-collapse border-gray-300 table-auto">
-        <tbody>
-          <tr className="font-semibold bg-gray-100 border border-gray-300">
-            <td className="px-4 py-2 text-center border border-gray-300">
-              90점 이상
-            </td>
-            <td className="px-4 py-2 text-center border border-gray-300">
-              80점 이상
-            </td>
-            <td className="px-4 py-2 text-center border border-gray-300">
-              70점 이상
-            </td>
-            <td className="px-4 py-2 text-center border border-gray-300">
-              60점 이상
-            </td>
-            <td className="px-4 py-2 text-center border border-gray-300">
-              60점 미만
-            </td>
-          </tr>
-          <tr className="border border-gray-300">
-            <td className="px-4 py-2 text-center border border-gray-300">
-              {scoreDistribution["90점 이상"]}개
-            </td>
-            <td className="px-4 py-2 text-center border border-gray-300">
-              {scoreDistribution["80점 이상"]}개
-            </td>
-            <td className="px-4 py-2 text-center border border-gray-300">
-              {scoreDistribution["70점 이상"]}개
-            </td>
-            <td className="px-4 py-2 text-center border border-gray-300">
-              {scoreDistribution["60점 이상"]}개
-            </td>
-            <td className="px-4 py-2 text-center border border-gray-300">
-              {scoreDistribution["60점 미만"]}개
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div className="rounded-lg border bg-white p-5 shadow-sm">
+      <h2 className="text-sm font-semibold text-gray-700 mb-3">
+        {isAdminView ? "전체 점수 분포 현황" : "내 점수 분포 현황"}
+      </h2>
+      <div className="grid grid-cols-5 gap-2">
+        {SCORE_RANGES.map((key) => (
+          <div key={key} className="rounded-md bg-gray-50 p-3 text-center">
+            <p className="text-xs text-muted-foreground">{key}</p>
+            <p className="text-lg font-bold mt-1 text-gray-900">
+              {scoreDistribution[key]}
+            </p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

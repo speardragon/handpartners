@@ -808,13 +808,18 @@ export async function getCompanyScoresByRoundId(
     });
   });
 
-  // 4) totalScore 내림차순 정렬 & 단순 순위 매기기
+  // 4) totalScore 내림차순 정렬 & 동순위 처리
   companiesArray.sort((a, b) => b.totalScore - a.totalScore);
 
-  let rank = 1;
-  companiesArray.forEach((company) => {
-    company.ranking = rank;
-    rank++;
+  companiesArray.forEach((company, index) => {
+    if (index === 0) {
+      company.ranking = 1;
+    } else {
+      company.ranking =
+        company.totalScore === companiesArray[index - 1].totalScore
+          ? companiesArray[index - 1].ranking
+          : index + 1;
+    }
   });
 
   // 5) 반환

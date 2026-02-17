@@ -58,6 +58,22 @@ export default function JudgingRoundDetailPage() {
     username,
   }));
 
+  // 동순위 처리된 순위 맵 (company_id → rank)
+  const rankMap = new Map<number, number>();
+  companies.forEach((company, index) => {
+    if (index === 0) {
+      rankMap.set(company.company_id, 1);
+    } else {
+      const prevCompany = companies[index - 1];
+      rankMap.set(
+        company.company_id,
+        company.totalScore === prevCompany.totalScore
+          ? rankMap.get(prevCompany.company_id)!
+          : index + 1
+      );
+    }
+  });
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* 라운드 정보 */}
@@ -201,7 +217,7 @@ export default function JudgingRoundDetailPage() {
                             : "-"}
                         </td>
                         <td className="px-4 py-2 text-center border border-gray-200">
-                          {index + 1}
+                          {rankMap.get(company.company_id)}
                         </td>
                       </tr>
                     ))}
@@ -230,7 +246,7 @@ export default function JudgingRoundDetailPage() {
               >
                 {/* 아코디언 헤더(Trigger) */}
                 <AccordionTrigger className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-left text-lg font-semibold text-gray-800 transition-colors">
-                  {idx + 1}위{`(${company.totalScore}점)`} :{" "}
+                  {rankMap.get(company.company_id)}위{`(${company.totalScore}점)`} :{" "}
                   {company.company_name}{" "}
                 </AccordionTrigger>
 

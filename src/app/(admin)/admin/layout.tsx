@@ -19,9 +19,11 @@ export default function Layout({
   }, [userProfile]);
 
   return (
-    <div className="flex min-h-screen flex-row">
+    <div className="flex min-h-screen">
       <SideNav />
-      {children}
+      <main className="mt-14 flex-1 overflow-y-auto lg:ml-[260px] lg:mt-0">
+        {children}
+      </main>
     </div>
   );
 }

@@ -45,15 +45,16 @@ export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
   {
     accessorKey: "name",
     header: "프로그램 이름",
-    size: 300,
+    size: 150,
   },
   {
     accessorKey: "description",
     header: "설명",
+    meta: { className: "hidden md:table-cell" },
     cell: ({ getValue }) => {
       const description = (getValue() ?? "").toString();
       return (
-        <div className="w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">
+        <div className="max-w-[300px] overflow-hidden text-ellipsis whitespace-nowrap">
           {description}
         </div>
       );
@@ -62,11 +63,12 @@ export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
   {
     id: "dateRange",
     header: "기간",
+    meta: { className: "hidden sm:table-cell" },
     cell: ({ row }) => {
       const startDate = row.original.start_date ?? "";
       const endDate = row.original.end_date ?? "";
       return (
-        <div className="w-[130px]">
+        <div className="whitespace-nowrap">
           {startDate} ~ {endDate}
         </div>
       );
@@ -75,22 +77,25 @@ export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
   {
     id: "addColumns",
     header: "",
+    // size: 100,
     cell: ({ row }) => {
       const router = useRouter();
       return (
         <Button
           onClick={() => router.push(`/admin/program/${row.original.id}`)}
-          className="p-0 px-4 hover:border hover:border-gray-400"
           variant="outline"
+          size="sm"
+          className="gap-1.5 whitespace-nowrap"
         >
-          심사 관리 <Map className="ml-2 h-4 w-4" />
+          심사 관리
+          <Map className="h-3.5 w-3.5" />
         </Button>
       );
     },
   },
   {
-    // 드롭다운 메뉴 액션 컬럼
     id: "actions",
+    size: 50,
     cell: ({ row }) => {
       const [openEdit, setOpenEdit] = useState(false);
       const [openDelete, setOpenDelete] = useState(false);
@@ -99,7 +104,7 @@ export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
       const queryClient = useQueryClient();
 
       const deleteHandler = async (programId: number) => {
-        const result = await deleteProgram(programId);
+        await deleteProgram(programId);
         toast.success("프로그램이 삭제되었습니다.");
         queryClient.invalidateQueries({ queryKey: ["programs"] });
       };
@@ -108,7 +113,7 @@ export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
       return (
         <>
           <Sheet open={openEdit} onOpenChange={setOpenEdit}>
-            <SheetContent className="min-w-[600px] overflow-y-auto">
+            <SheetContent className="w-[calc(100%-2rem)] overflow-y-auto sm:min-w-[600px]">
               <SheetHeader>
                 <SheetTitle>프로그램 수정</SheetTitle>
                 <SheetDescription></SheetDescription>
@@ -129,7 +134,7 @@ export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
           </Sheet>
 
           <AlertDialog open={openDelete} onOpenChange={setOpenDelete}>
-            <AlertDialogContent>
+            <AlertDialogContent className="w-[calc(100%-2rem)] max-w-md sm:w-full">
               <AlertDialogHeader>
                 <AlertDialogTitle>프로그램 삭제</AlertDialogTitle>
                 <AlertDialogDescription>
@@ -141,7 +146,7 @@ export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
                 <AlertDialogCancel>취소</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => deleteHandler(programId)}
-                  className="bg-red-500"
+                  className="bg-red-500 hover:bg-red-600"
                 >
                   삭제
                 </AlertDialogAction>
@@ -150,31 +155,34 @@ export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
           </AlertDialog>
 
           <DropdownMenu open={openMenu} onOpenChange={setOpenMenu}>
-            <DropdownMenuTrigger className="border border-gray-300 p-2 rounded-lg hover:border hover:border-gray-400">
-              <EllipsisVertical size={14} />
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <EllipsisVertical className="h-4 w-4" />
+              </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48">
+            <DropdownMenuContent className="w-48" align="end">
               <DropdownMenuLabel>프로그램 작업</DropdownMenuLabel>
               <DropdownMenuSeparator />
 
               <DropdownMenuItem
-                className="text-gray-700 hover:text-black"
                 onClick={() => {
                   setOpenEdit(true);
                   setOpenMenu(false);
                 }}
               >
-                <Pencil /> 프로그램 수정
+                <Pencil className="mr-2 h-4 w-4" />
+                프로그램 수정
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                className="text-gray-700 hover:text-black"
+                className="text-red-600 focus:text-red-600"
                 onClick={() => {
                   setOpenDelete(true);
                   setOpenMenu(false);
                 }}
               >
-                <Trash color="red" /> 프로그램 삭제
+                <Trash className="mr-2 h-4 w-4" />
+                프로그램 삭제
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

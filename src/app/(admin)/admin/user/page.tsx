@@ -3,7 +3,6 @@
 import { useUserQuery } from "@/app/_hooks/useUserQuery";
 import { UserDataTable } from "./_components/UserDataTable";
 import { userColumns } from "./_components/userColumns";
-import Loading from "@/app/_components/Loading";
 import { useState } from "react";
 import { PaginationState } from "@tanstack/react-table";
 
@@ -13,21 +12,18 @@ export default function Page() {
     pageSize: 10,
   });
 
-  const { data: users } = useUserQuery(pagination);
-
-  if (!users) {
-    <Loading />;
-  }
+  const { data: users, isFetching } = useUserQuery(pagination);
 
   return (
-    <div className="flex flex-col space-y-2 justify-center w-full min-h-screen p-10">
-      <div className="text-xl font-semibold">유저</div>
+    <div className="flex min-h-screen w-full flex-col space-y-4 p-4 sm:p-6 lg:p-10">
+      <h1 className="text-lg font-semibold sm:text-xl">사용자 관리</h1>
       <UserDataTable
         totalPages={users?.totalPages ?? 0}
         pagination={pagination}
         setPagination={setPagination}
         data={users?.result || []}
         columns={userColumns}
+        isFetching={isFetching}
       />
     </div>
   );

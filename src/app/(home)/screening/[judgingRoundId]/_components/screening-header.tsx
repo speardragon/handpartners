@@ -2,25 +2,51 @@
 
 import { ScreeningWithStatus } from "@/actions/program-action";
 import { getStatusBadge } from "@/app/(home)/_lib/lib";
+import { Calendar, Eye, Hash } from "lucide-react";
 
 interface ScreeningHeaderProps {
   screening: ScreeningWithStatus;
+  isAdminView: boolean;
 }
 
-export default function ScreeningHeader({ screening }: ScreeningHeaderProps) {
+export default function ScreeningHeader({
+  screening,
+  isAdminView,
+}: ScreeningHeaderProps) {
+  const startDate = screening.start_date?.slice(0, 10) ?? "";
+  const endDate = screening.end_date?.slice(0, 10) ?? "";
+
   return (
-    <div className="space-y-1">
-      <div className="text-xl font-bold">
-        {screening.program.name} / {screening.name}
+    <div className="rounded-lg border bg-white p-5 shadow-sm space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground truncate">
+            {screening.program.name}
+          </p>
+          <h1 className="text-xl font-bold mt-0.5 line-clamp-1">
+            {screening.name}
+          </h1>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {isAdminView && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+              <Eye size={12} />
+              전체 현황
+            </span>
+          )}
+          {getStatusBadge(screening.screeningStatus)}
+        </div>
       </div>
-      <div className="flex items-center gap-2 text-sm text-gray-600">
-        <span>
-          심사 기간: {screening.start_date?.slice(0, 10)} ~{" "}
-          {screening.end_date?.slice(0, 10)}
+      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <Hash size={14} />
+          {screening.id}
         </span>
-        {getStatusBadge(screening.screeningStatus)}
+        <span className="flex items-center gap-1">
+          <Calendar size={14} />
+          {startDate} ~ {endDate}
+        </span>
       </div>
-      <div className="text-sm text-gray-500">심사 번호: {screening.id}</div>
     </div>
   );
 }

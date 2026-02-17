@@ -9,20 +9,21 @@ import { programColumns } from "./_components/ProgramColumns2";
 export default function Page() {
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: 5,
   });
 
-  const { data: programs } = useProgramQuery(pagination);
+  const { data: programs, isFetching } = useProgramQuery(pagination);
 
   return (
-    <div className="flex flex-col space-y-2 justify-center w-full min-h-screen p-10 px-24 bg-gray-50">
-      <div className="text-xl font-semibold">프로그램</div>
+    <div className="flex min-h-screen w-full flex-col space-y-4 p-4 sm:p-6 lg:p-10">
+      <h1 className="text-lg font-semibold sm:text-xl">프로그램 관리</h1>
       <ProgramDataTable
         totalPages={programs?.totalPages ?? 0}
         pagination={pagination}
         setPagination={setPagination}
         data={programs?.result || []}
         columns={programColumns}
+        isFetching={isFetching}
       />
     </div>
   );
