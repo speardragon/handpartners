@@ -1,11 +1,11 @@
 "use client";
 
-import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 
-export default function AuthProvider({ accessToken, children }) {
-  const supabase = createBrowserSupabaseClient();
+export default function AuthProvider({ accessToken, children }: { accessToken: string | null; children: React.ReactNode }) {
+  const supabase = createClient();
   const router = useRouter();
 
   useEffect(() => {
@@ -15,7 +15,7 @@ export default function AuthProvider({ accessToken, children }) {
       if (!session) {
         router.push("login");
       }
-      if (session.access_token !== accessToken) {
+      if (session?.access_token !== accessToken) {
         router.refresh();
       }
     });

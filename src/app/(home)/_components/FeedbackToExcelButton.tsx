@@ -12,7 +12,7 @@ import {
 import { FileSpreadsheet } from "lucide-react";
 
 type Props = {
-  judgingRoundId: number;
+  judgingRoundId: string;
   className?: string;
 };
 

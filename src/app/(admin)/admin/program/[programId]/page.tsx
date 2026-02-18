@@ -1,47 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import { PaginationState } from "@tanstack/react-table";
 import { JudgeDataTable } from "./_components/JudgeDataTable";
 import { useJudgingRoundsByProgram } from "./_hooks/useJudgingRoundsByProgram";
 import { judgeColumns } from "./_components/JudgeColumns";
-import Loading from "@/app/_components/Loading";
 
 type Props = {
-  params: {
+  params: Promise<{
     programId: string;
-  };
+  }>;
 };
 
 export default function Page({ params }: Props) {
-  const programId = Number(params.programId);
+  const { programId } = use(params);
+  const programIdNumber = Number(programId);
 
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   });
 
-  const { data, isPending } = useJudgingRoundsByProgram(programId, pagination);
-
-  // if (!data) {
-  //   return (
-  //     <div className="animate-pulse space-y-4">
-  //       <div className="w-full h-6 bg-gray-200 rounded" />
-  //       <div className="w-5/6 h-6 bg-gray-200 rounded" />
-  //       <div className="w-4/6 h-6 bg-gray-200 rounded" />
-  //       <div className="w-3/6 h-6 bg-gray-200 rounded" />
-  //     </div>
-  //   );
-  // }
+  const { data, isFetching } = useJudgingRoundsByProgram(
+    programIdNumber,
+    pagination
+  );
 
   return (
-    <div className="flex flex-col space-y-2 justify-center w-full min-h-screen p-10 px-24 bg-gray-50">
-      <div className="text-xl font-semibold">프로그램 {">"} 심사</div>
-      <div>{data?.result?.[0]?.program?.name}</div>
+    <div className="flex min-h-screen w-full flex-col space-y-4 p-4 sm:p-6 lg:p-8">
+      <div>
+        <h1 className="text-lg font-semibold text-neutral-900 sm:text-xl">
+          심사 관리
+        </h1>
+        <p className="mt-1 text-sm text-neutral-500">
+          {data?.result?.[0]?.program?.name}
+        </p>
+      </div>
       <JudgeDataTable
-        isPending={isPending}
-        programId={programId}
-        totalPages={data?.totalPages}
+        isFetching={isFetching}
+        programId={programIdNumber}
+        totalPages={data?.totalPages ?? 0}
         pagination={pagination}
         setPagination={setPagination}
         data={data?.result || []}

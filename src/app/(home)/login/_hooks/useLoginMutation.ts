@@ -1,4 +1,4 @@
-import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ type LoginRequest = {
 
 export function useLoginMutation() {
   const router = useRouter();
-  const supabase = createBrowserSupabaseClient();
+  const supabase = createClient();
 
   return useMutation({
     mutationKey: ["login"],
@@ -26,7 +26,7 @@ export function useLoginMutation() {
       }
     },
     onSuccess: () => {
-      router.refresh();
+      router.push("/");
     },
     onError: (error: any) => {
       if (error.message === "invalid_credentials") {

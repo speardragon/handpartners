@@ -1,21 +1,22 @@
 "use client";
 
-import React, { memo, useEffect, useState } from "react";
-import { Separator } from "@/components/ui/separator";
+import { memo, useEffect, useState } from "react";
 import { useJudgingRoundUserQuery } from "../_hooks/useJudgingRoundUserQuery";
-import InfiniteScroll from "react-infinite-scroller";
 import { useUserInfiniteQuery } from "../_hooks/useUserInfiniteQuery";
-import Loading from "@/app/_components/Loading";
-import { isEqual } from "lodash";
+import { useInfiniteScroll } from "@/app/_hooks/useInfiniteScroll";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { ChevronRight, ChevronLeft, Loader2, Search } from "lucide-react";
 
 interface User {
   id: string;
   name: string;
-  affiliation: string;
+  affiliation: string | null;
 }
 
 interface JudgeUserSelectProps {
-  judgingRoundId: number;
+  judgingRoundId: string;
   targetList: User[];
   onTargetListChange: (newList: User[]) => void;
 }
@@ -25,6 +26,7 @@ function JudgeUserSelect({
   targetList,
   onTargetListChange,
 }: JudgeUserSelectProps) {
+  const [search, setSearch] = useState("");
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
 
@@ -32,173 +34,198 @@ function JudgeUserSelect({
     data: allUsers,
     fetchNextPage,
     hasNextPage,
-    isLoading,
-  } = useUserInfiniteQuery();
+    isFetchingNextPage,
+  } = useUserInfiniteQuery(search);
   const { data: judgingRoundUsers } = useJudgingRoundUserQuery(judgingRoundId);
 
-  // 1) 처음 로드 시, judgingRoundUsers 로 targetList를 초기화
+  const sentinelRef = useInfiniteScroll({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  });
+
   useEffect(() => {
     if (judgingRoundUsers && judgingRoundUsers.length > 0) {
-      const mapped = judgingRoundUsers.map((item) => ({
+      const mapped = judgingRoundUsers.map((item: any) => ({
         id: item.user_id,
         name: item.user.username || "",
         affiliation: item.user?.affiliation || "",
         group_name: item.group_name,
       }));
       onTargetListChange(mapped);
-    }
-    // 만약 라운드에 속한 기업이 없으면 빈 배열로 초기화
-    else if (judgingRoundUsers && judgingRoundUsers.length === 0) {
+    } else if (judgingRoundUsers && judgingRoundUsers.length === 0) {
       onTargetListChange([]);
     }
   }, [judgingRoundUsers, onTargetListChange]);
 
   const sourceFlatList = allUsers?.pages.flatMap((page) => page.result) ?? [];
-  const sourceList =
-    sourceFlatList.map((c) => ({
-      id: c.id,
-      name: c.username,
-      affiliation: c.affiliation,
-    })) ?? [];
+  const sourceList = sourceFlatList.map((c) => ({
+    id: c.id,
+    name: c.username,
+    affiliation: c.affiliation,
+  }));
 
-  // Source 영역에서 아이템 클릭 시 선택/해제 토글
   const handleSelectSource = (id: string) => {
     setSelectedSourceIds((prev) =>
       prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
     );
   };
 
-  // Target 영역에서 아이템 클릭 시 선택/해제 토글
   const handleSelectTarget = (id: string) => {
     setSelectedTargetIds((prev) =>
       prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
     );
   };
 
-  // ">" 버튼: Source에서 선택된 회사들을 Target으로 이동
   const moveSourceToTarget = () => {
     if (selectedSourceIds.length === 0) return;
-
-    // 이동할 아이템들
     const selectedItems = sourceList.filter((item) =>
       selectedSourceIds.includes(item.id)
     );
-
-    // 이미 target에 있는지 확인해서 중복 방지
     const newTargetItems = selectedItems.filter(
       (si) => !targetList.some((ti) => ti.id === si.id)
     );
-
-    // TargetList 업데이트
     onTargetListChange([...targetList, ...newTargetItems]);
-
-    // 선택 해제
     setSelectedSourceIds([]);
   };
 
-  // // "<" 버튼: Target에서 선택된 회사들을 다시 Source로 이동(이 예시에서는 사실상 Source에서 안 빼도 되지만, 요구사항에 맞춰 구현)
   const moveTargetToSource = () => {
     if (selectedTargetIds.length === 0) return;
-
-    // Target에서 선택된 아이템 제외
     const newTargetList = targetList.filter(
       (item) => !selectedTargetIds.includes(item.id)
     );
-
     onTargetListChange(newTargetList);
     setSelectedTargetIds([]);
   };
 
-  // Source 무한 스크롤 로드
-  const loadMore = () => {
-    if (!isLoading && hasNextPage) {
-      setTimeout(() => {
-        fetchNextPage();
-      }, 1000); // 1초 딜레이
-    }
-  };
-
   return (
-    <div className="flex w-full gap-1 items-center">
-      {/* Source 영역 */}
-      <div className="w-1/2 h-80 space-y-2 border border-gray-200 p-2 rounded-md flex flex-col">
-        <div className="text-sm font-semibold">
-          심사자 리스트 ({selectedSourceIds.length}개 선택중)
+    <div className="flex w-full items-stretch gap-2">
+      {/* Source - 전체 심사자 */}
+      <div className="flex flex-1 flex-col rounded-lg border border-neutral-200 bg-white">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-3 py-2.5">
+          <span className="text-sm font-medium text-neutral-700">
+            전체 심사자
+          </span>
+          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
+            {selectedSourceIds.length}개 선택
+          </span>
         </div>
-        {/* 검색 인풋 */}
-        {/* <input
-          type="text"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-          }}
-          placeholder="이름 검색"
-          className="border p-1 w-full rounded-md"
-        /> */}
-        {/* 검색된 유저 리스트 (무한 스크롤) */}{" "}
-        <div className="flex-1 overflow-auto">
-          <InfiniteScroll
-            pageStart={1}
-            loadMore={loadMore}
-            hasMore={!!hasNextPage}
-            useWindow={false} // 특정 영역에 스크롤바를 사용하기 위해 false
-            loader={<Loading key="loader" />}
-          >
-            {sourceList.map((user) => {
-              const isSelected = selectedSourceIds.includes(user.id);
-              return (
-                <div
-                  key={user.id}
-                  onClick={() => handleSelectSource(user.id)}
-                  className={`p-2 border-b cursor-pointer ${
-                    isSelected ? "bg-blue-100" : "bg-white"
-                  } hover:bg-blue-50`}
-                >
-                  {user.name}
-                </div>
-              );
-            })}
-          </InfiniteScroll>
+        <div className="border-b border-neutral-100 px-3 py-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="이름 또는 소속 검색"
+              className="h-8 pl-8 text-sm"
+            />
+          </div>
         </div>
-      </div>
-
-      {/* 버튼들 */}
-      <div className="flex flex-col gap-2">
-        <div
-          className="rounded-md p-1 px-2 bg-green-200 hover:bg-green-400 cursor-pointer"
-          onClick={moveSourceToTarget}
-        >
-          {">"}
-        </div>
-        <div
-          className="rounded-md p-1 px-2 bg-blue-200 hover:bg-blue-400 cursor-pointer"
-          onClick={moveTargetToSource}
-        >
-          {"<"}
-        </div>
-      </div>
-
-      {/* Target 영역 */}
-      <div className="w-1/2 h-80 space-y-2 border border-gray-200 p-2 rounded-md flex flex-col ">
-        <div className="text-sm font-semibold">
-          선택된 심사자 ({targetList.length}명)
-        </div>
-        <Separator />
-        <div className="overflow-y-auto">
-          {targetList.map((user) => {
-            const isSelected = selectedTargetIds.includes(user.id);
+        <div className="h-52 overflow-y-auto">
+          {sourceList.map((user) => {
+            const isSelected = selectedSourceIds.includes(user.id);
+            const isInTarget = targetList.some((t) => t.id === user.id);
             return (
-              <div
+              <label
                 key={user.id}
-                onClick={() => handleSelectTarget(user.id)}
-                className={`p-2 border-b cursor-pointer ${
-                  isSelected ? "bg-green-100" : "bg-white"
-                } hover:bg-green-50`}
+                className={`flex items-center gap-2.5 border-b border-neutral-50 px-3 py-2 text-sm transition-colors ${
+                  isInTarget
+                    ? "cursor-default bg-neutral-50 text-neutral-400"
+                    : isSelected
+                      ? "cursor-pointer bg-neutral-100"
+                      : "cursor-pointer hover:bg-neutral-50"
+                }`}
               >
-                {user.name}
-              </div>
+                <Checkbox
+                  checked={isSelected || isInTarget}
+                  disabled={isInTarget}
+                  onCheckedChange={() => handleSelectSource(user.id)}
+                  className="h-4 w-4"
+                />
+                <div className="flex flex-col">
+                  <span>{user.name}</span>
+                  {user.affiliation && (
+                    <span className="text-xs text-neutral-400">
+                      {user.affiliation}
+                    </span>
+                  )}
+                </div>
+                {isInTarget && (
+                  <span className="ml-auto text-xs text-neutral-400">
+                    추가됨
+                  </span>
+                )}
+              </label>
             );
           })}
+          {isFetchingNextPage && (
+            <div className="flex justify-center py-3">
+              <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
+            </div>
+          )}
+          <div ref={sentinelRef} />
+        </div>
+      </div>
+
+      {/* Transfer buttons */}
+      <div className="flex flex-col items-center justify-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          onClick={moveSourceToTarget}
+          disabled={selectedSourceIds.length === 0}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          onClick={moveTargetToSource}
+          disabled={selectedTargetIds.length === 0}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Target - 선택된 심사자 */}
+      <div className="flex flex-1 flex-col rounded-lg border border-neutral-200 bg-white">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-3 py-2.5">
+          <span className="text-sm font-medium text-neutral-700">
+            선택된 심사자
+          </span>
+          <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs font-medium text-white">
+            {targetList.length}명
+          </span>
+        </div>
+        <div className="h-52 overflow-y-auto">
+          {targetList.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-sm text-neutral-400">
+              심사자를 선택해주세요
+            </div>
+          ) : (
+            targetList.map((user) => {
+              const isSelected = selectedTargetIds.includes(user.id);
+              return (
+                <label
+                  key={user.id}
+                  className={`flex cursor-pointer items-center gap-2.5 border-b border-neutral-50 px-3 py-2 text-sm transition-colors ${
+                    isSelected ? "bg-neutral-100" : "hover:bg-neutral-50"
+                  }`}
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => handleSelectTarget(user.id)}
+                    className="h-4 w-4"
+                  />
+                  <span>{user.name}</span>
+                </label>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

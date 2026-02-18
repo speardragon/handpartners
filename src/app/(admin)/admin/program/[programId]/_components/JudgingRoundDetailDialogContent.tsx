@@ -4,7 +4,7 @@ import Loading from "@/app/_components/Loading";
 import { useJudgingRoundDetailQuery } from "../_hooks/useJudgingRoundDetailQuery";
 
 type JudgingRoundDetailDialogContentProps = {
-  judgingRoundId: number;
+  judgingRoundId: string;
 };
 
 export default function JudgingRoundDetailDialogContent({
@@ -54,37 +54,37 @@ export default function JudgingRoundDetailDialogContent({
           <tr>
             <th
               rowSpan={2}
-              className="px-4 py-2 text-xs uppercase border border-gray-300"
+              className="border border-gray-300 px-4 py-2 text-xs uppercase"
             >
               No.
             </th>
             <th
               rowSpan={2}
-              className="px-4 py-2 text-xs uppercase border border-gray-300"
+              className="border border-gray-300 px-4 py-2 text-xs uppercase"
             >
               기업명
             </th>
             <th
               colSpan={judges.length}
-              className="px-4 py-2 text-xs uppercase border border-gray-300"
+              className="border border-gray-300 px-4 py-2 text-xs uppercase"
             >
               심사자
             </th>
             <th
               rowSpan={2}
-              className="px-4 py-2 text-xs uppercase border border-gray-300"
+              className="border border-gray-300 px-4 py-2 text-xs uppercase"
             >
               총점
             </th>
             <th
               rowSpan={2}
-              className="px-4 py-2 text-xs uppercase border border-gray-300"
+              className="border border-gray-300 px-4 py-2 text-xs uppercase"
             >
               평균
             </th>
             <th
               rowSpan={2}
-              className="px-4 py-2 text-xs uppercase border border-gray-300"
+              className="border border-gray-300 px-4 py-2 text-xs uppercase"
             >
               순위
             </th>
@@ -93,7 +93,7 @@ export default function JudgingRoundDetailDialogContent({
             {judges.map((judge) => (
               <th
                 key={judge.user_id}
-                className="px-4 py-2 text-xs uppercase border border-gray-300"
+                className="border border-gray-300 px-4 py-2 text-xs uppercase"
               >
                 {judge.username}
               </th>
@@ -103,10 +103,10 @@ export default function JudgingRoundDetailDialogContent({
         <tbody className="bg-white text-xs">
           {companies.map((company, index) => (
             <tr key={company.company_id} className="border border-gray-200">
-              <td className="px-4 py-2 text-center border border-gray-200">
+              <td className="border border-gray-200 px-4 py-2 text-center">
                 {index + 1}
               </td>
-              <td className="px-4 py-2 border border-gray-200">
+              <td className="border border-gray-200 px-4 py-2">
                 {company.company_name}
               </td>
               {judges.map((judge) => {
@@ -122,21 +122,21 @@ export default function JudgingRoundDetailDialogContent({
                 return (
                   <td
                     key={judge.user_id}
-                    className="px-4 py-2 text-center border border-gray-200"
+                    className="border border-gray-200 px-4 py-2 text-center"
                   >
                     {judgeScore !== null ? judgeScore : "-"}
                   </td>
                 );
               })}
-              <td className="px-4 py-2 text-center border border-gray-200">
+              <td className="border border-gray-200 px-4 py-2 text-center">
                 {company.totalScore}
               </td>
-              <td className="px-4 py-2 text-center border border-gray-200">
+              <td className="border border-gray-200 px-4 py-2 text-center">
                 {company.evaluations.length > 0
                   ? (company.totalScore / company.evaluations.length).toFixed(2)
                   : "-"}
               </td>
-              <td className="px-4 py-2 text-center border border-gray-200">
+              <td className="border border-gray-200 px-4 py-2 text-center">
                 {index + 1}
               </td>
             </tr>

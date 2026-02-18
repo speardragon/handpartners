@@ -1,164 +1,305 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useJudgeQuery } from "../_hooks/useJudgeQuery";
-import { toast } from "sonner";
-import { createEvaluation } from "@/actions/evaluation-action";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useEvaluationQuery } from "../_hooks/useEvaluationQuery";
-import { useQueryClient } from "@tanstack/react-query";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { useEvaluationMutation } from "../_hooks/useEvaluationMutation";
+import { useAutoSaveMutation } from "../_hooks/useAutoSaveMutation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Info, Loader2, CircleDot, CheckCircle2, Ban } from "lucide-react";
+import { useCompanyQuery } from "../_hooks/useCompanyQuery";
 
-type Props = {
-  judgeRoundId: number;
-  companyId: number;
+type EvaluationStatus = "ONGOING" | "DONE" | null;
+
+type EvaluationItem = {
+  id: number;
+  grade: number;
+  item_name: string;
+  points: number;
+  description: string;
 };
 
-export default function EvaluateTable({ judgeRoundId, companyId }: Props) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
+type Props = {
+  judgeRoundId: string;
+  companyId: number;
+  isParticipant: boolean;
+};
 
-  const { data: judgeRound, isLoading } = useJudgeQuery(judgeRoundId);
-  const { data: existEvaluation, isLoading: isEvaluationLoading } =
-    useEvaluationQuery(judgeRoundId, companyId);
+const DEBOUNCE_MS = 1000;
+
+const StatusBadge = ({ status }: { status: EvaluationStatus }) => {
+  if (status === "DONE") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
+        <CheckCircle2 size={12} />
+        제출 완료
+      </span>
+    );
+  }
+
+  if (status === "ONGOING") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+        <CircleDot size={12} />
+        작성 중
+      </span>
+    );
+  }
+
+  return null;
+};
+
+export default function EvaluateTable({
+  judgeRoundId,
+  companyId,
+  isParticipant,
+}: Props) {
+  const router = useRouter();
+
+  const { data: judgeRound } = useJudgeQuery(judgeRoundId);
+  const { data: existEvaluation } = useEvaluationQuery(judgeRoundId, companyId);
+  const { data: company } = useCompanyQuery(companyId);
+
+  const isJudgingActive = judgeRound?.status === "IN_PROGRESS";
+  const canEdit = isParticipant && isJudgingActive;
 
   const { mutate: submitEvaluation, isPending } = useEvaluationMutation();
+  const { mutate: autoSave, isPending: isAutoSaving } = useAutoSaveMutation();
 
-  const [feedback, setFeedback] = useState<string>("");
-  const [evaluations, setEvaluations] = useState<
-    {
-      id: number;
-      grade: number;
-      item_name: string;
-      points: number;
-      description: string;
-    }[]
-  >([]);
+  const [feedback, setFeedback] = useState("");
+  const [evaluations, setEvaluations] = useState<EvaluationItem[]>([]);
+  const [status, setStatus] = useState<EvaluationStatus>(null);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+
+  const isInitialized = useRef(false);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 초기 데이터 로드 (최초 마운트 시 1회만)
+  useEffect(() => {
+    if (isInitialized.current) return;
+    if (!judgeRound?.criterias || !existEvaluation?.evaluations) return;
+
+    const initialEvaluations = judgeRound.criterias.map((item: any) => {
+      const existing = existEvaluation.evaluations.find(
+        (e) => e.evaluation_criterion_id === item.id
+      );
+      return { ...item, grade: existing ? Number(existing.grade) : 0 };
+    });
+
+    setEvaluations(initialEvaluations);
+    setFeedback(existEvaluation.evaluations[0]?.feedback ?? "");
+    setStatus(
+      (existEvaluation.evaluations[0]?.status as EvaluationStatus) ?? null
+    );
+
+    setTimeout(() => {
+      isInitialized.current = true;
+    }, 0);
+  }, [judgeRound, existEvaluation]);
+
+  // 자동 저장
+  const triggerAutoSave = useCallback(() => {
+    if (!isInitialized.current || !canEdit || evaluations.length === 0) return;
+
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+    debounceTimer.current = setTimeout(() => {
+      autoSave(
+        { judgeRoundId, companyId, feedback, evaluations },
+        { onSuccess: () => setStatus("ONGOING") }
+      );
+    }, DEBOUNCE_MS);
+  }, [judgeRoundId, companyId, feedback, evaluations, canEdit, autoSave]);
 
   useEffect(() => {
-    if (
-      judgeRound &&
-      judgeRound.criterias &&
-      existEvaluation &&
-      existEvaluation.evaluations
-    ) {
-      const initialEvaluations = judgeRound.criterias.map((item) => {
-        const existingEvaluation = existEvaluation.evaluations.find(
-          (evalItem) => evalItem.evaluation_criterion_id === item.id
-        );
-
-        // existEvaluation.grade가 존재하면 해당 값, 없으면 0
-        const grade = existingEvaluation ? Number(existingEvaluation.grade) : 0;
-
-        return {
-          ...item,
-          grade,
-        };
-      });
-
-      setEvaluations(initialEvaluations);
-      setFeedback(existEvaluation.evaluations[0]?.feedback ?? "");
-    }
-  }, [judgeRound, existEvaluation]);
+    triggerAutoSave();
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [triggerAutoSave]);
 
   const handleInputChange = (id: number, value: string) => {
     const numValue = Number(value);
-    const item = evaluations.find((item) => item.id === id);
+    if (numValue < 0) return;
 
-    if (item) {
-      // Prevent negative values
-      if (numValue < 0) return;
+    setEvaluations((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? { ...item, grade: Math.min(numValue, item.points) }
+          : item
+      )
+    );
+  };
 
-      // Prevent values larger than maximum points
-      if (numValue > item.points) {
-        setEvaluations((prevData) =>
-          prevData.map((item) =>
-            item.id === id ? { ...item, grade: item.points } : item
-          )
-        );
-        return;
-      }
-
-      setEvaluations((prevData) =>
-        prevData.map((item) =>
-          item.id === id ? { ...item, grade: numValue } : item
-        )
-      );
+  const handleClose = () => {
+    if (canEdit && status === "ONGOING") {
+      setShowLeaveDialog(true);
+    } else {
+      router.back();
     }
   };
 
-  const handleSave = () => {
-    router.push("/");
+  const handleSubmit = () => {
+    submitEvaluation(
+      { judgeRoundId, companyId, feedback, evaluations },
+      { onSuccess: () => setStatus("DONE") }
+    );
   };
 
-  const handleSubmit = async () => {
-    submitEvaluation({ judgeRoundId, companyId, feedback, evaluations });
-  };
+  const totalScore = evaluations.reduce((sum, item) => sum + item.grade, 0);
+  const maxScore = evaluations.reduce((sum, item) => sum + item.points, 0);
 
   return (
-    <div className="w-full mx-auto mt-4">
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="bg-gray-500 text-white">
-            <th className="p-2">점수그룹</th>
-            <th className="p-2">세부평가내용</th>
-            <th className="p-2">배점</th>
-          </tr>
-        </thead>
-        <tbody>
-          {evaluations.map((item) => (
-            <tr key={item.id} className="border-t">
-              <td className="p-2">{`${item.item_name} (${item.points})`}</td>
-              <td className="p-2 text-center">{item.description}</td>
-              <td className="p-2">
-                <input
-                  value={item.grade} // 빈 문자열 허용
-                  max={item.points}
-                  onChange={(e) => handleInputChange(item.id, e.target.value)}
-                  className="w-16 p-1 border border-gray-300 rounded"
-                />
+    <div className="w-full space-y-4">
+      <section className="rounded-lg border bg-white px-4 py-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          평가 대상 기업
+        </p>
+        <h2 className="mt-1 text-lg font-semibold text-gray-900">
+          {company?.name ?? `기업 ${companyId}`}
+        </h2>
+        <p className="mt-2 text-sm text-gray-600">
+          {company?.description?.trim() || "기업 소개가 없습니다."}
+        </p>
+      </section>
+
+      {!isParticipant && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          <Info size={16} className="shrink-0" />
+          <span>참여 중인 심사가 아니므로 점수를 제출할 수 없습니다.</span>
+        </div>
+      )}
+
+      {isParticipant && !isJudgingActive && (
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+          <Ban size={16} className="shrink-0" />
+          <span>
+            {judgeRound?.status === "PENDING"
+              ? "아직 심사가 시작되지 않았습니다. 심사가 시작되면 평가할 수 있습니다."
+              : "심사가 종료되어 점수를 수정하거나 제출할 수 없습니다."}
+          </span>
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-lg border bg-white">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-gray-900 text-sm text-white">
+              <th className="px-4 py-3 text-left font-medium">평가 항목</th>
+              <th className="px-4 py-3 text-left font-medium">세부 내용</th>
+              <th className="w-24 px-4 py-3 text-center font-medium">배점</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {evaluations.map((item) => (
+              <tr key={item.id} className="transition-colors hover:bg-gray-50">
+                <td className="px-4 py-3">
+                  <div className="text-sm font-medium text-gray-900">
+                    {item.item_name}
+                  </div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    최대 {item.points}점
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-600">
+                  {item.description}
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <input
+                    value={item.grade}
+                    max={item.points}
+                    onChange={(e) => handleInputChange(item.id, e.target.value)}
+                    disabled={!canEdit}
+                    className="w-16 rounded-md border px-2 py-1.5 text-center text-sm font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="border-t-2 bg-gray-50">
+              <td className="px-4 py-3 text-sm font-bold text-gray-900">
+                총점
+              </td>
+              <td className="px-4 py-3" />
+              <td className="px-4 py-3 text-center">
+                <span className="text-lg font-bold text-blue-600">
+                  {totalScore}
+                </span>
+                <span className="ml-1 text-sm text-muted-foreground">
+                  / {maxScore}
+                </span>
               </td>
             </tr>
-          ))}
-          <tr className="border-t">
-            <td className="p-2">총점</td>
-            <td className="p-2 text-center text-gray-600"></td>
-            <td className="p-2">
-              {evaluations.reduce((total, item) => total + item.grade, 0)}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+          </tfoot>
+        </table>
+      </div>
 
-      <Separator />
-      <div className="mt-4">
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-gray-700">총평</label>
         <Textarea
           placeholder="총 피드백을 입력하세요"
           value={feedback}
           onChange={(e) => setFeedback(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded"
-          rows={5}
+          disabled={!canEdit}
+          className="resize-none disabled:cursor-not-allowed disabled:bg-gray-100"
+          rows={4}
         />
       </div>
-      <div className="flex justify-center mt-4 space-x-4">
-        <Button variant="outline" onClick={handleSave}>
+
+      <div className="flex items-center justify-center gap-3 pt-2">
+        {isAutoSaving && (
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Loader2 size={14} className="animate-spin" />
+            임시 저장 중...
+          </span>
+        )}
+        {!isAutoSaving && <StatusBadge status={status} />}
+        <Button variant="outline" onClick={handleClose}>
           닫기
         </Button>
         <LoadingButton
           loading={isPending}
-          className="bg-blue-500 text-white"
           onClick={handleSubmit}
+          disabled={!canEdit}
         >
           제출
         </LoadingButton>
       </div>
-      <p className="text-center mt-2 text-sm text-gray-500">
-        점수 입력이나 수정 후 반드시 저장해 주십시오.
-      </p>
+
+      <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>아직 제출하지 않았습니다</AlertDialogTitle>
+            <AlertDialogDescription>
+              작성 중인 평가가 임시 저장되어 있습니다. 제출하지 않고
+              나가시겠습니까?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>계속 작성</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => router.back()}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              나가기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

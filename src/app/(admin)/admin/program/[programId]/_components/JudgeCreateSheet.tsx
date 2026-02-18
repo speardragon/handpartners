@@ -6,7 +6,6 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 import {
   Form,
@@ -61,7 +60,6 @@ export default function JudgeCreateSheet({ programId }: Props) {
     formState: { isSubmitting },
   } = form;
 
-  // 폼 제출 함수
   const onSubmit = async (data: JudgeCreateType) => {
     try {
       await createJudgingRound({ ...data, program_id: programId });
@@ -75,8 +73,8 @@ export default function JudgeCreateSheet({ programId }: Props) {
 
   return (
     <Sheet open={createOpen} onOpenChange={setCreateOpen}>
-      <SheetContent className="overflow-y-auto min-w-[800px] p-0">
-        <SheetHeader className="p-4 border-b">
+      <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-lg lg:max-w-2xl">
+        <SheetHeader className="border-b border-neutral-100 px-6 py-4">
           <SheetTitle>심사 추가</SheetTitle>
           <SheetDescription>새로운 심사를 생성합니다.</SheetDescription>
         </SheetHeader>
@@ -85,48 +83,58 @@ export default function JudgeCreateSheet({ programId }: Props) {
           <form
             autoComplete="off"
             onSubmit={handleSubmit(onSubmit)}
-            className="space-y-4 py-2"
+            className="flex flex-col gap-6 p-6"
           >
-            <div className="flex flex-col gap-4 p-6">
-              <div className="flex justify-between">
-                <div className="w-1/3 font-medium">심사 정보</div>
-                <div className="flex flex-col w-2/3 space-y-6">
-                  <FormField
-                    control={control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>심사 이름</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="심사 라운드 이름을 입력해주세요."
-                            {...field}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>심사 설명</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="심사에 대한 설명을 입력해주세요."
-                            {...field}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+            <section className="rounded-lg border border-neutral-200 bg-white">
+              <div className="border-b border-neutral-100 px-4 py-3">
+                <h3 className="text-sm font-semibold text-neutral-900">
+                  심사 정보
+                </h3>
+              </div>
+              <div className="space-y-4 p-4">
+                <FormField
+                  control={control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-neutral-700">
+                        심사 이름
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="심사 라운드 이름을 입력해주세요."
+                          {...field}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-neutral-700">
+                        심사 설명
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="심사에 대한 설명을 입력해주세요."
+                          {...field}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <FormField
                     control={control}
                     name="start_date"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>시작일</FormLabel>
+                        <FormLabel className="text-neutral-700">
+                          시작일
+                        </FormLabel>
                         <FormControl>
                           <Input type="date" {...field} />
                         </FormControl>
@@ -138,7 +146,9 @@ export default function JudgeCreateSheet({ programId }: Props) {
                     name="end_date"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>종료일</FormLabel>
+                        <FormLabel className="text-neutral-700">
+                          종료일
+                        </FormLabel>
                         <FormControl>
                           <Input type="date" {...field} />
                         </FormControl>
@@ -147,13 +157,11 @@ export default function JudgeCreateSheet({ programId }: Props) {
                   />
                 </div>
               </div>
-            </div>
+            </section>
 
-            <div className="flex justify-center w-full mt-4">
-              <Button type="submit" disabled={isSubmitting}>
-                심사 생성
-              </Button>
-            </div>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              심사 생성
+            </Button>
           </form>
         </Form>
       </SheetContent>

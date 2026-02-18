@@ -7,22 +7,18 @@ import PdfViewer from "./_components/pdf-viewer";
 import EvaluateTable from "./_components/evaluate-table";
 import { useEvaluationQuery } from "./_hooks/useEvaluationQuery";
 import { useParams } from "next/navigation";
-
-type Props = {
-  params: {
-    judgeRoundId: string;
-    companyId: string;
-  };
-};
+import { useParticipationQuery } from "@/app/(home)/screening/[judgingRoundId]/_hooks/useScreeningDetailQuery";
+import { FileText, ClipboardList } from "lucide-react";
 
 const Page = () => {
   const params = useParams<{ judgeRoundId: string; companyId: string }>();
 
-  const judgeRoundId = parseInt(params.judgeRoundId);
+  const judgeRoundId = params.judgeRoundId;
   const companyId = parseInt(params.companyId);
 
-  const { data: judgeRound, isLoading } = useJudgeQuery(judgeRoundId);
+  const { data: judgeRound } = useJudgeQuery(judgeRoundId);
   const { data: existEvaluation } = useEvaluationQuery(judgeRoundId, companyId);
+  const { data: isParticipant } = useParticipationQuery(judgeRoundId);
 
   const [isFull, setIsFull] = useState<boolean>(false);
 
@@ -36,37 +32,54 @@ const Page = () => {
 
   return (
     <div
-      className={`flex w-full h-full ${
-        isFull ? "flex-col overflow-hidden" : "flex-row"
+      className={`flex h-full min-h-0 w-full overflow-hidden ${
+        isFull ? "flex-col" : "flex-row"
       }`}
     >
-      {/* 왼쪽 영역: EvaluateTable - 전체화면일 때는 숨김 처리 */}
       <div
-        className={`flex flex-col overflow-y-auto ${
-          isFull ? "hidden" : "w-1/2 p-4"
+        className={`flex min-h-0 flex-col border-l bg-gray-50 ${
+          isFull ? "h-full w-full" : "w-1/2"
         }`}
       >
-        <div className="space-y-2 text-gray-600">
-          <p className="text-gray-700 text-lg font-semibold">
-            {judgeRound.program.name}
-          </p>
-          <p className="text-gray-800 font-bold">{judgeRound.name}</p>
-          <p className="text-sm">{judgeRound.description}</p>
-        </div>
-        <EvaluateTable judgeRoundId={judgeRoundId} companyId={companyId} />
-      </div>
-
-      {/* 오른쪽 영역: PdfViewer - 전체화면일 때는 이 영역이 전부 */}
-      <div
-        className={`flex flex-col h-full overflow-y-auto bg-gray-50 ${
-          isFull ? "w-full h-full " : "w-1/2 p-4"
-        }`}
-      >
+        {!isFull && (
+          <div className="flex shrink-0 items-center gap-2 border-b bg-white px-6 py-3">
+            <FileText size={14} className="text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">
+              제출 서류
+            </span>
+          </div>
+        )}
         <PdfViewer
           isFull={isFull}
           handleFullButton={handleFullButton}
-          pdfPath={existEvaluation?.pdfPath}
+          pdfPath={existEvaluation?.pdfPath ?? ""}
         />
+      </div>
+
+      <div
+        className={`flex min-h-0 flex-1 flex-col overflow-y-auto ${
+          isFull ? "hidden" : "w-1/2"
+        }`}
+      >
+        <div className="border-b bg-white px-6 py-4">
+          <div className="mb-1 flex items-center gap-2 text-sm text-muted-foreground">
+            <ClipboardList size={14} />
+            <span>{judgeRound.program.name}</span>
+          </div>
+          <h1 className="text-lg font-bold text-gray-900">{judgeRound.name}</h1>
+          {judgeRound.description && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {judgeRound.description}
+            </p>
+          )}
+        </div>
+        <div className="p-6">
+          <EvaluateTable
+            judgeRoundId={judgeRoundId}
+            companyId={companyId}
+            isParticipant={isParticipant ?? false}
+          />
+        </div>
       </div>
     </div>
   );

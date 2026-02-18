@@ -5,17 +5,16 @@ import { useAuth } from "../_hooks/useAuth"; // 새로 만든 훅 import
 import Image from "next/image";
 import Link from "next/link";
 import handpartnersLogo from "../../../public/images/handpartners_logo.png";
-import { useRouter } from "next/navigation";
 
 export default function Header() {
   const { user } = useAuth();
-  const { data: userProfile } = useUserProfileQuery();
+  const { data: userProfile } = useUserProfileQuery(!!user);
 
   const isAdmin = userProfile?.role === "관리자";
 
   return (
-    <header className="flex z-50 w-full items-center h-16 border-b border-gray-200">
-      <div className="flex items-center justify-between w-full p-2 px-6 font-medium text-gray-900">
+    <header className="z-50 flex h-16 w-full items-center border-b border-gray-200">
+      <div className="flex w-full items-center justify-between p-2 px-6 font-medium text-gray-900">
         <Link href="/">
           <Image
             className="h-full w-auto"
@@ -45,11 +44,10 @@ export default function Header() {
 // 공통 로그아웃 로직을 위한 커스텀 훅
 function useSignOut() {
   const { supabase } = useAuth();
-  const router = useRouter();
 
   return async () => {
     await supabase.auth.signOut();
-    router.refresh();
+    window.location.href = "/";
   };
 }
 
@@ -58,7 +56,7 @@ function SignOutButton() {
   const handleSignOut = useSignOut();
 
   return (
-    <div onClick={handleSignOut} className="hover:underline cursor-pointer">
+    <div onClick={handleSignOut} className="cursor-pointer hover:underline">
       로그아웃
     </div>
   );
@@ -81,7 +79,7 @@ function AdminHeaderActions() {
 
 function GuestHeaderActions() {
   return (
-    <Link href="/login" className="hover:underline cursor-pointer">
+    <Link href="/login" className="cursor-pointer hover:underline">
       로그인
     </Link>
   );

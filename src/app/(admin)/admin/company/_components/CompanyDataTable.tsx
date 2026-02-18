@@ -19,10 +19,12 @@ import {
 import useDialogOpenStore from "@/store/useDialogOpenStore";
 import { Dispatch, SetStateAction } from "react";
 import { DataTablePagination } from "../../_components/DataTablePagination";
-import Loading from "@/app/_components/Loading";
-import { MessageSquareText, Plus, Search } from "lucide-react";
+import { Loader2, Plus, Search } from "lucide-react";
 import CompanyCreateSheet from "./CompanyCreateSheet";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -30,7 +32,12 @@ interface DataTableProps<TData, TValue> {
   pagination: PaginationState;
   setPagination: Dispatch<SetStateAction<PaginationState>>;
   totalPages: number;
+  isFetching?: boolean;
+  search: string;
+  onSearchChange: (value: string) => void;
 }
+
+const SKELETON_ROW_COUNT = 10;
 
 export function CompanyDataTable<TData, TValue>({
   columns,
@@ -38,6 +45,9 @@ export function CompanyDataTable<TData, TValue>({
   pagination,
   setPagination,
   totalPages,
+  isFetching,
+  search,
+  onSearchChange,
 }: DataTableProps<TData, TValue>) {
   const { setCreateOpen } = useDialogOpenStore((state) => state);
 
@@ -59,81 +69,138 @@ export function CompanyDataTable<TData, TValue>({
     onPaginationChange: setPagination,
   });
 
+  const visibleColumns = table.getVisibleLeafColumns();
+
   return (
-    <div className="rounded-lg border space-y-2 shadow-lg p-4 font-medium overflow-y-auto">
+    <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-3 shadow-sm sm:p-4">
       <CompanyCreateSheet />
-      <div className="flex w-full justify-between items-center">
-        {/* <Input className="w-36" placeholder="기업을 검색하세요" /> */}
-        <div className="relative w-48 ">
-          <Search
-            size={18}
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 z-10"
-          />
+
+      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
           <Input
             type="text"
-            placeholder="기업을 검색하세요..."
-            className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-[#6E23DD] focus:border-transparent" // Add additional styling as needed
+            placeholder="기업명으로 검색..."
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-9"
           />
         </div>
-        <button
-          onClick={(e) => {
-            setCreateOpen(true);
-          }}
-          className="flex p-2 py-1 pr-3 border border-blue-600 text-xs gap-2 rounded-lg bg-blue-300 text-black hover:bg-blue-400"
+        <Button
+          onClick={() => setCreateOpen(true)}
+          size="sm"
+          className="gap-1.5 self-end"
         >
-          <Plus className="w-4 h-4" />
-          기업 추가
-        </button>
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">기업 추가</span>
+          <span className="sm:hidden">추가</span>
+        </Button>
       </div>
-      <Table className="container relative py-2 mx-auto overflow-y-auto border rounded-full">
-        <TableHeader className="sticky top-0 bg-gray-100">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead className="p-2 px-6" key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
+
+      <div className="overflow-x-auto rounded-md border border-neutral-200">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
-                className="bg-white hover:bg-white"
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
+                key={headerGroup.id}
+                className="bg-neutral-50 hover:bg-neutral-50"
               >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    className="px-6 py-1 text-gray-600"
-                    style={{ width: cell.column.getSize() }}
-                    key={cell.id}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  const meta = header.column.columnDef.meta as
+                    | { className?: string }
+                    | undefined;
+                  return (
+                    <TableHead
+                      className={cn(
+                        "whitespace-nowrap px-3 py-2.5 text-xs font-semibold text-neutral-600 sm:px-4",
+                        meta?.className
+                      )}
+                      key={header.id}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center ">
-                {/* 로딩 중... */}
-                <Loading />
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      <DataTablePagination table={table} pagination={pagination} />
+            ))}
+          </TableHeader>
+          <TableBody>
+            {isFetching ? (
+              Array.from({ length: SKELETON_ROW_COUNT }).map((_, rowIdx) => (
+                <TableRow key={`skeleton-${rowIdx}`}>
+                  {visibleColumns.map((col) => {
+                    const meta = col.columnDef.meta as
+                      | { className?: string }
+                      | undefined;
+                    return (
+                      <TableCell
+                        key={col.id}
+                        className={cn("px-3 sm:px-4", meta?.className)}
+                      >
+                        <Skeleton className="h-5 w-full rounded" />
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className="transition-colors hover:bg-neutral-50"
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    const meta = cell.column.columnDef.meta as
+                      | { className?: string }
+                      | undefined;
+                    return (
+                      <TableCell
+                        className={cn(
+                          "px-3 text-sm text-neutral-700 sm:px-4",
+                          meta?.className
+                        )}
+                        style={{ width: cell.column.getSize() }}
+                        key={cell.id}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center text-sm text-neutral-500"
+                >
+                  {search ? "검색 결과가 없습니다." : "데이터가 없습니다."}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex items-center justify-end">
+        {isFetching ? (
+          <div className="flex items-center gap-2 text-sm text-neutral-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </div>
+        ) : (
+          <div />
+        )}
+        <DataTablePagination table={table} pagination={pagination} />
+      </div>
     </div>
   );
 }

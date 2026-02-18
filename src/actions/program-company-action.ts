@@ -1,7 +1,7 @@
 "use server";
 
 import { Database } from "types_db";
-import { createServerSupabaseClient } from "../utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export type ProgramCompanyRow =
   Database["public"]["Tables"]["program_company"]["Row"];
@@ -18,7 +18,7 @@ function handleError(error: any) {
 export async function getProgramCompanies(
   programId: number
 ): Promise<ProgramCompanyRow[]> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("program_company")
@@ -48,7 +48,7 @@ export async function updateProgramAndCompanies(
   programData: ProgramRowUpdate,
   companyIds: number[]
 ) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   // 1) program 업데이트
   const { error: programError } = await supabase

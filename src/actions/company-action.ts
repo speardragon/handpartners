@@ -1,7 +1,7 @@
 "use server";
 
 import { Database } from "types_db";
-import { createServerSupabaseClient } from "../utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export type CompanyRow = Database["public"]["Tables"]["company"]["Row"];
 export type CompanyRowInsert =
@@ -17,7 +17,7 @@ export interface CompanyResult {
   result: CompanyRow[];
 }
 
-function handleError(error) {
+function handleError(error: any) {
   console.error(error);
   throw new Error(error.message);
 }
@@ -27,15 +27,13 @@ export async function getCompanies(
   size: number,
   search?: string
 ): Promise<CompanyResult> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
   let query = supabase.from("company").select("*", { count: "exact" });
 
-  // 검색
   if (search && search.trim() !== "") {
     query = query.ilike("name", `%${search}%`);
   }
 
-  // 페이지네이션
   const { data, error, count } = await query.range(
     (page - 1) * size,
     page * size - 1
@@ -57,8 +55,26 @@ export async function getCompanies(
   };
 }
 
+export async function getCompanyById(
+  companyId: number
+): Promise<CompanyRow | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("company")
+    .select("*")
+    .eq("id", companyId)
+    .maybeSingle();
+
+  if (error) {
+    handleError(error);
+  }
+
+  return data;
+}
+
 export async function createCompany(company: CompanyRowInsert) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   // 1) 현재 DB에 동일한 name이 있는지 미리 체크
   const { data: existingData, error: existingError } = await supabase
@@ -89,14 +105,14 @@ export async function createCompany(company: CompanyRowInsert) {
 }
 
 export async function updateCompany(company: CompanyRowUpdate) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("company")
     .update({
       ...company,
     })
-    .eq("id", company.id);
+    .eq("id", company.id!);
 
   if (error) {
     handleError(error);
@@ -105,7 +121,7 @@ export async function updateCompany(company: CompanyRowUpdate) {
 }
 
 export async function deleteCompany(companyId: number) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("company")

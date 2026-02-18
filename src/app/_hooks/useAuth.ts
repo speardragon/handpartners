@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
 
 /**
  * 사용자 인증 정보를 관리하는 커스텀 훅
  */
 export function useAuth() {
-  const supabase = createBrowserSupabaseClient();
+  const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {

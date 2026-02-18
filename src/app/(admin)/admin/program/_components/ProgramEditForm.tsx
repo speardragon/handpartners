@@ -1,6 +1,12 @@
 "use client";
 
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -9,10 +15,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { ProgramUpdateFormSchema } from "../_lib/ProgramFormSchema";
-import { ProgramRow, updateProgram } from "@/actions/program-action";
-import { Separator } from "@/components/ui/separator";
+import { ProgramRow } from "@/actions/program-action";
 import CompanySelectForModify from "./CompanySelectForModify";
-import { CompanyRow } from "@/actions/company-action";
 import { useState } from "react";
 import { updateProgramAndCompanies } from "@/actions/program-company-action";
 
@@ -33,7 +37,6 @@ export default function ProgramEditForm({
   setOpenEdit,
 }: Props) {
   const queryClient = useQueryClient();
-
   const [targetList, setTargetList] = useState<Company[]>([]);
 
   const form = useForm<z.infer<typeof ProgramUpdateFormSchema>>({
@@ -48,13 +51,9 @@ export default function ProgramEditForm({
     },
   });
 
-  const {
-    formState: { dirtyFields },
-  } = form;
-
   const onSubmit = async (data: z.infer<typeof ProgramUpdateFormSchema>) => {
     const result = await updateProgramAndCompanies(
-      programId,
+      programId ?? 0,
       data,
       targetList.map((company) => company.id)
     );
@@ -64,7 +63,6 @@ export default function ProgramEditForm({
     } else {
       toast.error("예상치 못한 오류가 발생했습니다.");
     }
-
     setOpenEdit(false);
   };
 
@@ -74,19 +72,26 @@ export default function ProgramEditForm({
         autoComplete="off"
         autoFocus={false}
         onSubmit={form.handleSubmit(onSubmit)}
-        className="items-start w-full space-y-6"
+        className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 sm:p-6"
       >
-        <div className="space-y-6 pt-4">
-          <div className="flex justify-between items-center">
-            <div className="w-1/3 text-gray-800">프로그램 이름</div>
+        {/* 프로그램 정보 */}
+        <section className="shrink-0 rounded-lg border border-neutral-200 bg-white">
+          <div className="border-b border-neutral-100 px-4 py-3">
+            <h3 className="text-sm font-semibold text-neutral-900">
+              프로그램 정보
+            </h3>
+          </div>
+          <div className="space-y-4 p-4">
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
-                <FormItem className="w-2/3">
+                <FormItem>
+                  <FormLabel className="text-neutral-700">
+                    프로그램 이름
+                  </FormLabel>
                   <FormControl>
                     <Input
-                      className="w-full border-gray-400"
                       autoFocus={false}
                       autoComplete="off"
                       placeholder="프로그램 이름을 입력해주세요."
@@ -96,71 +101,69 @@ export default function ProgramEditForm({
                 </FormItem>
               )}
             />
-          </div>
-          <div className="flex justify-between items-center">
-            <div className="w-1/3 text-gray-800">설명</div>
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
-                <FormItem className="w-2/3">
+                <FormItem>
+                  <FormLabel className="text-neutral-700">설명</FormLabel>
                   <FormControl>
-                    <Input
-                      className="w-full border-gray-400"
-                      placeholder="설명을 입력해주세요."
-                      {...field}
-                    />
+                    <Input placeholder="설명을 입력해주세요." {...field} />
                   </FormControl>
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="start_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-neutral-700">시작일</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="end_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-neutral-700">종료일</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
-          <div className="flex justify-between items-center">
-            <div className="w-1/3 text-gray-800">시작일</div>
-            <FormField
-              control={form.control}
-              name="start_date"
-              render={({ field }) => (
-                <FormItem className="w-2/3">
-                  <FormControl>
-                    <Input className="w-full" type="date" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
+        </section>
+
+        {/* 참여 기업 */}
+        <section className="shrink-0 rounded-lg border border-neutral-200 bg-white">
+          <div className="border-b border-neutral-100 px-4 py-3">
+            <h3 className="text-sm font-semibold text-neutral-900">
+              참여 기업
+            </h3>
+            <p className="mt-0.5 text-xs text-neutral-500">
+              DB에 등록된 전체 기업 중 이 프로그램에 참여할 기업을 선택합니다.
+            </p>
+          </div>
+          <div className="p-4">
+            <CompanySelectForModify
+              programId={programId}
+              targetList={targetList}
+              onTargetListChange={setTargetList}
             />
           </div>
-          <div className="flex justify-between items-center">
-            <div className="w-1/3 text-gray-800">종료일</div>
-            <FormField
-              control={form.control}
-              name="end_date"
-              render={({ field }) => (
-                <FormItem className="w-2/3">
-                  <FormControl>
-                    <Input className="w-full" type="date" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
+        </section>
 
-        <Separator />
-
-        <div className="flex flex-col">
-          <div className="mb-4 font-medium">프로그램 참여 기업 추가</div>
-          <CompanySelectForModify
-            programId={programId}
-            targetList={targetList}
-            onTargetListChange={setTargetList}
-          />
-        </div>
-
-        <Separator />
-
-        <div className="flex w-full justify-end">
-          <Button type="submit">수정하기</Button>
-        </div>
+        <Button type="submit" className="w-full shrink-0">
+          수정하기
+        </Button>
       </form>
     </Form>
   );

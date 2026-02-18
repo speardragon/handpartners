@@ -132,3 +132,7 @@ dist
 .DS_Store
 
 /*.pdf
+
+.claude
+.agents
+.mcp.json

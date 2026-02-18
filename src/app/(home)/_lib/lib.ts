@@ -1,4 +1,30 @@
 import { Company } from "@/actions/program-action";
+import type { JudgingRoundStatus } from "@/actions/judging_round-action";
+import { Badge } from "@/components/ui/badge";
+import { createElement } from "react";
+
+export function getStatusBadge(status: JudgingRoundStatus) {
+  switch (status) {
+    case "IN_PROGRESS":
+      return createElement(
+        Badge,
+        { className: "bg-green-500 hover:bg-green-500/80 text-white" },
+        "진행 중"
+      );
+    case "COMPLETED":
+      return createElement(
+        Badge,
+        { className: "bg-gray-400 hover:bg-gray-400/80 text-white" },
+        "종료"
+      );
+    case "PENDING":
+      return createElement(
+        Badge,
+        { className: "bg-blue-500 hover:bg-blue-500/80 text-white" },
+        "진행 전"
+      );
+  }
+}
 
 export function calculateStatusDistribution(companies: Company[]) {
   const statusDistribution = {

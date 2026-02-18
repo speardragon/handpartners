@@ -1,4 +1,4 @@
-// hooks/useFeedbacksQuery.ts
+import { getCompanyFeedbacksByRoundId } from "@/actions/judging_round-action";
 import { useQuery } from "@tanstack/react-query";
 
 interface FeedbackData {
@@ -8,20 +8,10 @@ interface FeedbackData {
   }[];
 }
 
-async function fetchFeedbacks(judgingRoundId: number) {
-  const res = await fetch(`/api/feedback?judging_round_id=${judgingRoundId}`);
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    const errorMsg = errorData?.error || "Failed to fetch feedbacks";
-    throw new Error(errorMsg);
-  }
-  return res.json() as Promise<FeedbackData>;
-}
-
-export function useFeedbacksQuery(judgingRoundId: number, enabled = true) {
+export function useFeedbacksQuery(judgingRoundId: string, enabled = true) {
   return useQuery<FeedbackData>({
     queryKey: ["feedbacks", judgingRoundId],
-    queryFn: () => fetchFeedbacks(judgingRoundId),
+    queryFn: () => getCompanyFeedbacksByRoundId(judgingRoundId),
     enabled,
   });
 }
