@@ -36,7 +36,7 @@ export default function Home() {
 
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
-  const [judgingRoundId, setJudgingRoundId] = useState<number | undefined>(
+  const [judgingRoundId, setJudgingRoundId] = useState<string | undefined>(
     undefined
   );
 
@@ -53,12 +53,11 @@ export default function Home() {
       }
 
       const timer = setTimeout(() => {
-        const numValue = parseInt(value, 10);
         if (value === "") {
           setJudgingRoundId(undefined);
           setPage(1);
-        } else if (!isNaN(numValue) && numValue > 0) {
-          setJudgingRoundId(numValue);
+        } else {
+          setJudgingRoundId(value);
           setPage(1);
         }
       }, 500);
@@ -180,12 +179,10 @@ export default function Home() {
           />
           <Input
             type="text"
-            inputMode="numeric"
             placeholder="심사 번호로 검색"
             value={searchInput}
             onChange={(e) => {
-              const value = e.target.value.replace(/[^0-9]/g, "");
-              handleSearchChange(value);
+              handleSearchChange(e.target.value);
             }}
             className="pl-9"
           />

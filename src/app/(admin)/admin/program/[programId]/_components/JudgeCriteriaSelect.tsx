@@ -14,7 +14,7 @@ export interface CriteriaItem {
 }
 
 type Props = {
-  judgingRoundId?: number;
+  judgingRoundId?: string;
   targetList: CriteriaItem[];
   onTargetListChange: (list: CriteriaItem[]) => void;
 };
@@ -30,7 +30,7 @@ export default function JudgeCriteriaSelect({
   } | null>(null);
 
   const { data, isLoading, isError, error } = useJudgingCriteriaQuery(
-    String(judgingRoundId || 0)
+    judgingRoundId || "0"
   );
 
   useEffect(() => {
