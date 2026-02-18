@@ -30,7 +30,7 @@ export default function JudgeCriteriaSelect({
   } | null>(null);
 
   const { data, isLoading, isError, error } = useJudgingCriteriaQuery(
-    judgingRoundId || 0
+    String(judgingRoundId || 0)
   );
 
   useEffect(() => {

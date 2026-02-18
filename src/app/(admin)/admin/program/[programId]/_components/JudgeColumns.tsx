@@ -71,7 +71,7 @@ function JudgeActionsCell({
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  const judgingRoundId = Number(row.original.id);
+  const judgingRoundId = String(row.original.id);
   const programId = Number(row.original.program_id);
   const programName = row.original.program?.name ?? "";
   const currentStatus = row.original.status as JudgingRoundStatus;
@@ -96,7 +96,7 @@ function JudgeActionsCell({
     }
   };
 
-  const deleteHandler = async (id: number) => {
+  const deleteHandler = async (id: string) => {
     await deleteJudgingRound(id);
     toast.success("심사가 삭제되었습니다.");
     queryClient.invalidateQueries({ queryKey: ["judging_rounds"] });
@@ -158,7 +158,7 @@ function JudgeActionsCell({
           <JudgeEditForm
             setOpenEdit={setOpenEdit}
             programId={programId}
-            judgingRoundId={judgingRoundId}
+            judgingRoundId={Number(judgingRoundId)}
             judgingRoundInfo={{
               name: row.original.name ?? "",
               description: row.original.description ?? "",
@@ -274,7 +274,7 @@ export const judgeColumns: ColumnDef<JudgingRoundWithCounts>[] = [
     header: "심사 이름",
     size: 200,
     cell: ({ row, getValue }) => {
-      const judgingRoundId = Number(row.original.id);
+      const judgingRoundId = String(row.original.id);
       return (
         <Dialog>
           <DialogTrigger className="cursor-pointer break-all text-left font-medium text-neutral-900 hover:underline">

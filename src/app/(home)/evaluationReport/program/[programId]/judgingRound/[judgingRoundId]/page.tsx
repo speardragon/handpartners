@@ -17,7 +17,7 @@ export default function Page({ params }: Props) {
   const programId = parseInt(programIdStr);
 
   // useEvaluationReportQuery를 사용해 데이터 불러오기
-  const { data, isLoading } = useEvaluationReportQuery(judgingRoundId, {
+  const { data, isLoading } = useEvaluationReportQuery(judgingRoundIdStr, {
     enabled: !!judgingRoundId,
   });
   const { data: programInfo } = useProgramQuery(programId, {

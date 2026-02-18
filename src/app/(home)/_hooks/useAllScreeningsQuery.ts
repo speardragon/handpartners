@@ -12,6 +12,12 @@ export const useAllScreeningsQuery = (
 ) => {
   return useQuery<AllScreeningsResult>({
     queryKey: ["allScreenings", page, size, isAdmin, judgingRoundId],
-    queryFn: () => getAllScreenings(page, size, isAdmin, judgingRoundId),
+    queryFn: () =>
+      getAllScreenings(
+        page,
+        size,
+        isAdmin,
+        judgingRoundId !== undefined ? String(judgingRoundId) : undefined
+      ),
   });
 };
