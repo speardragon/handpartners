@@ -51,7 +51,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 type Props = {
   programId: number;
-  judgingRoundId?: number;
+  judgingRoundId?: string;
   judgingRoundInfo: JudgeUpdateFormType;
   setOpenEdit: (open: boolean) => void;
 };
@@ -217,7 +217,7 @@ export default function JudgeEditForm({
   const handleSubmitBasic = async (data: JudgeUpdateFormType) => {
     try {
       const payload = {
-        judgingRoundId: String(judgingRoundId ?? 0),
+        judgingRoundId: judgingRoundId ?? "",
         name: data.name ?? "",
         description: data.description ?? "",
         start_date: data.start_date ?? "",
@@ -238,7 +238,7 @@ export default function JudgeEditForm({
   const handleSubmitUsers = async () => {
     try {
       const payload = {
-        judgingRoundId: String(judgingRoundId ?? 0),
+        judgingRoundId: judgingRoundId ?? "",
         users: targetUserList.map((u) => ({
           user_id: u.id,
           group_name: u.group_name ?? "",
@@ -330,7 +330,7 @@ export default function JudgeEditForm({
       }));
 
       const result = await updateJudgeCompany2({
-        judgingRoundId: String(judgingRoundId),
+        judgingRoundId: judgingRoundId,
         companies: companiesPayload,
       });
 
@@ -354,7 +354,7 @@ export default function JudgeEditForm({
   const handleSubmitCriteria = async () => {
     try {
       const payload = {
-        judgingRoundId: String(judgingRoundId ?? 0),
+        judgingRoundId: judgingRoundId ?? "",
         criteriaList: targetCriteriaList.map((c) => ({
           id: c.id,
           item_name: c.item_name,
@@ -491,7 +491,7 @@ export default function JudgeEditForm({
             </div>
             <div className="space-y-4 p-4">
               <JudgeCompanySelect
-                judgingRoundId={String(judgingRoundId ?? 0)}
+                judgingRoundId={judgingRoundId ?? ""}
                 programId={programId}
                 targetList={targetList}
                 onTargetListChange={setTargetList}
@@ -548,7 +548,7 @@ export default function JudgeEditForm({
             </div>
             <div className="space-y-4 p-4">
               <JudgeUserSelect
-                judgingRoundId={String(judgingRoundId ?? 0)}
+                judgingRoundId={judgingRoundId ?? ""}
                 targetList={targetUserList}
                 onTargetListChange={handleUserListChange}
               />

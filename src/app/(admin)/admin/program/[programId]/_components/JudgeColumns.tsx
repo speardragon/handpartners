@@ -158,7 +158,7 @@ function JudgeActionsCell({
           <JudgeEditForm
             setOpenEdit={setOpenEdit}
             programId={programId}
-            judgingRoundId={Number(judgingRoundId)}
+            judgingRoundId={judgingRoundId}
             judgingRoundInfo={{
               name: row.original.name ?? "",
               description: row.original.description ?? "",

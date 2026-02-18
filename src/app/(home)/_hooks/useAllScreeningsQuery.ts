@@ -8,16 +8,10 @@ export const useAllScreeningsQuery = (
   page: number,
   size: number,
   isAdmin: boolean,
-  judgingRoundId?: number
+  judgingRoundId?: string
 ) => {
   return useQuery<AllScreeningsResult>({
     queryKey: ["allScreenings", page, size, isAdmin, judgingRoundId],
-    queryFn: () =>
-      getAllScreenings(
-        page,
-        size,
-        isAdmin,
-        judgingRoundId !== undefined ? String(judgingRoundId) : undefined
-      ),
+    queryFn: () => getAllScreenings(page, size, isAdmin, judgingRoundId),
   });
 };
