@@ -12,9 +12,10 @@ export const useUserQuery = (pagination: {
   });
 };
 
-export const useUserProfileQuery = () => {
+export const useUserProfileQuery = (enabled = true) => {
   return useQuery({
     queryKey: ["users", "me"],
     queryFn: () => getUserProfile(),
+    enabled,
   });
 };

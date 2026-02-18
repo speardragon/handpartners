@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useJudgingCriteriaQuery } from "../_hooks/useJudgingCriteriaQuery";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Plus, Trash2 } from "lucide-react";
 
 export interface CriteriaItem {
   id?: number;
@@ -22,19 +24,21 @@ export default function JudgeCriteriaSelect({
   targetList,
   onTargetListChange,
 }: Props) {
-  // (1) 심사 기준 목록 가져오기 (React Query)
+  const [editingPoints, setEditingPoints] = useState<{
+    index: number;
+    value: string;
+  } | null>(null);
+
   const { data, isLoading, isError, error } = useJudgingCriteriaQuery(
     judgingRoundId || 0
   );
 
-  // (2) 데이터가 로딩 완료되면 targetList 초기화
   useEffect(() => {
     if (!isLoading && data) {
-      onTargetListChange(data); // 부모로부터 받은 setter
+      onTargetListChange(data);
     }
   }, [data, isLoading, onTargetListChange]);
 
-  // 이하 UI ...
   const handleAdd = () => {
     onTargetListChange([
       ...targetList,
@@ -46,6 +50,14 @@ export default function JudgeCriteriaSelect({
     const newList = [...targetList];
     newList.splice(index, 1);
     onTargetListChange(newList);
+    setEditingPoints((prev) => {
+      if (!prev) return null;
+      if (prev.index === index) return null;
+      if (prev.index > index) {
+        return { ...prev, index: prev.index - 1 };
+      }
+      return prev;
+    });
   };
 
   const handleChange = (
@@ -58,50 +70,119 @@ export default function JudgeCriteriaSelect({
     onTargetListChange(newList);
   };
 
-  if (isLoading) return <div>불러오는 중...</div>;
-  if (isError) return <div>에러 발생: {String(error)}</div>;
+  const handlePointsFocus = (index: number, currentPoints: number) => {
+    setEditingPoints({
+      index,
+      value: currentPoints === 0 ? "" : String(currentPoints),
+    });
+  };
+
+  const handlePointsChange = (index: number, rawValue: string) => {
+    setEditingPoints({ index, value: rawValue });
+    if (rawValue === "") {
+      handleChange(index, "points", 0);
+      return;
+    }
+
+    const nextPoints = Number(rawValue);
+    handleChange(index, "points", Number.isNaN(nextPoints) ? 0 : nextPoints);
+  };
+
+  const handlePointsBlur = () => {
+    setEditingPoints(null);
+  };
+
+  if (isLoading)
+    return (
+      <div className="py-4 text-center text-sm text-neutral-500">
+        불러오는 중...
+      </div>
+    );
+  if (isError)
+    return (
+      <div className="py-4 text-center text-sm text-red-500">
+        에러 발생: {String(error)}
+      </div>
+    );
+
+  const totalPoints = targetList.reduce((sum, item) => sum + item.points, 0);
 
   return (
-    <div className="space-y-2">
-      <button
-        type="button"
-        className="px-3 py-2 text-sm bg-blue-50 rounded border border-blue-500"
-        onClick={handleAdd}
-      >
-        + 심사 기준 추가
-      </button>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={handleAdd}
+        >
+          <Plus className="h-4 w-4" />
+          기준 추가
+        </Button>
+        <span className="text-sm text-neutral-500">
+          총 배점:{" "}
+          <span className="font-semibold text-neutral-900">
+            {totalPoints}점
+          </span>
+        </span>
+      </div>
 
-      {targetList.map((item, idx) => (
-        <div key={idx} className="flex items-center gap-2 border p-2 rounded">
-          <Input
-            className="border p-1 w-40"
-            placeholder="기준명"
-            value={item.item_name}
-            onChange={(e) => handleChange(idx, "item_name", e.target.value)}
-          />
-          <Input
-            type="number"
-            className="border p-1 w-24"
-            placeholder="배점"
-            value={item.points}
-            onChange={(e) =>
-              handleChange(idx, "points", Number(e.target.value))
-            }
-          />
-          <Input
-            className="border p-1 flex-1"
-            placeholder="설명(선택)"
-            value={item.description ?? ""}
-            onChange={(e) => handleChange(idx, "description", e.target.value)}
-          />
-          <div
-            className="text-sm text-red-500 cursor-pointer hover:underline"
-            onClick={() => handleDelete(idx)}
-          >
-            삭제
-          </div>
+      {targetList.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-400">
+          심사 기준을 추가해주세요
         </div>
-      ))}
+      ) : (
+        <div className="space-y-2">
+          {targetList.map((item, idx) => (
+            <div
+              key={idx}
+              className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white p-3"
+            >
+              <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+                <Input
+                  className="h-9 sm:w-40"
+                  placeholder="기준명"
+                  value={item.item_name}
+                  onChange={(e) =>
+                    handleChange(idx, "item_name", e.target.value)
+                  }
+                />
+                <Input
+                  type="number"
+                  className="h-9 sm:w-24"
+                  placeholder="배점"
+                  value={
+                    editingPoints?.index === idx
+                      ? editingPoints.value
+                      : String(item.points)
+                  }
+                  onFocus={() => handlePointsFocus(idx, item.points)}
+                  onChange={(e) => handlePointsChange(idx, e.target.value)}
+                  onBlur={handlePointsBlur}
+                />
+                <Input
+                  className="h-9 flex-1"
+                  placeholder="설명 (선택)"
+                  value={item.description ?? ""}
+                  onChange={(e) =>
+                    handleChange(idx, "description", e.target.value)
+                  }
+                />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 text-neutral-400 hover:text-red-500"
+                onClick={() => handleDelete(idx)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

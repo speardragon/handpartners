@@ -23,10 +23,15 @@ function handleError(error: any) {
 
 export async function getUsers(
   page: number,
-  size: number
+  size: number,
+  search?: string
 ): Promise<UserResult> {
   const supabase = await createClient();
   let query = supabase.from("user").select("*", { count: "exact" });
+
+  if (search) {
+    query = query.or(`username.ilike.%${search}%,affiliation.ilike.%${search}%`);
+  }
 
   const { data, error, count } = await query.range(
     (page - 1) * size,

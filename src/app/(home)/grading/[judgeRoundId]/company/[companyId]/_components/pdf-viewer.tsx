@@ -95,7 +95,7 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
       className={`flex flex-col items-center gap-2 p-4 ${
         isFull
           ? "h-full overflow-hidden"
-          : "h-full justify-center overflow-y-auto"
+          : "h-full justify-center overflow-y-scroll"
       }`}
       ref={setContainerRef}
     >

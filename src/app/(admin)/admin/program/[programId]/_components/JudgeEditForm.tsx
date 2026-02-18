@@ -1,13 +1,18 @@
 "use client";
 
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { Separator } from "@/components/ui/separator";
 import { useCallback, useState } from "react";
 import {
   JudgeUpdateFormSchema,
@@ -15,24 +20,34 @@ import {
 } from "../_lib/JudgeFormSchema";
 import JudgeCompanySelect from "./JudgeCompanySelect";
 import JudgeUserSelect from "./JudgeUserSelect";
-import { v4 as uuidv4 } from "uuid";
 
-// ************** 변경된 부분: updateJudgeBasic, updateJudgeUser는 객체로 전달 **************
 import { updateJudgeBasic } from "@/actions/judging_round-action";
 import {
-  updateJudgeCompany,
+  createJudgeCompanyPdfUploadUrl,
   updateJudgeCompany2,
 } from "@/actions/judging_rounds_company-action";
 import { updateJudgeUser } from "@/actions/judging_round_user-action";
 import JudgeCriteriaSelect from "./JudgeCriteriaSelect";
 import { updateJudgeCriteria } from "@/actions/evaluation_criteria-action";
-import { Database } from "types_db";
-import { createClient } from "@/lib/supabase/client";
-
-// (참고) 기존 sanitizeFileName 등 필요한 함수/타입들
-function sanitizeFileName(originalName: string) {
-  return originalName.replace(/[^a-zA-Z0-9.\-]/g, "");
-}
+import { FileText, GripVertical } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type Props = {
   programId: number;
@@ -47,6 +62,7 @@ export interface SimpleCompany {
   pdf_file?: File;
   pdf_path?: string;
   group_name?: string;
+  judge_num?: number;
 }
 export interface SimpleUser {
   id: string;
@@ -55,12 +71,102 @@ export interface SimpleUser {
   group_name?: string;
 }
 
-// ★ 심사 기준 타입
 export interface SimpleCriteria {
   id?: number;
   item_name: string;
   points: number;
   description?: string | null;
+}
+
+function SortableCompanyItem({
+  item,
+  index,
+  pdfEditMap,
+  onClickPdfEdit,
+  onFileChange,
+  onGroupChange,
+}: {
+  item: SimpleCompany;
+  index: number;
+  pdfEditMap: Record<number, boolean>;
+  onClickPdfEdit: (companyId: number) => void;
+  onFileChange: (index: number, file?: File) => void;
+  onGroupChange: (index: number, value: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const pdfPathExists = !!item.pdf_path;
+  const isEditMode = pdfEditMap[item.id] === true;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex flex-col gap-2 border-b border-neutral-100 px-3 py-3 sm:flex-row sm:items-center ${
+        isDragging ? "z-10 bg-neutral-50 shadow-md" : ""
+      }`}
+    >
+      <button
+        type="button"
+        className="flex shrink-0 cursor-grab items-center text-neutral-400 hover:text-neutral-600 active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <span className="mr-1 shrink-0 text-xs font-medium text-neutral-400">
+        {index + 1}
+      </span>
+      <div className="flex w-full flex-1 sm:w-32">
+        <p className="text-sm font-medium text-neutral-900">{item.name}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        {pdfPathExists && !isEditMode ? (
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            className="gap-1.5"
+            onClick={() => onClickPdfEdit(item.id)}
+          >
+            <FileText className="h-3.5 w-3.5" />
+            PDF 변경
+          </Button>
+        ) : (
+          <Input
+            type="file"
+            accept="application/pdf"
+            className="h-9 text-sm"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              onFileChange(index, file);
+            }}
+          />
+        )}
+      </div>
+      <div className="sm:w-32">
+        <Input
+          type="text"
+          placeholder="그룹 (ex. A)"
+          className="h-9 text-sm"
+          value={item.group_name ?? ""}
+          onChange={(e) => onGroupChange(index, e.target.value)}
+        />
+      </div>
+    </div>
+  );
 }
 
 export default function JudgeEditForm({
@@ -69,19 +175,30 @@ export default function JudgeEditForm({
   judgingRoundInfo,
   setOpenEdit,
 }: Props) {
-  const supabaseClient = createClient();
   const queryClient = useQueryClient();
 
   const [targetList, setTargetList] = useState<SimpleCompany[]>([]);
   const [targetUserList, setTargetUserList] = useState<SimpleUser[]>([]);
   const [pdfEditMap, setPdfEditMap] = useState<Record<number, boolean>>({});
-
-  // (B) 심사 기준 상태
   const [targetCriteriaList, setTargetCriteriaList] = useState<
     SimpleCriteria[]
   >([]);
 
-  // -------------- 기본 정보 Form 설정 --------------
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setTargetList((prev) => {
+      const oldIndex = prev.findIndex((item) => item.id === active.id);
+      const newIndex = prev.findIndex((item) => item.id === over.id);
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  };
+
   const form = useForm<JudgeUpdateFormType>({
     resolver: zodResolver(JudgeUpdateFormSchema),
     mode: "onSubmit",
@@ -97,12 +214,8 @@ export default function JudgeEditForm({
     setTargetUserList(newList);
   }, []);
 
-  // ---------------------------------------------------------------------------
-  //  (1) 기본 정보 업데이트 → 객체 payload로 updateJudgeBasic 호출
-  // ---------------------------------------------------------------------------
   const handleSubmitBasic = async (data: JudgeUpdateFormType) => {
     try {
-      // ★★★ 변경: FormData 대신 객체를 만든다.
       const payload = {
         judgingRoundId: judgingRoundId ?? 0,
         name: data.name ?? "",
@@ -110,7 +223,6 @@ export default function JudgeEditForm({
         start_date: data.start_date ?? "",
         end_date: data.end_date ?? "",
       };
-
       const result = await updateJudgeBasic(payload);
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ["judging_rounds"] });
@@ -123,54 +235,8 @@ export default function JudgeEditForm({
     }
   };
 
-  // ---------------------------------------------------------------------------
-  //  (2) 기업 정보 업데이트 → PDF 처리가 있어 FormData 유지
-  // ---------------------------------------------------------------------------
-  // const handleSubmitCompanies = async () => {
-  //   try {
-  //     // PDF 파일 처리를 위해 기존대로 FormData 사용
-  //     const formData = new FormData();
-  //     formData.append("judgingRoundId", String(judgingRoundId ?? ""));
-
-  //     // company payload
-  //     const companiesPayload = targetList.map((c) => ({
-  //       company_id: c.id,
-  //       group_name: c.group_name ?? "",
-  //     }));
-  //     formData.append("companies", JSON.stringify(companiesPayload));
-
-  //     // 파일들 (index 일치)
-  //     targetList.forEach((c, i) => {
-  //       if (c.pdf_file) {
-  //         const sanitizedName = sanitizeFileName(c.pdf_file.name);
-  //         const renamedFile = new File([c.pdf_file], sanitizedName, {
-  //           type: c.pdf_file.type,
-  //         });
-  //         formData.append(`files[${i}]`, renamedFile);
-  //       }
-  //     });
-
-  //     const result = await updateJudgeCompany(formData);
-  //     if (result.success) {
-  //       queryClient.invalidateQueries({
-  //         queryKey: ["judging_round_companies"],
-  //       });
-  //       queryClient.invalidateQueries({ queryKey: ["judging_round_users"] });
-  //       toast.success("기업 정보를 수정하였습니다.");
-  //     } else {
-  //       toast.error("기업 정보 수정 중 오류가 발생했습니다.");
-  //     }
-  //   } catch (error: any) {
-  //     toast.error(`기업 업데이트 중 오류가 발생했습니다: ${error.message}`);
-  //   }
-  // };
-
-  // ---------------------------------------------------------------------------
-  //  (3) 사용자(심사자) 정보 업데이트 → 객체 payload로 updateJudgeUser 호출
-  // ---------------------------------------------------------------------------
   const handleSubmitUsers = async () => {
     try {
-      // ★★★ 변경: FormData 대신 객체를 만든다.
       const payload = {
         judgingRoundId: judgingRoundId ?? 0,
         users: targetUserList.map((u) => ({
@@ -178,7 +244,6 @@ export default function JudgeEditForm({
           group_name: u.group_name ?? "",
         })),
       };
-
       const result = await updateJudgeUser(payload);
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ["judging_round_users"] });
@@ -191,15 +256,10 @@ export default function JudgeEditForm({
     }
   };
 
-  // 기업 PDF 수정 모드 토글
   const handleClickPdfEdit = (companyId: number) => {
-    setPdfEditMap((prev) => ({
-      ...prev,
-      [companyId]: true,
-    }));
+    setPdfEditMap((prev) => ({ ...prev, [companyId]: true }));
   };
 
-  // 기업 PDF file change
   const handleFileChange = (index: number, file?: File) => {
     setTargetList((prev) => {
       const newArr = [...prev];
@@ -208,7 +268,6 @@ export default function JudgeEditForm({
     });
   };
 
-  // 기업 group_name change
   const handleGroupChange = (index: number, value: string) => {
     setTargetList((prev) => {
       const newArr = [...prev];
@@ -217,7 +276,6 @@ export default function JudgeEditForm({
     });
   };
 
-  // 사용자 group_name change
   const handleUserGroupChange = (index: number, value: string) => {
     setTargetUserList((prev) => {
       const newArr = [...prev];
@@ -228,79 +286,71 @@ export default function JudgeEditForm({
 
   const handleSubmitCompanies = async () => {
     try {
-      // 1) 클라이언트에서 Supabase에 직접 업로드
-      //    (기존 FormData로 보내지 않는다!)
-      const updatedList = [...targetList]; // 복사본
+      const updatedList = [...targetList];
+
+      if (!judgingRoundId) {
+        toast.error("심사 라운드 ID가 없습니다.");
+        return;
+      }
 
       for (let i = 0; i < updatedList.length; i++) {
         const c = updatedList[i];
         if (c.pdf_file) {
-          // 파일이 새로 선택된 경우만 업로드
-          const sanitizedName = sanitizeFileName(c.pdf_file.name);
-          const uniqueId = uuidv4();
-          const fileName = `${Date.now()}-${uniqueId}-${sanitizedName}`;
-          const filePath = `judging-round-pdfs/${fileName}`;
+          const { uploadUrl, objectKey } = await createJudgeCompanyPdfUploadUrl(
+            {
+              fileName: c.pdf_file.name,
+              contentType: c.pdf_file.type || "application/pdf",
+            }
+          );
 
-          const { error: storageError } = await supabaseClient.storage
-            .from("handpartners")
-            .upload(filePath, c.pdf_file, {
-              cacheControl: "3600",
-              upsert: true,
-            });
+          const uploadResponse = await fetch(uploadUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": c.pdf_file.type || "application/pdf",
+            },
+            body: c.pdf_file,
+          });
 
-          if (storageError) {
-            console.error("Storage upload error:", storageError);
-            throw new Error(storageError.message);
+          if (!uploadResponse.ok) {
+            throw new Error("PDF 업로드에 실패했습니다.");
           }
 
-          // public URL 생성
-          const { data: publicUrlData } = supabaseClient.storage
-            .from("handpartners")
-            .getPublicUrl(filePath);
-
-          if (publicUrlData?.publicUrl) {
-            // 업로드 성공 시 local state에 pdf_path 저장
-            updatedList[i] = {
-              ...updatedList[i],
-              pdf_path: publicUrlData.publicUrl,
-            };
-          }
+          updatedList[i] = {
+            ...updatedList[i],
+            pdf_path: objectKey,
+          };
         }
       }
 
-      // 2) 모든 업로드가 끝났으면, DB에 반영할 최종 정보만 Server Action에 전달
-      //    Server Action으로는 큰 파일이 아니라 { judgingRoundId, companies }만 보냄
-      const companiesPayload = updatedList.map((c) => ({
+      const companiesPayload = updatedList.map((c, i) => ({
         company_id: c.id,
         group_name: c.group_name ?? "",
         pdf_path: c.pdf_path || null,
+        judge_num: i + 1,
       }));
 
-      const payload = {
-        judgingRoundId: judgingRoundId ?? 0,
+      const result = await updateJudgeCompany2({
+        judgingRoundId,
         companies: companiesPayload,
-      };
-
-      const result = await updateJudgeCompany2(payload);
+      });
 
       if (result?.success) {
-        setTargetList(updatedList); // state 갱신
-        queryClient.invalidateQueries({
+        setTargetList(updatedList);
+        await queryClient.invalidateQueries({
           queryKey: ["judging_round_companies"],
+        });
+        await queryClient.invalidateQueries({
+          queryKey: ["screeningDetail"],
         });
         toast.success("기업 정보를 수정하였습니다.");
       } else {
         toast.error("기업 정보 수정 중 오류가 발생했습니다.");
       }
     } catch (error: any) {
-      console.error(error);
       toast.error(`기업 업데이트 중 오류가 발생했습니다: ${error.message}`);
     }
   };
 
-  // ------------------------------------------------------------------
-  // (4) 심사 기준 배점 설정 → 객체 payload
-  // ------------------------------------------------------------------
   const handleSubmitCriteria = async () => {
     try {
       const payload = {
@@ -312,10 +362,11 @@ export default function JudgeEditForm({
           description: c.description ?? null,
         })),
       };
-
       const result = await updateJudgeCriteria(payload);
       if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ["judging_round_criteria"] });
+        await queryClient.invalidateQueries({
+          queryKey: ["judging_round_criteria"],
+        });
         toast.success("심사 기준을 수정하였습니다.");
       } else {
         toast.error("심사 기준 수정 중 오류가 발생했습니다.");
@@ -327,231 +378,248 @@ export default function JudgeEditForm({
     }
   };
 
-  // ----------------------------------------------------------------
-  // render
-  // ----------------------------------------------------------------
   return (
-    <div className="flex flex-col space-y-8">
-      {/* -------------------- (1) 기본 정보 수정 Form -------------------- */}
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(handleSubmitBasic)}
-          className="items-start w-full space-y-6"
-        >
-          <div className="space-y-6 pt-4">
-            <div className="flex justify-between items-center">
-              <div className="w-1/3 text-gray-800">심사 이름</div>
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem className="w-2/3">
-                    <FormControl>
-                      <Input
-                        className="w-full border-gray-400"
-                        placeholder="심사 이름을 입력해주세요."
-                        {...field}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+    <div className="p-4 sm:p-6">
+      <Tabs defaultValue="basic">
+        <TabsList className="mb-4 w-full">
+          <TabsTrigger value="basic" className="flex-1">
+            기본 정보
+          </TabsTrigger>
+          <TabsTrigger value="companies" className="flex-1">
+            참여 기업
+          </TabsTrigger>
+          <TabsTrigger value="judges" className="flex-1">
+            심사자
+          </TabsTrigger>
+          <TabsTrigger value="criteria" className="flex-1">
+            심사 기준
+          </TabsTrigger>
+        </TabsList>
+
+        {/* (1) 기본 정보 */}
+        <TabsContent value="basic">
+          <section className="rounded-lg border border-neutral-200 bg-white">
+            <div className="border-b border-neutral-100 px-4 py-3">
+              <h3 className="text-sm font-semibold text-neutral-900">
+                기본 정보
+              </h3>
             </div>
-            {/* 설명 */}
-            <div className="flex justify-between items-center">
-              <div className="w-1/3 text-gray-800">설명</div>
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem className="w-2/3">
-                    <FormControl>
-                      <Input
-                        className="w-full border-gray-400"
-                        placeholder="설명을 입력해주세요."
-                        {...field}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
-            {/* 시작일 */}
-            <div className="flex justify-between items-center">
-              <div className="w-1/3 text-gray-800">시작일</div>
-              <FormField
-                control={form.control}
-                name="start_date"
-                render={({ field }) => (
-                  <FormItem className="w-2/3">
-                    <FormControl>
-                      <Input className="w-full" type="date" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
-            {/* 종료일 */}
-            <div className="flex justify-between items-center">
-              <div className="w-1/3 text-gray-800">종료일</div>
-              <FormField
-                control={form.control}
-                name="end_date"
-                render={({ field }) => (
-                  <FormItem className="w-2/3">
-                    <FormControl>
-                      <Input className="w-full" type="date" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-
-          <div className="flex w-full justify-end">
-            {/* 기본 정보만 업데이트 */}
-            <Button type="submit">기본 정보 수정</Button>
-          </div>
-        </form>
-      </Form>
-
-      <Separator />
-
-      {/* -------------------- (2) 기업 정보 수정 영역 -------------------- */}
-      <div className="flex flex-col space-y-2">
-        <div className="font-medium mb-2">심사 참여 기업</div>
-        <JudgeCompanySelect
-          judgingRoundId={judgingRoundId ?? 0}
-          programId={programId}
-          targetList={targetList}
-          onTargetListChange={setTargetList}
-        />
-
-        {/* 기업별 PDF, group_name 입력 */}
-        <div className="h-48 overflow-y-auto border border-gray-300 rounded-md p-2">
-          {targetList.length === 0 && (
-            <div className="text-gray-500">아직 추가된 기업이 없습니다.</div>
-          )}
-          {targetList.map((item, index) => {
-            const pdfPathExists = !!item.pdf_path;
-            const isEditMode = pdfEditMap[item.id] === true;
-
-            return (
-              <div
-                key={item.id}
-                className="flex items-center gap-2 border p-3 rounded-md mb-2"
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(handleSubmitBasic)}
+                className="space-y-4 p-4"
               >
-                {/* 기업명 */}
-                <div className="w-24">
-                  <p className="text-sm font-medium">{item.name}</p>
-                </div>
-
-                {/* PDF */}
-                <div className="flex-1">
-                  {pdfPathExists && !isEditMode ? (
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={() => handleClickPdfEdit(item.id)}
-                    >
-                      PDF 수정
-                    </Button>
-                  ) : (
-                    <Input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        handleFileChange(index, file);
-                      }}
-                    />
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-neutral-700">
+                        심사 이름
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="심사 이름을 입력해주세요."
+                          {...field}
+                        />
+                      </FormControl>
+                    </FormItem>
                   )}
-                </div>
-
-                {/* group_name */}
-                <div className="flex-1">
-                  <Input
-                    type="text"
-                    placeholder="그룹 이름(ex. A)"
-                    value={item.group_name ?? ""}
-                    onChange={(e) => handleGroupChange(index, e.target.value)}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-neutral-700">설명</FormLabel>
+                      <FormControl>
+                        <Input placeholder="설명을 입력해주세요." {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="start_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-neutral-700">
+                          시작일
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="end_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-neutral-700">
+                          종료일
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
                   />
                 </div>
-              </div>
-            );
-          })}
-        </div>
+                <div className="flex justify-end pt-2">
+                  <Button type="submit" size="sm">
+                    기본 정보 수정
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </section>
+        </TabsContent>
 
-        <div className="flex w-full justify-end">
-          {/* 기업 정보만 업데이트 (PDF 파일 때문에 FormData 유지) */}
-          <Button type="button" onClick={handleSubmitCompanies}>
-            기업 정보 수정
-          </Button>
-        </div>
-      </div>
+        {/* (2) 심사 참여 기업 */}
+        <TabsContent value="companies">
+          <section className="rounded-lg border border-neutral-200 bg-white">
+            <div className="border-b border-neutral-100 px-4 py-3">
+              <h3 className="text-sm font-semibold text-neutral-900">
+                심사 참여 기업
+              </h3>
+              <p className="mt-0.5 text-xs text-neutral-500">
+                프로그램에 등록된 기업 중 이 심사에 참여할 기업을 선택합니다.
+              </p>
+            </div>
+            <div className="space-y-4 p-4">
+              <JudgeCompanySelect
+                judgingRoundId={judgingRoundId ?? 0}
+                programId={programId}
+                targetList={targetList}
+                onTargetListChange={setTargetList}
+              />
 
-      <Separator />
+              {targetList.length > 0 && (
+                <div className="rounded-lg border border-neutral-200">
+                  <div className="border-b border-neutral-100 px-3 py-2">
+                    <span className="text-xs font-medium text-neutral-600">
+                      기업별 상세 설정 (드래그하여 순서 변경)
+                    </span>
+                  </div>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={targetList.map((item) => item.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="max-h-96 overflow-y-auto">
+                        {targetList.map((item, index) => (
+                          <SortableCompanyItem
+                            key={item.id}
+                            item={item}
+                            index={index}
+                            pdfEditMap={pdfEditMap}
+                            onClickPdfEdit={handleClickPdfEdit}
+                            onFileChange={handleFileChange}
+                            onGroupChange={handleGroupChange}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                </div>
+              )}
 
-      {/* -------------------- (3) 사용자(심사자) 정보 수정 영역 -------------------- */}
-      <div className="flex flex-col space-y-2">
-        <div className="font-medium mb-2">심사자 정보</div>
-        <JudgeUserSelect
-          judgingRoundId={judgingRoundId ?? 0}
-          targetList={targetUserList}
-          onTargetListChange={handleUserListChange}
-        />
-
-        {/* 사용자별 group_name 입력 */}
-        <div className="h-48 overflow-y-auto border border-gray-300 rounded-md p-2">
-          {targetUserList.length === 0 && (
-            <div className="text-gray-500">아직 추가된 심사자가 없습니다.</div>
-          )}
-          {targetUserList.map((user, index) => (
-            <div
-              key={user.id}
-              className="flex items-center gap-2 border p-3 rounded-md mb-2"
-            >
-              {/* 사용자 이름 */}
-              <div className="w-24">
-                <p className="text-sm font-medium">{user.name}</p>
-              </div>
-
-              {/* group_name */}
-              <div className="flex-1">
-                <Input
-                  type="text"
-                  placeholder="그룹 이름(ex. A)"
-                  value={user.group_name ?? ""}
-                  onChange={(e) => handleUserGroupChange(index, e.target.value)}
-                />
+              <div className="flex justify-end">
+                <Button type="button" size="sm" onClick={handleSubmitCompanies}>
+                  기업 정보 수정
+                </Button>
               </div>
             </div>
-          ))}
-        </div>
+          </section>
+        </TabsContent>
 
-        <div className="flex w-full justify-end">
-          {/* 사용자(심사자) 정보만 업데이트 → 객체 전달 */}
-          <Button type="button" onClick={handleSubmitUsers}>
-            심사자 정보 수정
-          </Button>
-        </div>
-      </div>
+        {/* (3) 심사자 */}
+        <TabsContent value="judges">
+          <section className="rounded-lg border border-neutral-200 bg-white">
+            <div className="border-b border-neutral-100 px-4 py-3">
+              <h3 className="text-sm font-semibold text-neutral-900">심사자</h3>
+            </div>
+            <div className="space-y-4 p-4">
+              <JudgeUserSelect
+                judgingRoundId={judgingRoundId ?? 0}
+                targetList={targetUserList}
+                onTargetListChange={handleUserListChange}
+              />
 
-      {/* -------------------- (4) 심사 기준 배점 설정 영역 -------------------- */}
-      <div className="flex flex-col space-y-2">
-        <div className="font-medium mb-2">심사 기준 배점 설정</div>
-        <JudgeCriteriaSelect
-          judgingRoundId={judgingRoundId}
-          targetList={targetCriteriaList}
-          onTargetListChange={setTargetCriteriaList}
-        />
+              {targetUserList.length > 0 && (
+                <div className="rounded-lg border border-neutral-200">
+                  <div className="border-b border-neutral-100 px-3 py-2">
+                    <span className="text-xs font-medium text-neutral-600">
+                      심사자별 그룹 설정
+                    </span>
+                  </div>
+                  <div className="max-h-96 divide-y divide-neutral-100 overflow-y-auto">
+                    {targetUserList.map((user, index) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center gap-2 px-3 py-2.5"
+                      >
+                        <div className="w-24 shrink-0">
+                          <p className="text-sm font-medium text-neutral-900">
+                            {user.name}
+                          </p>
+                        </div>
+                        <div className="flex-1">
+                          <Input
+                            type="text"
+                            placeholder="그룹 (ex. A)"
+                            className="h-9 text-sm"
+                            value={user.group_name ?? ""}
+                            onChange={(e) =>
+                              handleUserGroupChange(index, e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-        <div className="flex w-full justify-end">
-          <Button type="button" onClick={handleSubmitCriteria}>
-            심사 기준 수정
-          </Button>
-        </div>
-      </div>
+              <div className="flex justify-end">
+                <Button type="button" size="sm" onClick={handleSubmitUsers}>
+                  심사자 정보 수정
+                </Button>
+              </div>
+            </div>
+          </section>
+        </TabsContent>
+
+        {/* (4) 심사 기준 배점 */}
+        <TabsContent value="criteria">
+          <section className="rounded-lg border border-neutral-200 bg-white">
+            <div className="border-b border-neutral-100 px-4 py-3">
+              <h3 className="text-sm font-semibold text-neutral-900">
+                심사 기준 배점
+              </h3>
+            </div>
+            <div className="space-y-4 p-4">
+              <JudgeCriteriaSelect
+                judgingRoundId={judgingRoundId}
+                targetList={targetCriteriaList}
+                onTargetListChange={setTargetCriteriaList}
+              />
+              <div className="flex justify-end">
+                <Button type="button" size="sm" onClick={handleSubmitCriteria}>
+                  심사 기준 수정
+                </Button>
+              </div>
+            </div>
+          </section>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

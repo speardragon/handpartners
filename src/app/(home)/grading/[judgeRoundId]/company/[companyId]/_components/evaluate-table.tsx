@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Info, Loader2, CircleDot, CheckCircle2 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useCompanyQuery } from "../_hooks/useCompanyQuery";
 
 type EvaluationStatus = "ONGOING" | "DONE" | null;
 
@@ -68,10 +68,10 @@ export default function EvaluateTable({
   isParticipant,
 }: Props) {
   const router = useRouter();
-  const queryClient = useQueryClient();
 
   const { data: judgeRound } = useJudgeQuery(judgeRoundId);
   const { data: existEvaluation } = useEvaluationQuery(judgeRoundId, companyId);
+  const { data: company } = useCompanyQuery(companyId);
 
   const { mutate: submitEvaluation, isPending } = useEvaluationMutation();
   const { mutate: autoSave, isPending: isAutoSaving } = useAutoSaveMutation();
@@ -159,6 +159,18 @@ export default function EvaluateTable({
 
   return (
     <div className="w-full space-y-4">
+      <section className="rounded-lg border bg-white px-4 py-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          평가 대상 기업
+        </p>
+        <h2 className="mt-1 text-lg font-semibold text-gray-900">
+          {company?.name ?? `기업 ${companyId}`}
+        </h2>
+        <p className="mt-2 text-sm text-gray-600">
+          {company?.description?.trim() || "기업 소개가 없습니다."}
+        </p>
+      </section>
+
       {!isParticipant && (
         <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           <Info size={16} className="shrink-0" />

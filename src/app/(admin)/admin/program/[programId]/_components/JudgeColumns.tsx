@@ -5,7 +5,6 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
@@ -26,14 +25,18 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { EllipsisVertical, NotepadText, Pencil, Trash } from "lucide-react";
+import {
+  EllipsisVertical,
+  NotepadText,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 import {
   deleteJudgingRound,
-  JudgingRoundRow,
+  JudgingRoundWithCounts,
 } from "@/actions/judging_round-action";
 import JudgeEditForm from "./JudgeEditForm";
 import { useRouter } from "next/navigation";
@@ -48,8 +51,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import JudgingRoundDetailDialogContent from "./JudgingRoundDetailDialogContent";
+import { Button } from "@/components/ui/button";
 
-export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
+export const judgeColumns: ColumnDef<JudgingRoundWithCounts>[] = [
   {
     accessorKey: "id",
     cell: (info) => info.getValue(),
@@ -58,15 +62,15 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
   {
     accessorKey: "name",
     header: "심사 이름",
-    size: 300,
+    size: 200,
     cell: ({ row, getValue }) => {
       const judgingRoundId = Number(row.original.id);
       return (
         <Dialog>
-          <DialogTrigger className="cursor-pointer text-blue-600 hover:underline text-left break-all">
+          <DialogTrigger className="cursor-pointer text-neutral-900 font-medium hover:underline text-left break-all">
             {`${getValue()}`}
           </DialogTrigger>
-          <DialogContent className="min-w-[80vw] h-[80vh]">
+          <DialogContent className="max-w-[90vw] h-[80vh] lg:max-w-[80vw]">
             <DialogHeader>
               <DialogTitle>{`${getValue()}`}</DialogTitle>
             </DialogHeader>
@@ -78,20 +82,32 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
   },
   {
     accessorKey: "number_of_companies",
-    header: "참여 기업 수",
+    header: "참여 기업",
+    meta: { className: "hidden sm:table-cell" },
+    cell: ({ getValue }) => (
+      <span className="tabular-nums">{`${getValue()}`}개</span>
+    ),
   },
   {
     accessorKey: "number_of_users",
-    header: "심사위원 수",
+    header: "심사위원",
+    meta: { className: "hidden sm:table-cell" },
+    cell: ({ getValue }) => (
+      <span className="tabular-nums">{`${getValue()}`}명</span>
+    ),
   },
   {
     accessorKey: "description",
     header: "설명",
+    meta: { className: "hidden md:table-cell" },
     cell: ({ getValue }) => {
       const description = (getValue() ?? "").toString();
       return (
-        <div className="w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">
-          {description}
+        <div
+          className="max-w-[300px] truncate text-neutral-500"
+          title={description}
+        >
+          {description || "설명 없음"}
         </div>
       );
     },
@@ -99,19 +115,21 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
   {
     id: "dateRange",
     header: "기간",
+    meta: { className: "hidden lg:table-cell" },
     cell: ({ row }) => {
       const startDate = row.original.start_date ?? "";
       const endDate = row.original.end_date ?? "";
+      if (!startDate && !endDate) return <span className="text-neutral-400">-</span>;
       return (
-        <div className="w-[130px]">
+        <span className="text-neutral-600 tabular-nums">
           {startDate} ~ {endDate}
-        </div>
+        </span>
       );
     },
   },
   {
-    // 드롭다운 메뉴 액션 컬럼
     id: "actions",
+    size: 50,
     cell: ({ row }) => {
       const [openEdit, setOpenEdit] = useState(false);
       const [openDelete, setOpenDelete] = useState(false);
@@ -121,21 +139,20 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
       const router = useRouter();
 
       const deleteHandler = async (judgingRoundId: number) => {
-        const result = await deleteJudgingRound(judgingRoundId);
-        toast.success("프로그램이 삭제되었습니다.");
+        await deleteJudgingRound(judgingRoundId);
+        toast.success("심사가 삭제되었습니다.");
         queryClient.invalidateQueries({ queryKey: ["judging_rounds"] });
       };
 
-      const judgingRoundId = Number(row.original.id?.toString());
-      const programId = Number(row.original.program_id?.toString());
+      const judgingRoundId = Number(row.original.id);
+      const programId = Number(row.original.program_id);
       return (
         <>
           <Sheet open={openEdit} onOpenChange={setOpenEdit}>
-            <SheetContent className="min-w-[800px] overflow-y-auto">
-              <SheetHeader>
+            <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-xl lg:max-w-2xl">
+              <SheetHeader className="border-b border-neutral-100 px-6 py-4">
                 <SheetTitle>심사 수정</SheetTitle>
                 <SheetDescription>{row.original.name}</SheetDescription>
-                <Separator />
               </SheetHeader>
               <JudgeEditForm
                 setOpenEdit={setOpenEdit}
@@ -163,7 +180,7 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
                 <AlertDialogCancel>취소</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => deleteHandler(judgingRoundId)}
-                  className="bg-red-500"
+                  className="bg-red-600 hover:bg-red-700"
                 >
                   삭제
                 </AlertDialogAction>
@@ -172,62 +189,65 @@ export const judgeColumns: ColumnDef<Partial<JudgingRoundRow>>[] = [
           </AlertDialog>
 
           <DropdownMenu open={openMenu} onOpenChange={setOpenMenu}>
-            <DropdownMenuTrigger className="p-2 border border-gray-300 rounded-lg hover:border hover:border-gray-400">
-              <EllipsisVertical size={14} />
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <EllipsisVertical className="h-4 w-4" />
+              </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48">
-              <DropdownMenuLabel>심사 작업</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-
+            <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
-                className="text-gray-700 cursor-pointer hover:text-black"
+                className="cursor-pointer gap-2"
                 onClick={() => {
                   setOpenEdit(true);
                   setOpenMenu(false);
                 }}
               >
-                <Pencil /> 심사 수정
+                <Pencil className="h-4 w-4" /> 심사 수정
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                className="text-gray-700 cursor-pointer hover:text-black"
+                className="cursor-pointer gap-2"
                 onClick={() => {
                   router.push(`/admin/${judgingRoundId}`);
                 }}
               >
-                <NotepadText /> 심사 결과 확인
+                <NotepadText className="h-4 w-4" /> 심사 결과 확인
               </DropdownMenuItem>
 
-              <DropdownMenuItem className="p-0 text-gray-700 hover:text-black">
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem className="p-0">
                 <FeedbackToExcelButton
-                  className="flex items-center justify-start w-full gap-2 p-2 text-sm text-gray-700 bg-white rounded-md hover:bg-gray-100 hover:text-black"
+                  className="flex w-full items-center justify-start gap-2 rounded-sm px-2 py-1.5 text-sm"
                   judgingRoundId={judgingRoundId}
                 />
               </DropdownMenuItem>
 
-              <DropdownMenuItem className="p-0 text-gray-700 hover:text-black">
+              <DropdownMenuItem className="p-0">
                 <ScoreToExcelButton
-                  className="flex items-center justify-start w-full gap-2 p-2 text-sm text-gray-700 bg-white rounded-md hover:bg-gray-100 hover:text-black"
+                  className="flex w-full items-center justify-start gap-2 rounded-sm px-2 py-1.5 text-sm"
                   judgingRoundId={judgingRoundId}
                 />
               </DropdownMenuItem>
 
-              <DropdownMenuItem className="p-0 text-gray-700 hover:text-black">
+              <DropdownMenuItem className="p-0">
                 <PdfDownloadButton
-                  className="flex items-center justify-start w-full gap-2 p-2 text-sm text-gray-700 bg-white rounded-md hover:bg-gray-100 hover:text-black"
+                  className="flex w-full items-center justify-start gap-2 rounded-sm px-2 py-1.5 text-sm"
                   programId={programId}
                   judgingRoundId={judgingRoundId}
                 />
               </DropdownMenuItem>
 
+              <DropdownMenuSeparator />
+
               <DropdownMenuItem
-                className="text-gray-700 hover:text-black"
+                className="cursor-pointer gap-2 text-red-600 focus:text-red-600"
                 onClick={() => {
                   setOpenDelete(true);
                   setOpenMenu(false);
                 }}
               >
-                <Trash color="red" /> 심사 삭제
+                <Trash2 className="h-4 w-4" /> 심사 삭제
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

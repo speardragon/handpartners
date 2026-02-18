@@ -32,7 +32,6 @@ import { EllipsisVertical, Map, Pencil, Trash } from "lucide-react";
 import ProgramEditForm from "./ProgramEditForm";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -113,11 +112,10 @@ export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
       return (
         <>
           <Sheet open={openEdit} onOpenChange={setOpenEdit}>
-            <SheetContent className="w-[calc(100%-2rem)] overflow-y-auto sm:min-w-[600px]">
-              <SheetHeader>
+            <SheetContent className="flex w-full flex-col overflow-hidden p-0 sm:max-w-xl lg:max-w-2xl">
+              <SheetHeader className="shrink-0 border-b border-neutral-100 px-6 py-4">
                 <SheetTitle>프로그램 수정</SheetTitle>
-                <SheetDescription></SheetDescription>
-                <Separator />
+                <SheetDescription>{row.original.name}</SheetDescription>
               </SheetHeader>
               <ProgramEditForm
                 setOpenEdit={setOpenEdit}

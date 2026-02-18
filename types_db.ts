@@ -177,7 +177,9 @@ export type Database = {
           id: number;
           judge_num: number | null;
           judging_round_id: number;
+          original_filename: string | null;
           pdf_path: string | null;
+          submitted_at: string | null;
           group_name: string | null;
         };
         Insert: {
@@ -188,7 +190,9 @@ export type Database = {
           id?: number;
           judge_num?: number | null;
           judging_round_id: number;
+          original_filename?: string | null;
           pdf_path?: string | null;
+          submitted_at?: string | null;
           group_name?: string | null;
         };
         Update: {
@@ -199,7 +203,9 @@ export type Database = {
           id?: number;
           judge_num?: number | null;
           judging_round_id?: number;
+          original_filename?: string | null;
           pdf_path?: string | null;
+          submitted_at?: string | null;
           group_name?: string | null;
         };
         Relationships: [

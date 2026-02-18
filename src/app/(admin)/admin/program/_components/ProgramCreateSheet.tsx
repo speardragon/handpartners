@@ -6,9 +6,14 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetFooter,
 } from "@/components/ui/sheet";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { z } from "zod";
 import useDialogOpenStore from "@/store/useDialogOpenStore";
@@ -19,7 +24,6 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { ProgramCreateFormSchema } from "../_lib/ProgramFormSchema";
 import { createProgram, ProgramRowInsert } from "@/actions/program-action";
-import { Separator } from "@/components/ui/separator";
 import CompanySelect from "./CompanySelect";
 import { useState } from "react";
 import { CompanyRow } from "@/actions/company-action";
@@ -45,7 +49,7 @@ export default function ProgramCreateSheet() {
   const onSubmit = async (data: z.infer<typeof ProgramCreateFormSchema>) => {
     await createProgram(
       data as ProgramRowInsert,
-      targetList.map((company) => company.id) // [1,2,3...]
+      targetList.map((company) => company.id)
     );
     queryClient.invalidateQueries({ queryKey: ["programs"] });
     setCreateOpen(false);
@@ -54,33 +58,36 @@ export default function ProgramCreateSheet() {
 
   return (
     <Sheet open={createOpen} onOpenChange={setCreateOpen}>
-      <SheetContent className="overflow-y-auto min-w-[600px]">
-        <SheetHeader>
+      <SheetContent className="flex w-full flex-col overflow-hidden p-0 sm:max-w-xl lg:max-w-2xl">
+        <SheetHeader className="shrink-0 border-b border-neutral-100 px-6 py-4">
           <SheetTitle>프로그램 추가</SheetTitle>
-          <SheetDescription>프로그램을 추가합니다.</SheetDescription>
+          <SheetDescription>새로운 프로그램을 추가합니다.</SheetDescription>
         </SheetHeader>
-
-        <Separator className="my-4" />
 
         <Form {...form}>
           <form
             autoComplete="off"
             autoFocus={false}
             onSubmit={form.handleSubmit(onSubmit)}
-            className="items-start space-y-4"
+            className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-6"
           >
-            <div className="space-y-6 pt-4">
-              <div className="font-medium">프로그램 정보</div>
-              <div className="flex justify-between items-center">
-                <div className="w-1/3 text-gray-800">프로그램 이름</div>
+            <section className="shrink-0 rounded-lg border border-neutral-200 bg-white">
+              <div className="border-b border-neutral-100 px-4 py-3">
+                <h3 className="text-sm font-semibold text-neutral-900">
+                  프로그램 정보
+                </h3>
+              </div>
+              <div className="space-y-4 p-4">
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
-                    <FormItem className="w-2/3">
+                    <FormItem>
+                      <FormLabel className="text-neutral-700">
+                        프로그램 이름
+                      </FormLabel>
                       <FormControl>
                         <Input
-                          className="w-full border-gray-400"
                           autoFocus={false}
                           autoComplete="off"
                           placeholder="프로그램 이름을 입력해주세요."
@@ -90,72 +97,72 @@ export default function ProgramCreateSheet() {
                     </FormItem>
                   )}
                 />
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="w-1/3 text-gray-800">설명</div>
                 <FormField
                   control={form.control}
                   name="description"
                   render={({ field }) => (
-                    <FormItem className="w-2/3">
+                    <FormItem>
+                      <FormLabel className="text-neutral-700">설명</FormLabel>
                       <FormControl>
-                        <Input
-                          className="w-full border-gray-400"
-                          placeholder="설명을 입력해주세요."
-                          {...field}
-                        />
+                        <Input placeholder="설명을 입력해주세요." {...field} />
                       </FormControl>
                     </FormItem>
                   )}
                 />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="start_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-neutral-700">
+                          시작일
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="end_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-neutral-700">
+                          종료일
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <div className="w-1/3 text-gray-800">시작일</div>
-                <FormField
-                  control={form.control}
-                  name="start_date"
-                  render={({ field }) => (
-                    <FormItem className="w-2/3">
-                      <FormControl>
-                        <Input className="w-full" type="date" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
+            </section>
+
+            <section className="shrink-0 rounded-lg border border-neutral-200 bg-white">
+              <div className="border-b border-neutral-100 px-4 py-3">
+                <h3 className="text-sm font-semibold text-neutral-900">
+                  참여 기업
+                </h3>
+                <p className="mt-0.5 text-xs text-neutral-500">
+                  DB에 등록된 전체 기업 중 이 프로그램에 참여할 기업을
+                  선택합니다.
+                </p>
+              </div>
+              <div className="p-4">
+                <CompanySelect
+                  targetList={targetList}
+                  onTargetListChange={setTargetList}
                 />
               </div>
-              <div className="flex justify-between items-center">
-                <div className="w-1/3 text-gray-800">종료일</div>
-                <FormField
-                  control={form.control}
-                  name="end_date"
-                  render={({ field }) => (
-                    <FormItem className="w-2/3">
-                      <FormControl>
-                        <Input className="w-full" type="date" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
+            </section>
 
-            <Separator />
-
-            <div className="flex flex-col">
-              <div className="mb-4 font-medium">프로그램 참여 기업 추가</div>
-              <CompanySelect
-                targetList={targetList}
-                onTargetListChange={setTargetList}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex w-full justify-center">
-              <Button className="w-1/2" type="submit">
-                생성하기
-              </Button>
-            </div>
+            <Button type="submit" className="w-full shrink-0">
+              프로그램 생성
+            </Button>
           </form>
         </Form>
       </SheetContent>

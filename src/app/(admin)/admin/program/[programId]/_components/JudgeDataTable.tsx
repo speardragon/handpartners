@@ -17,17 +17,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import useDialogOpenStore from "@/store/useDialogOpenStore";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { ProgramRow } from "@/actions/program-action";
-import Loading from "@/app/_components/Loading";
-import { Plus } from "lucide-react";
+import { Dispatch, SetStateAction } from "react";
+import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import { DataTablePagination } from "../../../_components/DataTablePagination";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import JudgeCreateSheet from "./JudgeCreateSheet";
+import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DataTableProps<TData, TValue> {
-  isPending: boolean;
+  isFetching: boolean;
   programId: number;
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -36,8 +36,10 @@ interface DataTableProps<TData, TValue> {
   totalPages: number;
 }
 
+const SKELETON_ROW_COUNT = 10;
+
 export function JudgeDataTable<TData, TValue>({
-  isPending,
+  isFetching,
   programId,
   columns,
   data,
@@ -66,80 +68,137 @@ export function JudgeDataTable<TData, TValue>({
     onPaginationChange: setPagination,
   });
 
+  const visibleColumns = table.getVisibleLeafColumns();
+
   return (
-    <div className="rounded-lg border space-y-2 shadow-lg p-4 font-medium overflow-y-auto">
+    <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-3 shadow-sm sm:p-4">
       <JudgeCreateSheet programId={programId} />
-      <div className="flex w-full justify-between items-center">
+
+      <div className="flex w-full items-center justify-between">
         <Button
+          variant="ghost"
+          size="sm"
           onClick={() => router.back()}
-          className="p-4 border border-gray-300 hover:border-gray-400 hover:bg-gray-100 bg-transparent text-gray-800"
+          className="gap-1.5 text-neutral-600"
         >
-          {"<"}
+          <ArrowLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">뒤로가기</span>
         </Button>
-        <button
-          onClick={(e) => {
-            setCreateOpen(true);
-          }}
-          className="flex p-2 py-1 pr-3 border border-blue-600 text-xs gap-2 rounded-lg bg-blue-300 text-black hover:bg-blue-400"
+        <Button
+          onClick={() => setCreateOpen(true)}
+          size="sm"
+          className="gap-1.5"
         >
-          <Plus className="w-4 h-4" />
-          심사 추가
-        </button>
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">심사 추가</span>
+          <span className="sm:hidden">추가</span>
+        </Button>
       </div>
-      <Table className="container relative py-2 mx-auto overflow-y-auto border rounded-full">
-        <TableHeader className="sticky top-0 bg-gray-100">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead className="p-2 px-6" key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
+
+      <div className="overflow-x-auto rounded-md border border-neutral-200">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
-                className="bg-white hover:bg-white"
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
+                key={headerGroup.id}
+                className="bg-neutral-50 hover:bg-neutral-50"
               >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    className="p-3 px-6 text-gray-600"
-                    style={{ width: cell.column.getSize() }}
-                    key={cell.id}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  const meta = header.column.columnDef.meta as
+                    | { className?: string }
+                    | undefined;
+                  return (
+                    <TableHead
+                      className={cn(
+                        "whitespace-nowrap px-3 py-2.5 text-xs font-semibold text-neutral-600 sm:px-4",
+                        meta?.className
+                      )}
+                      key={header.id}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
-            ))
-          ) : isPending ? (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center ">
-                <Loading />
-              </TableCell>
-            </TableRow>
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center ">
-                등록된 심사가 없습니다.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      <DataTablePagination table={table} pagination={pagination} />
+            ))}
+          </TableHeader>
+          <TableBody>
+            {isFetching ? (
+              Array.from({ length: SKELETON_ROW_COUNT }).map((_, rowIdx) => (
+                <TableRow key={`skeleton-${rowIdx}`}>
+                  {visibleColumns.map((col) => {
+                    const meta = col.columnDef.meta as
+                      | { className?: string }
+                      | undefined;
+                    return (
+                      <TableCell
+                        key={col.id}
+                        className={cn("px-3 py-3 sm:px-4", meta?.className)}
+                      >
+                        <Skeleton className="h-5 w-full rounded" />
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className="transition-colors hover:bg-neutral-50"
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    const meta = cell.column.columnDef.meta as
+                      | { className?: string }
+                      | undefined;
+                    return (
+                      <TableCell
+                        className={cn(
+                          "whitespace-nowrap px-3 text-sm text-neutral-700 sm:px-4",
+                          meta?.className
+                        )}
+                        style={{ width: cell.column.getSize() }}
+                        key={cell.id}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center text-sm text-neutral-500"
+                >
+                  등록된 심사가 없습니다.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex items-center justify-end">
+        {isFetching ? (
+          <div className="flex items-center gap-2 text-sm text-neutral-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </div>
+        ) : (
+          <div />
+        )}
+        <DataTablePagination table={table} pagination={pagination} />
+      </div>
     </div>
   );
 }

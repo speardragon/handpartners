@@ -8,7 +8,7 @@ import handpartnersLogo from "../../../public/images/handpartners_logo.png";
 
 export default function Header() {
   const { user } = useAuth();
-  const { data: userProfile } = useUserProfileQuery();
+  const { data: userProfile } = useUserProfileQuery(!!user);
 
   const isAdmin = userProfile?.role === "관리자";
 

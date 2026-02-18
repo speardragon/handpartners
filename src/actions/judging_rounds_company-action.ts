@@ -2,7 +2,12 @@
 
 import { v4 as uuidv4 } from "uuid";
 import { Database } from "types_db";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
+import {
+  createPresignedUploadUrl,
+  createPresignedDownloadUrl,
+  uploadPdfToS3,
+} from "@/lib/storage/s3";
 
 export type JudgingRoundRow =
   Database["public"]["Tables"]["judging_round"]["Row"];
@@ -37,7 +42,8 @@ export async function getJudgingRoundCompaniesById(
         )
         `
     )
-    .eq("judging_round_id", judgingRoundId);
+    .eq("judging_round_id", judgingRoundId)
+    .order("judge_num", { ascending: true, nullsFirst: false });
 
   if (error) {
     handleError(error);
@@ -51,6 +57,24 @@ interface CompanyPayload {
   group_name?: string;
 }
 
+function sanitizeFileName(originalName: string) {
+  return originalName.replace(/[^a-zA-Z0-9.\-_]/g, "");
+}
+
+export async function createJudgeCompanyPdfUploadUrl(args: {
+  fileName: string;
+  contentType?: string;
+}) {
+  const safeName = sanitizeFileName(args.fileName || "company.pdf");
+  const uniqueId = uuidv4();
+  const objectKey = `judging-round-pdfs/${Date.now()}-${uniqueId}-${safeName}`;
+
+  return createPresignedUploadUrl({
+    objectKey,
+    contentType: args.contentType || "application/pdf",
+  });
+}
+
 /**
  * FormData로 넘어온 기업 정보 + 파일(pdf_file) 처리
  * 1) 기존 judge_round_company 테이블에서 roundId에 해당하는 레코드들 조회
@@ -58,7 +82,7 @@ interface CompanyPayload {
  *    - 이미 존재하는 기업 -> 업데이트
  *    - 새로 추가된 기업 -> 삽입
  *    - 삭제된 기업 -> 제거
- * 3) pdf_file 있으면 Supabase Storage에 업로드 후 pdf_path 업데이트
+ * 3) pdf_file 있으면 S3에 업로드 후 pdf_path 업데이트
  */
 export async function updateJudgeCompany(formData: FormData) {
   const supabase = await createClient();
@@ -100,7 +124,8 @@ export async function updateJudgeCompany(formData: FormData) {
     const newMap = new Map<number, { group_name: string }>();
     companies.forEach((c) => {
       newMap.set(c.company_id, {
-        group_name: !c.group_name || c.group_name.length === 0 ? "A" : c.group_name,
+        group_name:
+          !c.group_name || c.group_name.length === 0 ? "A" : c.group_name,
       });
     });
 
@@ -118,19 +143,27 @@ export async function updateJudgeCompany(formData: FormData) {
     const toInsert: {
       company_id: number;
       group_name?: string;
-      index: number; // 파일 처리 위해 index 함께 추적
     }[] = [];
 
-    companies.forEach((c, index) => {
+    companies.forEach((c) => {
       if (!oldMap.has(c.company_id)) {
         // 신규 추가
         toInsert.push({
           company_id: c.company_id,
           group_name: c.group_name,
-          index,
         });
       }
     });
+
+    const fileIndexByCompanyId = new Map<number, number>();
+    companies.forEach((company, index) => {
+      fileIndexByCompanyId.set(company.company_id, index);
+    });
+    const getCompanyFile = (companyId: number): File | null => {
+      const idx = fileIndexByCompanyId.get(companyId);
+      if (idx === undefined) return null;
+      return formData.get(`files[${idx}]`) as File | null;
+    };
 
     // (4) '기존에도 있었고, 새 목록에도 있는' 기업은 UPDATE
     //     group_name이 변경되었을 수도 있으므로 업데이트. pdf_file이 있으면 업로드 후 pdf_path도 갱신
@@ -157,31 +190,13 @@ export async function updateJudgeCompany(formData: FormData) {
       for (const insertion of toInsert) {
         let pdfPath = null;
         // (B-1) pdf 파일이 있다면 업로드
-        const fileKey = `files[${insertion.index}]`; // companies와 files의 index가 일치한다고 가정
-        const file = formData.get(fileKey) as File | null;
+        const file = getCompanyFile(insertion.company_id);
         if (file) {
           const uniqueId = uuidv4();
           const fileName = `${Date.now()}-${uniqueId}`;
           const filePath = `judging-round-pdfs/${fileName}`;
 
-          const { error: storageError } = await supabase.storage
-            .from("handpartners")
-            .upload(filePath, file, {
-              cacheControl: "3600",
-              upsert: true,
-            });
-          if (storageError) {
-            console.error("Storage upload error", storageError);
-            throw new Error(storageError.message);
-          }
-
-          const { data: publicUrlData } = supabase.storage
-            .from("handpartners")
-            .getPublicUrl(filePath);
-
-          if (publicUrlData?.publicUrl) {
-            pdfPath = publicUrlData.publicUrl;
-          }
+          pdfPath = await uploadPdfToS3(file, filePath);
         }
 
         // (B-2) 최종 insert 객체
@@ -189,7 +204,9 @@ export async function updateJudgeCompany(formData: FormData) {
           judging_round_id: judgingRoundId,
           company_id: insertion.company_id,
           group_name:
-            !insertion.group_name || insertion.group_name.length === 0 ? "A" : insertion.group_name,
+            !insertion.group_name || insertion.group_name.length === 0
+              ? "A"
+              : insertion.group_name,
           pdf_path: pdfPath,
         });
       }
@@ -222,47 +239,22 @@ export async function updateJudgeCompany(formData: FormData) {
 
       // 만약 이번에 파일을 새로 업로드 했다면 갱신
       // (C-1) pdf 파일 업로드 확인
-      const fileKey = `files[${i}]`;
-      // 주의! index: i 를 쓸지, company_id와 매핑하는지 로직에 따라 달라질 수 있음
-      // toUpdate 배열 vs. companies 배열의 인덱스가 동일하다는 전제가 필요
-      // 안전하게는 companies.findIndex(...) 로 i를 찾거나, 별도 맵핑을 구성해야 합니다.
-
-      const file = formData.get(fileKey) as File | null;
+      const file = getCompanyFile(c.company_id);
       // console.log(file);
       if (file) {
         const uniqueId = uuidv4();
         const fileName = `${Date.now()}-${uniqueId}-${file.name}`;
         const filePath = `judging-round-pdfs/${fileName}`;
 
-        // console.log(filePath);
-
-        const { error: storageError } = await supabase.storage
-          .from("handpartners")
-          .upload(filePath, file, {
-            cacheControl: "3600",
-            upsert: true,
-          });
-        if (storageError) {
-          console.error("Storage upload error", storageError);
-          throw new Error(storageError.message);
-        }
-
-        // console.log("업로드 성공");
-
-        const { data: publicUrlData } = supabase.storage
-          .from("handpartners")
-          .getPublicUrl(filePath);
-
-        if (publicUrlData?.publicUrl) {
-          pdfPath = publicUrlData.publicUrl;
-        }
+        pdfPath = await uploadPdfToS3(file, filePath);
       }
 
       // (C-2) DB Update
       const { error: updateError } = await supabase
         .from("judging_round_company")
         .update({
-          group_name: !c.group_name || c.group_name.length === 0 ? "A" : c.group_name,
+          group_name:
+            !c.group_name || c.group_name.length === 0 ? "A" : c.group_name,
           pdf_path: pdfPath,
         })
         .eq("id", rowId);
@@ -284,6 +276,7 @@ interface CompanyPayload2 {
   company_id: number;
   group_name?: string;
   pdf_path?: string | null;
+  judge_num?: number;
 }
 
 /**
@@ -340,6 +333,7 @@ export async function updateJudgeCompany2(args: {
           company_id: c.company_id,
           group_name: c.group_name?.length === 0 ? "A" : c.group_name,
           pdf_path: c.pdf_path || null,
+          judge_num: c.judge_num ?? null,
         });
       } else {
         // 기존에도 있던 기업 → 업데이트
@@ -371,12 +365,13 @@ export async function updateJudgeCompany2(args: {
     // 5) 업데이트 처리
     for (const item of toUpdate) {
       const { rowId, payload } = item;
-      const { group_name, pdf_path } = payload;
+      const { group_name, pdf_path, judge_num } = payload;
       const { error: updateError } = await supabase
         .from("judging_round_company")
         .update({
           group_name: group_name?.length === 0 ? "A" : group_name,
           pdf_path: pdf_path ?? null,
+          judge_num: judge_num ?? null,
         })
         .eq("id", rowId);
       if (updateError) throw updateError;
@@ -384,7 +379,74 @@ export async function updateJudgeCompany2(args: {
 
     return { success: true };
   } catch (error: any) {
-    console.error("updateJudgeCompany error:", error);
+    console.error("updateJudgeCompany2 error:", error);
     return { success: false, message: error.message };
   }
+}
+
+export async function getJudgingRoundCompaniesPublic(judgingRoundId: number) {
+  const supabase = await createAdminClient();
+
+  const { data: round, error: roundError } = await supabase
+    .from("judging_round")
+    .select("name")
+    .eq("id", judgingRoundId)
+    .single();
+
+  if (roundError || !round) {
+    throw new Error("심사를 찾을 수 없습니다.");
+  }
+
+  const { data: companies, error: companiesError } = await supabase
+    .from("judging_round_company")
+    .select(
+      `id,
+       pdf_path,
+       original_filename,
+       submitted_at,
+       company:company_id (
+         name
+       )`
+    )
+    .eq("judging_round_id", judgingRoundId)
+    .order("id", { ascending: true });
+
+  if (companiesError) {
+    throw new Error(companiesError.message);
+  }
+
+  return {
+    roundName: round.name,
+    companies: companies ?? [],
+  };
+}
+
+export async function updateCompanyPdfPath(args: {
+  judgingRoundCompanyId: number;
+  pdfPath: string;
+  originalFilename: string;
+}) {
+  const supabase = await createAdminClient();
+
+  const { error } = await supabase
+    .from("judging_round_company")
+    .update({
+      pdf_path: args.pdfPath,
+      original_filename: args.originalFilename,
+      submitted_at: new Date().toISOString(),
+    })
+    .eq("id", args.judgingRoundCompanyId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { success: true };
+}
+
+export async function getCompanyPdfDownloadUrl(pdfPath: string) {
+  const { downloadUrl } = await createPresignedDownloadUrl({
+    objectPathOrUrl: pdfPath,
+  });
+  return { downloadUrl };
 }

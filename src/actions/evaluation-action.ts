@@ -2,6 +2,7 @@
 
 import { Database } from "types_db";
 import { createClient } from "@/lib/supabase/server";
+import { createPresignedDownloadUrl } from "@/lib/storage/s3";
 import {
   CompanyInfo,
   EvaluationItem,
@@ -39,7 +40,9 @@ export async function createEvaluation(
 ) {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const userId = user?.id;
   if (!userId) {
     throw new Error("User not authenticated");
@@ -85,7 +88,9 @@ export async function getEvaluationByUser(
 ): Promise<{ evaluations: EvaluationRecord[]; pdfPath: string | null }> {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const userId = user?.id;
   if (!userId) {
     throw new Error("User not authenticated");
@@ -120,7 +125,17 @@ export async function getEvaluationByUser(
   }
 
   // pdf_path 추출
-  const pdfPath = judgingRoundCompany?.pdf_path || null;
+  let pdfPath: string | null = null;
+  if (judgingRoundCompany?.pdf_path) {
+    try {
+      const { downloadUrl } = await createPresignedDownloadUrl({
+        objectPathOrUrl: judgingRoundCompany.pdf_path,
+      });
+      pdfPath = downloadUrl;
+    } catch (error) {
+      console.error("PDF path generation failed:", error);
+    }
+  }
 
   return { evaluations: evaluations || [], pdfPath };
 }
@@ -131,7 +146,9 @@ export async function getDetailedEvaluationsByUser(
   const supabase = await createClient();
 
   // 1. 인증된 사용자 ID 가져오기
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const userId = user?.id;
   if (!userId) {
     throw new Error("User not authenticated");

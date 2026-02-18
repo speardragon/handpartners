@@ -26,7 +26,7 @@ export function useLoginMutation() {
       }
     },
     onSuccess: () => {
-      router.refresh();
+      router.push("/");
     },
     onError: (error: any) => {
       if (error.message === "invalid_credentials") {

@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { CompanyRow } from "@/actions/company-action";
-import { Separator } from "@/components/ui/separator";
+import { useEffect, useState } from "react";
 import { useProgramCompanyQuery } from "../../../company/_hooks/useProgramCompanyQuery";
 import { useJudgingRoundCompanyQuery } from "../_hooks/useJudgingRoundCompanyQuery";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 
 interface Company {
   id: number;
@@ -27,16 +28,13 @@ export default function JudgeCompanySelect({
   targetList,
   onTargetListChange,
 }: CompanySelectProps) {
-  // const [search, setSearch] = useState("");
   const [selectedSourceIds, setSelectedSourceIds] = useState<number[]>([]);
   const [selectedTargetIds, setSelectedTargetIds] = useState<number[]>([]);
 
-  // useCompanyQuery 훅 사용 (10개씩, search)
   const { data: allCompanies } = useProgramCompanyQuery(programId);
   const { data: judgingRoundCompanies } =
     useJudgingRoundCompanyQuery(judgingRoundId);
 
-  // 1) 처음 로드 시, judgingRoundCompanies 로 targetList를 초기화
   useEffect(() => {
     if (judgingRoundCompanies && judgingRoundCompanies.length > 0) {
       const mapped = judgingRoundCompanies.map((item: any) => ({
@@ -44,11 +42,10 @@ export default function JudgeCompanySelect({
         name: item.company?.name || "",
         pdf_path: item.pdf_path,
         group_name: item.group_name,
+        judge_num: item.judge_num,
       }));
       onTargetListChange(mapped);
-    }
-    // 만약 라운드에 속한 기업이 없으면 빈 배열로 초기화
-    else if (judgingRoundCompanies && judgingRoundCompanies.length === 0) {
+    } else if (judgingRoundCompanies && judgingRoundCompanies.length === 0) {
       onTargetListChange([]);
     }
   }, [judgingRoundCompanies, onTargetListChange]);
@@ -57,153 +54,170 @@ export default function JudgeCompanySelect({
     allCompanies?.map((c) => ({ id: c.company_id, name: c.company.name })) ??
     [];
 
-  // 모든 Source 아이템이 선택되었는지 여부 (// 변경 부분)
   const areAllSelected =
     sourceList.length > 0 &&
     sourceList.every((company) => selectedSourceIds.includes(company.id));
 
-  // Source 영역에서 아이템 클릭 시 선택/해제 토글
   const handleSelectSource = (id: number) => {
     setSelectedSourceIds((prev) =>
       prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
     );
   };
 
-  // Target 영역에서 아이템 클릭 시 선택/해제 토글
   const handleSelectTarget = (id: number) => {
     setSelectedTargetIds((prev) =>
       prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
     );
   };
 
-  // ">" 버튼: Source에서 선택된 회사들을 Target으로 이동
   const moveSourceToTarget = () => {
     if (selectedSourceIds.length === 0) return;
-
-    // 이동할 아이템들
     const selectedItems = sourceList.filter((item) =>
       selectedSourceIds.includes(item.id)
     );
-
-    // 이미 target에 있는지 확인해서 중복 방지
     const newTargetItems = selectedItems.filter(
       (si) => !targetList.some((ti) => ti.id === si.id)
     );
-
-    // TargetList 업데이트
     onTargetListChange([...targetList, ...newTargetItems]);
-
-    // 선택 해제
     setSelectedSourceIds([]);
   };
 
-  // // "<" 버튼: Target에서 선택된 회사들을 다시 Source로 이동(이 예시에서는 사실상 Source에서 안 빼도 되지만, 요구사항에 맞춰 구현)
   const moveTargetToSource = () => {
     if (selectedTargetIds.length === 0) return;
-
-    // Target에서 선택된 아이템 제외
     const newTargetList = targetList.filter(
       (item) => !selectedTargetIds.includes(item.id)
     );
-
     onTargetListChange(newTargetList);
     setSelectedTargetIds([]);
   };
 
-  // 전체 선택/해제 핸들러 (// 변경 부분)
   const toggleSelectAllSource = () => {
-    // Source 아이템이 하나도 없으면 그냥 반환
     if (sourceList.length === 0) return;
-
-    // 이미 모두 선택된 경우 해제
     if (areAllSelected) {
       setSelectedSourceIds([]);
     } else {
-      // 모두 선택되지 않은 경우, 전체 선택
       setSelectedSourceIds(sourceList.map((company) => company.id));
     }
   };
 
   return (
-    <div className="flex w-full gap-1 items-center">
-      {/* Source 영역 */}
-      <div className="w-1/2 h-80 space-y-2 border border-gray-200 p-2 rounded-md flex flex-col">
-        <div className="text-sm font-semibold">
-          기업 리스트 ({selectedSourceIds.length}개 선택중)
+    <div className="flex w-full items-stretch gap-2">
+      {/* Source - 프로그램 참여 기업 */}
+      <div className="flex flex-1 flex-col rounded-lg border border-neutral-200 bg-white">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-3 py-2.5">
+          <span className="text-sm font-medium text-neutral-700">
+            프로그램 참여 기업
+          </span>
+          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
+            {selectedSourceIds.length}개 선택
+          </span>
         </div>
-        {/* 검색 인풋 */}
-        {/* <input
-          type="text"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-          }}
-          placeholder="기업명 검색"
-          className="border p-1 w-full rounded-md"
-        /> */}
-        {/* 전체 선택/해제 버튼 (// 변경 부분) */}
-        <div
-          onClick={toggleSelectAllSource}
-          className="border p-1 text-center rounded-md cursor-pointer text-xs bg-gray-100 hover:bg-gray-200"
-        >
-          {areAllSelected ? "전체 해제" : "전체 선택"}
+        <div className="border-b border-neutral-100 px-3 py-1.5">
+          <button
+            type="button"
+            onClick={toggleSelectAllSource}
+            className="w-full rounded-md px-2 py-1 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100"
+          >
+            {areAllSelected ? "전체 해제" : "전체 선택"}
+          </button>
         </div>
-        {/* 검색된 회사 리스트 (무한 스크롤) */}
-        <div className="flex-1 overflow-auto">
+        <div className="h-52 overflow-y-auto">
           {sourceList.map((company) => {
             const isSelected = selectedSourceIds.includes(company.id);
+            const isInTarget = targetList.some((t) => t.id === company.id);
             return (
-              <div
+              <label
                 key={company.id}
-                onClick={() => handleSelectSource(company.id)}
-                className={`p-2 border-b cursor-pointer ${
-                  isSelected ? "bg-blue-100" : "bg-white"
-                } hover:bg-blue-50`}
+                className={`flex items-center gap-2.5 border-b border-neutral-50 px-3 py-2 text-sm transition-colors ${
+                  isInTarget
+                    ? "cursor-default bg-neutral-50 text-neutral-400"
+                    : isSelected
+                      ? "cursor-pointer bg-neutral-100"
+                      : "cursor-pointer hover:bg-neutral-50"
+                }`}
               >
-                {company.name}
-              </div>
+                <Checkbox
+                  checked={isSelected || isInTarget}
+                  disabled={isInTarget}
+                  onCheckedChange={() => handleSelectSource(company.id)}
+                  className="h-4 w-4"
+                />
+                <span>{company.name}</span>
+                {isInTarget && (
+                  <span className="ml-auto text-xs text-neutral-400">
+                    추가됨
+                  </span>
+                )}
+              </label>
             );
           })}
+          {sourceList.length === 0 && (
+            <div className="flex h-full items-center justify-center text-sm text-neutral-400">
+              프로그램에 등록된 기업이 없습니다
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 버튼들 */}
-      <div className="flex flex-col gap-2">
-        <div
-          className="rounded-md p-1 px-2 bg-green-200 hover:bg-green-400 cursor-pointer"
+      {/* Transfer buttons */}
+      <div className="flex flex-col items-center justify-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
           onClick={moveSourceToTarget}
+          disabled={selectedSourceIds.length === 0}
         >
-          {">"}
-        </div>
-        <div
-          className="rounded-md p-1 px-2 bg-blue-200 hover:bg-blue-400 cursor-pointer"
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
           onClick={moveTargetToSource}
+          disabled={selectedTargetIds.length === 0}
         >
-          {"<"}
-        </div>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
       </div>
 
-      {/* Target 영역 */}
-      <div className="w-1/2 h-80 space-y-2 border border-gray-200 p-2 rounded-md flex flex-col ">
-        <div className="text-sm font-semibold">
-          선택된 기업 ({targetList.length}개)
+      {/* Target - 심사 참여 기업 */}
+      <div className="flex flex-1 flex-col rounded-lg border border-neutral-200 bg-white">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-3 py-2.5">
+          <span className="text-sm font-medium text-neutral-700">
+            심사 참여 기업
+          </span>
+          <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs font-medium text-white">
+            {targetList.length}개
+          </span>
         </div>
-        <Separator />
-        <div className="overflow-y-auto">
-          {targetList.map((company) => {
-            const isSelected = selectedTargetIds.includes(company.id);
-            return (
-              <div
-                key={company.id}
-                onClick={() => handleSelectTarget(company.id)}
-                className={`p-2 border-b cursor-pointer ${
-                  isSelected ? "bg-green-100" : "bg-white"
-                } hover:bg-green-50`}
-              >
-                {company.name}
-              </div>
-            );
-          })}
+        <div className="h-60 overflow-y-auto">
+          {targetList.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-sm text-neutral-400">
+              기업을 선택해주세요
+            </div>
+          ) : (
+            targetList.map((company) => {
+              const isSelected = selectedTargetIds.includes(company.id);
+              return (
+                <label
+                  key={company.id}
+                  className={`flex cursor-pointer items-center gap-2.5 border-b border-neutral-50 px-3 py-2 text-sm transition-colors ${
+                    isSelected ? "bg-neutral-100" : "hover:bg-neutral-50"
+                  }`}
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => handleSelectTarget(company.id)}
+                    className="h-4 w-4"
+                  />
+                  <span>{company.name}</span>
+                </label>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

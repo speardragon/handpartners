@@ -55,6 +55,24 @@ export async function getCompanies(
   };
 }
 
+export async function getCompanyById(
+  companyId: number
+): Promise<CompanyRow | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("company")
+    .select("*")
+    .eq("id", companyId)
+    .maybeSingle();
+
+  if (error) {
+    handleError(error);
+  }
+
+  return data;
+}
+
 export async function createCompany(company: CompanyRowInsert) {
   const supabase = await createClient();
 

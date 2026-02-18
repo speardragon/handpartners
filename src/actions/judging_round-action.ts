@@ -3,6 +3,7 @@
 import { Database } from "types_db";
 import { createClient } from "@/lib/supabase/server";
 import { v4 as uuidv4 } from "uuid";
+import { uploadPdfToS3 } from "@/lib/storage/s3";
 
 export type JudgingRoundRow =
   Database["public"]["Tables"]["judging_round"]["Row"];
@@ -349,34 +350,13 @@ export async function updateJudge(formData: FormData) {
 
       let pdfPath: string | null = null;
 
-      // (1) 파일이 있다면 Supabase Storage 업로드
+      // (1) 파일이 있다면 S3 업로드
       if (file) {
         const uniqueId = uuidv4();
         const fileName = `${Date.now()}-${uniqueId}`;
         const filePath = `judging-round-pdfs/${fileName}`;
 
-        // Supabase Storage에 업로드
-        const { error: storageError } =
-          await supabase.storage
-            .from("handpartners") // 실제 버킷명
-            .upload(filePath, file, {
-              cacheControl: "3600",
-              upsert: true,
-            });
-
-        if (storageError) {
-          console.error("Storage upload error", storageError);
-          throw new Error(storageError.message);
-        }
-
-        // public URL 생성
-        const { data: publicUrlData } = supabase.storage
-          .from("handpartners")
-          .getPublicUrl(filePath);
-
-        if (publicUrlData?.publicUrl) {
-          pdfPath = publicUrlData.publicUrl;
-        }
+        pdfPath = await uploadPdfToS3(file, filePath);
       }
 
       // (2) insert 레코드 생성
@@ -535,7 +515,10 @@ export async function getJudgingRoundDetails(
   }
 
   const companyList = companyData?.map((c) => {
-    const company = c.company as unknown as { name: string; description: string };
+    const company = c.company as unknown as {
+      name: string;
+      description: string;
+    };
     return {
       company_id: c.company_id,
       company_name: company.name,
@@ -589,7 +572,9 @@ export async function getJudgingRoundDetails(
       // 없다면 새로 삽입
       userEval = {
         user_id: evalItem.user_id,
-        username: (evalItem.user as unknown as { username: string })?.username ?? "(이름 없음)",
+        username:
+          (evalItem.user as unknown as { username: string })?.username ??
+          "(이름 없음)",
         feedback: evalItem.feedback, // 동일한 피드백이 들어오므로 일단 첫 레코드 feedback만 저장
         criteriaScores: [] as {
           evaluation_criterion_id: number;

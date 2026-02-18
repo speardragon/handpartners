@@ -5,7 +5,6 @@ import { PaginationState } from "@tanstack/react-table";
 import { JudgeDataTable } from "./_components/JudgeDataTable";
 import { useJudgingRoundsByProgram } from "./_hooks/useJudgingRoundsByProgram";
 import { judgeColumns } from "./_components/JudgeColumns";
-import Loading from "@/app/_components/Loading";
 
 type Props = {
   params: Promise<{
@@ -22,28 +21,23 @@ export default function Page({ params }: Props) {
     pageSize: 10,
   });
 
-  const { data, isPending } = useJudgingRoundsByProgram(
+  const { data, isFetching } = useJudgingRoundsByProgram(
     programIdNumber,
     pagination
   );
 
-  // if (!data) {
-  //   return (
-  //     <div className="animate-pulse space-y-4">
-  //       <div className="w-full h-6 bg-gray-200 rounded" />
-  //       <div className="w-5/6 h-6 bg-gray-200 rounded" />
-  //       <div className="w-4/6 h-6 bg-gray-200 rounded" />
-  //       <div className="w-3/6 h-6 bg-gray-200 rounded" />
-  //     </div>
-  //   );
-  // }
-
   return (
-    <div className="flex min-h-screen w-full flex-col justify-center space-y-2 bg-gray-50 p-10 px-24">
-      <div className="text-xl font-semibold">프로그램 {">"} 심사</div>
-      <div>{data?.result?.[0]?.program?.name}</div>
+    <div className="flex min-h-screen w-full flex-col space-y-4 p-4 sm:p-6 lg:p-8">
+      <div>
+        <h1 className="text-lg font-semibold text-neutral-900 sm:text-xl">
+          심사 관리
+        </h1>
+        <p className="mt-1 text-sm text-neutral-500">
+          {data?.result?.[0]?.program?.name}
+        </p>
+      </div>
       <JudgeDataTable
-        isPending={isPending}
+        isFetching={isFetching}
         programId={programIdNumber}
         totalPages={data?.totalPages ?? 0}
         pagination={pagination}
