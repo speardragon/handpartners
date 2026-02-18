@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState } from "react";
 import { useCompanyInfiniteQuery } from "../../company/_hooks/useCompanyInfiniteQuery";
+import { useInfiniteScroll } from "@/app/_hooks/useInfiniteScroll";
 import { CompanyRow } from "@/actions/company-action";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,10 +21,15 @@ export default function CompanySelect({
   const [search, setSearch] = useState("");
   const [selectedSourceIds, setSelectedSourceIds] = useState<number[]>([]);
   const [selectedTargetIds, setSelectedTargetIds] = useState<number[]>([]);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useCompanyInfiniteQuery(search);
+
+  const sentinelRef = useInfiniteScroll({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  });
 
   const sourceList = data?.pages.flatMap((page) => page.result) ?? [];
 
@@ -60,14 +66,6 @@ export default function CompanySelect({
     setSelectedTargetIds([]);
   };
 
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el || isFetchingNextPage || !hasNextPage) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
-      fetchNextPage();
-    }
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
   return (
     <div className="flex w-full items-stretch gap-2">
       {/* Source — 전체 기업 */}
@@ -91,11 +89,7 @@ export default function CompanySelect({
             />
           </div>
         </div>
-        <div
-          className="h-60 shrink-0 overflow-y-auto"
-          ref={scrollRef}
-          onScroll={handleScroll}
-        >
+        <div className="h-60 shrink-0 overflow-y-auto">
           {sourceList.map((company) => {
             const isSelected = selectedSourceIds.includes(company.id);
             const isInTarget = targetList.some((t) => t.id === company.id);
@@ -130,6 +124,7 @@ export default function CompanySelect({
               <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
             </div>
           )}
+          <div ref={sentinelRef} />
         </div>
       </div>
 

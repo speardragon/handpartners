@@ -23,7 +23,7 @@ function handleError(error: any) {
 }
 
 export async function getJudgingRoundUsersById(
-  judgingRoundId: number
+  judgingRoundId: string
 ): Promise<any> {
   const supabase = await createClient();
 
@@ -52,7 +52,7 @@ export interface UserPayload {
 }
 
 interface UpdateJudgeUserData {
-  judgingRoundId: number;
+  judgingRoundId: string;
   users: UserPayload[];
 }
 
@@ -84,7 +84,8 @@ export async function updateJudgeUser(data: UpdateJudgeUserData) {
     const newMap = new Map<string, { group_name: string }>();
     users.forEach((u) => {
       newMap.set(u.user_id, {
-        group_name: !u.group_name || u.group_name.length === 0 ? "A" : u.group_name,
+        group_name:
+          !u.group_name || u.group_name.length === 0 ? "A" : u.group_name,
       });
     });
 
@@ -120,7 +121,8 @@ export async function updateJudgeUser(data: UpdateJudgeUserData) {
       const insertPayload = toInsert.map((u) => ({
         judging_round_id: judgingRoundId,
         user_id: u.user_id,
-        group_name: !u.group_name || u.group_name.length === 0 ? "A" : u.group_name,
+        group_name:
+          !u.group_name || u.group_name.length === 0 ? "A" : u.group_name,
       }));
       const { error: insertError } = await supabase
         .from("judging_round_user")
@@ -140,7 +142,10 @@ export async function updateJudgeUser(data: UpdateJudgeUserData) {
       const rowId = existing.id;
       const { error: updateError } = await supabase
         .from("judging_round_user")
-        .update({ group_name: !u.group_name || u.group_name.length === 0 ? "A" : u.group_name })
+        .update({
+          group_name:
+            !u.group_name || u.group_name.length === 0 ? "A" : u.group_name,
+        })
         .eq("id", rowId);
 
       if (updateError) {

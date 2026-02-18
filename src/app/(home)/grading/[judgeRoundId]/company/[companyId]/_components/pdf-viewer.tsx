@@ -114,9 +114,7 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
           <Page
             className="flex justify-center"
             loading={
-              <div className="flex h-96 items-center justify-center">
-                로딩 중...
-              </div>
+              <div className="flex items-center justify-center">로딩 중...</div>
             }
             pageNumber={pageNumber}
             {...(isFull

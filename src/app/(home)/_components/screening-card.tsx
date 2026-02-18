@@ -16,17 +16,17 @@ export function ScreeningCard({ screening, onClick }: ScreeningCardProps) {
   return (
     <div
       onClick={() => onClick(screening)}
-      className="relative rounded-lg border bg-white p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      className="relative cursor-pointer rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
     >
-      <div className="absolute top-4 right-4">
-        {getStatusBadge(screening.screeningStatus)}
+      <div className="absolute right-4 top-4">
+        {getStatusBadge(screening.status)}
       </div>
 
-      <p className="text-xs text-muted-foreground truncate pr-16">
+      <p className="truncate pr-16 text-xs text-muted-foreground">
         {screening.program.name}
       </p>
 
-      <h3 className="mt-1 text-base font-semibold line-clamp-1 pr-16">
+      <h3 className="mt-1 line-clamp-1 pr-16 text-base font-semibold">
         {screening.name}
       </h3>
 

@@ -12,7 +12,7 @@ interface ScoreData {
   }[];
 }
 
-export function useScoresQuery(judgingRoundId: number, enabled = true) {
+export function useScoresQuery(judgingRoundId: string, enabled = true) {
   return useQuery<ScoreData>({
     queryKey: ["scores", judgingRoundId],
     queryFn: () => getCompanyScoresByRoundId(judgingRoundId),

@@ -8,7 +8,7 @@ interface FeedbackData {
   }[];
 }
 
-export function useFeedbacksQuery(judgingRoundId: number, enabled = true) {
+export function useFeedbacksQuery(judgingRoundId: string, enabled = true) {
   return useQuery<FeedbackData>({
     queryKey: ["feedbacks", judgingRoundId],
     queryFn: () => getCompanyFeedbacksByRoundId(judgingRoundId),

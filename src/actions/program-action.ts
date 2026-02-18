@@ -10,7 +10,7 @@ export type ProgramRowUpdate =
   Database["public"]["Tables"]["program"]["Update"];
 // 인터페이스 정의
 export interface Screening {
-  id: number; // 심사 ID(judging_round)
+  id: string; // 심사 ID(judging_round)
   name: string; // 심사 이름(judging_round)
   start_date: string;
   end_date: string;
@@ -60,13 +60,25 @@ export async function getProgramById(programId: number) {
   return data;
 }
 
-export async function getPrograms(page: number, size: number): Promise<Result> {
+export async function getPrograms(
+  page: number,
+  size: number,
+  search?: string
+): Promise<Result> {
   const supabase = await createClient();
-  const { data, error, count } = await supabase
+  let query = supabase
     .from("program")
     .select("*", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range((page - 1) * size, page * size - 1);
+    .order("created_at", { ascending: false });
+
+  if (search) {
+    query = query.ilike("name", `%${search}%`);
+  }
+
+  const { data, error, count } = await query.range(
+    (page - 1) * size,
+    page * size - 1
+  );
 
   if (error) {
     handleError(error);
@@ -165,6 +177,7 @@ export async function deleteProgram(programId: number) {
 
 export interface ScreeningWithStatus extends Screening {
   screeningStatus: "진행 전" | "진행 중" | "종료";
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
 }
 
 export interface AllScreeningsResult {
@@ -175,7 +188,7 @@ export interface AllScreeningsResult {
 }
 
 export async function checkParticipation(
-  judgingRoundId: number
+  judgingRoundId: string
 ): Promise<boolean> {
   const supabase = await createClient();
   const {
@@ -197,7 +210,7 @@ export async function getAllScreenings(
   page: number,
   size: number,
   isAdmin: boolean,
-  judgingRoundId?: number,
+  judgingRoundId?: string,
   isParticipating?: boolean
 ): Promise<AllScreeningsResult> {
   const supabase = await createClient();
@@ -212,10 +225,6 @@ export async function getAllScreenings(
     throw new Error("User not authenticated");
   }
 
-  const nowUtc = new Date();
-  const nowKst = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
-  const nowKstIsoString = nowKst.toISOString();
-
   // 관리자+참여 시 심사자와 동일한 데이터 로직 사용
   const useJudgeLogic = !isAdmin || (isAdmin && isParticipating);
 
@@ -228,6 +237,7 @@ export async function getAllScreenings(
       name,
       start_date,
       end_date,
+      status,
       program:program_id (
         id,
         name,
@@ -283,7 +293,7 @@ export async function getAllScreenings(
 
   // Step 2: (judging_round_id, company_id) 쌍을 만든다.
   const judgingCompanyPairs: {
-    judging_round_id: number;
+    judging_round_id: string;
     company_id: number;
   }[] = [];
   screenings.forEach((screening: any) => {
@@ -338,15 +348,15 @@ export async function getAllScreenings(
 
   // Step 4: 심사 상태 판별 및 결과 매핑
   const result: ScreeningWithStatus[] = screenings.map((screening: any) => {
-    // 심사 상태 판별
-    let screeningStatus: "진행 전" | "진행 중" | "종료";
-    if (screening.end_date < nowKstIsoString) {
-      screeningStatus = "종료";
-    } else if (screening.start_date <= nowKstIsoString) {
-      screeningStatus = "진행 중";
-    } else {
-      screeningStatus = "진행 전";
-    }
+    const status: "PENDING" | "IN_PROGRESS" | "COMPLETED" =
+      screening.status ?? "PENDING";
+
+    const screeningStatus =
+      status === "IN_PROGRESS"
+        ? "진행 중"
+        : status === "COMPLETED"
+          ? "종료"
+          : "진행 전";
 
     return {
       id: screening.id,
@@ -354,6 +364,7 @@ export async function getAllScreenings(
       start_date: screening.start_date,
       end_date: screening.end_date,
       screeningStatus,
+      status,
       program: {
         id: screening.program.id,
         name: screening.program.name,
@@ -459,7 +470,7 @@ export async function getScreenings(): Promise<any> {
 
   // Step 2: (judging_round_id, company_id) 쌍을 만든다.
   const judgingCompanyPairs: {
-    judging_round_id: number;
+    judging_round_id: string;
     company_id: number;
   }[] = [];
   screenings.forEach((screening) => {

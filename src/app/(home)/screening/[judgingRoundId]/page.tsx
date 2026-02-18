@@ -21,7 +21,7 @@ import { ArrowLeft } from "lucide-react";
 export default function ScreeningDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const judgingRoundId = Number(params.judgingRoundId);
+  const judgingRoundId = params.judgingRoundId as string;
 
   const { data: profile } = useUserProfileQuery();
   const isAdmin = profile?.role === "관리자";
@@ -45,12 +45,12 @@ export default function ScreeningDetailPage() {
   }
 
   return (
-    <main className="flex flex-col items-center w-full">
-      <div className="flex flex-col space-y-4 w-full max-w-[960px] p-4">
+    <main className="flex w-full flex-col items-center">
+      <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4">
         {/* 뒤로가기 */}
         <Button
           variant="ghost"
-          className="self-start flex items-center gap-1 text-gray-600 hover:text-gray-900 px-2"
+          className="flex items-center gap-1 self-start px-2 text-gray-600 hover:text-gray-900"
           onClick={() => router.push("/")}
         >
           <ArrowLeft size={16} />
@@ -66,11 +66,12 @@ export default function ScreeningDetailPage() {
             judgingRoundId={screening.id}
             programId={screening.program.id}
             programName={screening.program.name}
+            currentStatus={screening.status}
           />
         )}
 
         {/* 통계 카드 그리드 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <ScoreDistributionTable
             companies={screening.companies}
             isAdminView={isAdminView}

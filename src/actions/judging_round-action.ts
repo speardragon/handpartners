@@ -4,6 +4,10 @@ import { Database } from "types_db";
 import { createClient } from "@/lib/supabase/server";
 import { v4 as uuidv4 } from "uuid";
 import { uploadPdfToS3 } from "@/lib/storage/s3";
+import { generateJudgingRoundId } from "@/lib/utils/judging-round-id";
+
+export type JudgingRoundStatus =
+  Database["public"]["Enums"]["judging_round_status"];
 
 export type JudgingRoundRow =
   Database["public"]["Tables"]["judging_round"]["Row"];
@@ -104,7 +108,7 @@ export async function getJudgingRoundsByProgramId(
 
   // 라운드별 기업 수 집계 (딕셔너리 형태)
   // { [roundId]: numberOfCompanies }
-  const companyCountsMap: Record<number, number> = {};
+  const companyCountsMap: Record<string, number> = {};
   companyRows?.forEach((row) => {
     if (!companyCountsMap[row.judging_round_id]) {
       companyCountsMap[row.judging_round_id] = 0;
@@ -124,7 +128,7 @@ export async function getJudgingRoundsByProgramId(
 
   // 라운드별 사용자 수 집계
   // { [roundId]: numberOfUsers }
-  const userCountsMap: Record<number, number> = {};
+  const userCountsMap: Record<string, number> = {};
   userRows?.forEach((row) => {
     if (!userCountsMap[row.judging_round_id]) {
       userCountsMap[row.judging_round_id] = 0;
@@ -156,6 +160,7 @@ export async function createJudgingRound(judgingRound: JudgingRoundRowInsert) {
 
   const { data, error } = await supabase.from("judging_round").insert({
     ...judgingRound,
+    id: generateJudgingRoundId(),
     created_at: new Date().toISOString(),
   });
 
@@ -183,12 +188,30 @@ export async function updateJudgingRound(judgingRound: JudgingRoundRowUpdate) {
   return data;
 }
 
-export async function deleteJudgingRound(judgingRoundId: number) {
+export async function deleteJudgingRound(judgingRoundId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("judging_round")
     .delete()
+    .eq("id", judgingRoundId);
+
+  if (error) {
+    handleError(error);
+  }
+
+  return data;
+}
+
+export async function updateJudgingRoundStatus(
+  judgingRoundId: string,
+  status: JudgingRoundStatus
+) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("judging_round")
+    .update({ status })
     .eq("id", judgingRoundId);
 
   if (error) {
@@ -205,13 +228,13 @@ export interface JudgingRoundWithCriterias extends JudgingRoundRow {
   };
   criterias: {
     id: number;
-    judging_round_id: number;
+    judging_round_id: string;
     item_name: string;
     points: number;
     description: string;
   }[];
 }
-export async function getJudgeById(judgeRoundId: number): Promise<any> {
+export async function getJudgeById(judgeRoundId: string): Promise<any> {
   const supabase = await createClient();
 
   const { data: judgingRoundData, error: judgingRoundError } = await supabase
@@ -282,7 +305,7 @@ export async function updateJudge(formData: FormData) {
     if (!judgingRoundIdString) {
       throw new Error("judgingRoundId가 없습니다.");
     }
-    const judgingRoundId = parseInt(judgingRoundIdString, 10);
+    const judgingRoundId = judgingRoundIdString;
 
     // 2) companies (JSON 문자열) -> 파싱
     const companiesJson = formData.get("companies") as string;
@@ -335,7 +358,7 @@ export async function updateJudge(formData: FormData) {
 
     // 5) 새로 insert할 judge_round_company 데이터 구성
     const companyInserts: {
-      judging_round_id: number;
+      judging_round_id: string;
       company_id: number;
       pdf_path?: string | null;
       group_name?: string;
@@ -393,7 +416,7 @@ export async function updateJudge(formData: FormData) {
 }
 
 export interface JudgeBasicData {
-  judgingRoundId: number;
+  judgingRoundId: string;
   name?: string;
   description?: string;
   start_date?: string;
@@ -432,7 +455,7 @@ export async function updateJudgeBasic(data: JudgeBasicData) {
 }
 
 export type JudgingRoundDetail = {
-  id: number;
+  id: string;
   name: string;
   start_date: string | null;
   end_date: string | null;
@@ -461,7 +484,7 @@ export type JudgingRoundDetail = {
 };
 
 export async function getJudgingRoundDetails(
-  judgingRoundId: number
+  judgingRoundId: string
 ): Promise<JudgingRoundDetail> {
   const supabase = await createClient();
 
@@ -614,7 +637,7 @@ export async function getJudgingRoundDetails(
  * 주어진 judging_round_id를 기반으로
  * 회사별(Company.name) 모든 feedback을 배열 형태로 모아서 반환
  */
-export async function getCompanyFeedbacksByRoundId(judging_round_id: number) {
+export async function getCompanyFeedbacksByRoundId(judging_round_id: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -676,7 +699,7 @@ export interface CompanyScoreResult {
  * 회사별 (심사자별 점수 합, totalScore, 평균, 순위)를 구해 반환
  */
 export async function getCompanyScoresByRoundId(
-  judging_round_id: number
+  judging_round_id: string
 ): Promise<{ companies: CompanyScoreResult[] }> {
   const supabase = await createClient();
 

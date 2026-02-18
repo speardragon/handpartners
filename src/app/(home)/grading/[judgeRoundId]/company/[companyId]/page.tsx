@@ -13,7 +13,7 @@ import { FileText, ClipboardList } from "lucide-react";
 const Page = () => {
   const params = useParams<{ judgeRoundId: string; companyId: string }>();
 
-  const judgeRoundId = parseInt(params.judgeRoundId);
+  const judgeRoundId = params.judgeRoundId;
   const companyId = parseInt(params.companyId);
 
   const { data: judgeRound } = useJudgeQuery(judgeRoundId);
@@ -32,11 +32,30 @@ const Page = () => {
 
   return (
     <div
-      className={`flex h-full w-full min-h-0 overflow-hidden ${
+      className={`flex h-full min-h-0 w-full overflow-hidden ${
         isFull ? "flex-col" : "flex-row"
       }`}
     >
-      {/* 왼쪽 영역: EvaluateTable */}
+      <div
+        className={`flex min-h-0 flex-col border-l bg-gray-50 ${
+          isFull ? "h-full w-full" : "w-1/2"
+        }`}
+      >
+        {!isFull && (
+          <div className="flex shrink-0 items-center gap-2 border-b bg-white px-6 py-3">
+            <FileText size={14} className="text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">
+              제출 서류
+            </span>
+          </div>
+        )}
+        <PdfViewer
+          isFull={isFull}
+          handleFullButton={handleFullButton}
+          pdfPath={existEvaluation?.pdfPath ?? ""}
+        />
+      </div>
+
       <div
         className={`flex min-h-0 flex-1 flex-col overflow-y-auto ${
           isFull ? "hidden" : "w-1/2"
@@ -61,27 +80,6 @@ const Page = () => {
             isParticipant={isParticipant ?? false}
           />
         </div>
-      </div>
-
-      {/* 오른쪽 영역: PdfViewer */}
-      <div
-        className={`flex min-h-0 flex-col border-l bg-gray-50 ${
-          isFull ? "h-full w-full" : "w-1/2"
-        }`}
-      >
-        {!isFull && (
-          <div className="flex shrink-0 items-center gap-2 border-b bg-white px-6 py-3">
-            <FileText size={14} className="text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground">
-              제출 서류
-            </span>
-          </div>
-        )}
-        <PdfViewer
-          isFull={isFull}
-          handleFullButton={handleFullButton}
-          pdfPath={existEvaluation?.pdfPath ?? ""}
-        />
       </div>
     </div>
   );

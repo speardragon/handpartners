@@ -34,7 +34,7 @@ type EvaluationUpsert = {
   created_at: string;
 };
 export async function createEvaluation(
-  judgeRoundId: number,
+  judgeRoundId: string,
   companyId: number,
   data: EvaluationUpsert[]
 ) {
@@ -73,7 +73,7 @@ export async function createEvaluation(
 
 type EvaluationRecord = {
   id: number;
-  judging_round_id: number;
+  judging_round_id: string;
   company_id: number;
   evaluation_criterion_id: number;
   grade: number;
@@ -83,7 +83,7 @@ type EvaluationRecord = {
   status: string | null;
 };
 export async function getEvaluationByUser(
-  judgeRoundId: number,
+  judgeRoundId: string,
   companyId: number
 ): Promise<{ evaluations: EvaluationRecord[]; pdfPath: string | null }> {
   const supabase = await createClient();
@@ -141,7 +141,7 @@ export async function getEvaluationByUser(
 }
 
 export async function getDetailedEvaluationsByUser(
-  judgingRoundId: number
+  judgingRoundId: string
 ): Promise<FinalResult[]> {
   const supabase = await createClient();
 
@@ -294,7 +294,7 @@ export async function getDetailedEvaluationsByUser(
  * 특정 userId의 평가 데이터를 조회하는 함수 (관리자용)
  */
 export async function getDetailedEvaluationsByUserId(
-  judgingRoundId: number,
+  judgingRoundId: string,
   userId: string
 ): Promise<FinalResult[]> {
   const supabase = await createClient();
@@ -424,7 +424,7 @@ export type JudgeEvaluationResult = {
  * 해당 라운드의 모든 심사자 평가 데이터를 조회하는 함수 (관리자용)
  */
 export async function getAllJudgeEvaluations(
-  judgingRoundId: number
+  judgingRoundId: string
 ): Promise<JudgeEvaluationResult[]> {
   const supabase = await createClient();
 

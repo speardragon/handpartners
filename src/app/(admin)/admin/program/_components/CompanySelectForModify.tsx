@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useProgramCompanyQuery } from "../../company/_hooks/useProgramCompanyQuery";
 import { useCompanyInfiniteQuery } from "../../company/_hooks/useCompanyInfiniteQuery";
+import { useInfiniteScroll } from "@/app/_hooks/useInfiniteScroll";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,10 +28,14 @@ export default function CompanySelectForModify({
   const [search, setSearch] = useState("");
   const [selectedSourceIds, setSelectedSourceIds] = useState<number[]>([]);
   const [selectedTargetIds, setSelectedTargetIds] = useState<number[]>([]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useCompanyInfiniteQuery(search);
+
+  const sentinelRef = useInfiniteScroll({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  });
 
   const { data: allCompanies, isLoading } = useProgramCompanyQuery(
     programId ?? 0
@@ -82,14 +87,6 @@ export default function CompanySelectForModify({
     setSelectedTargetIds([]);
   };
 
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el || isFetchingNextPage || !hasNextPage) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
-      fetchNextPage();
-    }
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
@@ -121,11 +118,7 @@ export default function CompanySelectForModify({
             />
           </div>
         </div>
-        <div
-          className="h-60 shrink-0 overflow-y-auto"
-          ref={scrollRef}
-          onScroll={handleScroll}
-        >
+        <div className="h-60 shrink-0 overflow-y-auto">
           {sourceList.map((company) => {
             const isSelected = selectedSourceIds.includes(company.id);
             const isInTarget = targetList.some((t) => t.id === company.id);
@@ -160,6 +153,7 @@ export default function CompanySelectForModify({
               <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
             </div>
           )}
+          <div ref={sentinelRef} />
         </div>
       </div>
 

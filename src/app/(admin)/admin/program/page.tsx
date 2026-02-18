@@ -5,14 +5,20 @@ import { useProgramQuery } from "./_hooks/useProgramQuery";
 import { PaginationState } from "@tanstack/react-table";
 import { ProgramDataTable } from "./_components/ProgramDataTable";
 import { programColumns } from "./_components/ProgramColumns2";
+import { useDebounce } from "@/app/_hooks/useDebounce";
 
 export default function Page() {
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 5,
   });
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
 
-  const { data: programs, isFetching } = useProgramQuery(pagination);
+  const { data: programs, isFetching } = useProgramQuery(
+    pagination,
+    debouncedSearch
+  );
 
   return (
     <div className="flex min-h-screen w-full flex-col space-y-4 p-4 sm:p-6 lg:p-10">
@@ -24,6 +30,11 @@ export default function Page() {
         data={programs?.result || []}
         columns={programColumns}
         isFetching={isFetching}
+        search={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+        }}
       />
     </div>
   );

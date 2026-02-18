@@ -14,7 +14,7 @@ import {
 } from "../_lib/score-helper";
 
 type Props = {
-  judgingRoundId: number;
+  judgingRoundId: string;
   className?: string;
 };
 

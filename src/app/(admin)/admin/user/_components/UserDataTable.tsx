@@ -22,8 +22,9 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { UserRow } from "@/actions/user-actions";
 import { DataTablePagination } from "../../_components/DataTablePagination";
 import UserCreateDialog from "./UserCreateDialog";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -34,6 +35,8 @@ interface DataTableProps<TData, TValue> {
   setPagination: Dispatch<SetStateAction<PaginationState>>;
   totalPages: number;
   isFetching?: boolean;
+  search: string;
+  onSearchChange: (value: string) => void;
 }
 
 const SKELETON_ROW_COUNT = 10;
@@ -45,6 +48,8 @@ export function UserDataTable<TData, TValue>({
   setPagination,
   totalPages,
   isFetching,
+  search,
+  onSearchChange,
 }: DataTableProps<TData, TValue>) {
   const { setOpen, setCreateOpen } = useDialogOpenStore((state) => state);
 
@@ -89,14 +94,21 @@ export function UserDataTable<TData, TValue>({
       <UserEditDialog userId={userId} userProfile={userProfile} />
       <UserCreateDialog />
 
-      <div className="flex w-full items-center justify-between">
-        <p className="text-xs text-neutral-500 sm:text-sm">
-          목록을 클릭하면 수정할 수 있습니다
-        </p>
+      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <Input
+            type="text"
+            placeholder="이름 또는 소속으로 검색..."
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-9"
+          />
+        </div>
         <Button
           onClick={() => setCreateOpen(true)}
           size="sm"
-          className="gap-1.5"
+          className="gap-1.5 self-end"
         >
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">사용자 추가</span>
@@ -200,7 +212,7 @@ export function UserDataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center text-sm text-neutral-500"
                 >
-                  데이터가 없습니다.
+                  {search ? "검색 결과가 없습니다." : "데이터가 없습니다."}
                 </TableCell>
               </TableRow>
             )}

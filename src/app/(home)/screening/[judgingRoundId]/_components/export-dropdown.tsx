@@ -5,7 +5,7 @@ import FeedbackToExcelButton from "@/app/(home)/_components/FeedbackToExcelButto
 import PdfDownloadButton from "@/app/(home)/_components/PdfDownloadButton";
 
 interface ExportDropdownProps {
-  judgingRoundId: number;
+  judgingRoundId: string;
   programId: number;
 }
 
@@ -18,7 +18,7 @@ export default function ExportDropdown({
 }: ExportDropdownProps) {
   return (
     <div className="rounded-lg border bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-semibold text-gray-700 mb-3">내보내기</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700">내보내기</h2>
       <div className="flex flex-wrap gap-2">
         <ScoreToExcelButton
           className={exportButtonClass}

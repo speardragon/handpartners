@@ -37,11 +37,11 @@ export default function Home() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [judgingRoundId, setJudgingRoundId] = useState<number | undefined>(
-    undefined,
+    undefined
   );
 
   const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(
-    null,
+    null
   );
 
   const handleSearchChange = useCallback(
@@ -65,21 +65,21 @@ export default function Home() {
 
       setDebounceTimer(timer);
     },
-    [debounceTimer],
+    [debounceTimer]
   );
 
   const { data, isLoading } = useAllScreeningsQuery(
     page,
     PAGE_SIZE,
     isAdmin,
-    judgingRoundId,
+    judgingRoundId
   );
 
   const handleRowClick = useCallback(
     (screening: ScreeningWithStatus) => {
       router.push(`/screening/${screening.id}`);
     },
-    [router],
+    [router]
   );
 
   const stats = useMemo(() => {
@@ -87,9 +87,9 @@ export default function Home() {
     const all = data.result;
     return {
       total: data.totalElements,
-      active: all.filter((s) => s.screeningStatus === "진행 중").length,
-      completed: all.filter((s) => s.screeningStatus === "종료").length,
-      upcoming: all.filter((s) => s.screeningStatus === "진행 전").length,
+      active: all.filter((s) => s.status === "IN_PROGRESS").length,
+      completed: all.filter((s) => s.status === "COMPLETED").length,
+      upcoming: all.filter((s) => s.status === "PENDING").length,
     };
   }, [data]);
 
@@ -116,7 +116,7 @@ export default function Home() {
 
   if (data.result.length === 0 && !judgingRoundId) {
     return (
-      <div className="flex flex-col w-full h-full justify-center items-center gap-2">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2">
         <CalendarX2 size={48} />
         <div className="text-lg font-semibold text-gray-700">
           {isAdmin ? "등록된 심사가 없습니다." : "참여 중인 심사가 없습니다."}
@@ -126,9 +126,9 @@ export default function Home() {
   }
 
   return (
-    <main className="flex flex-col items-center w-full">
-      <div className="flex flex-col space-y-4 w-full max-w-[960px] p-4">
-        <div className="w-full text-2xl font-bold text-center">
+    <main className="flex w-full flex-col items-center">
+      <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4">
+        <div className="w-full text-center text-2xl font-bold">
           {isAdmin ? "전체 심사 목록" : "나의 심사 목록"}
         </div>
 
@@ -192,7 +192,7 @@ export default function Home() {
         </div>
 
         {data.result.length === 0 && judgingRoundId && (
-          <div className="flex flex-col w-full py-12 justify-center items-center gap-2 text-gray-500">
+          <div className="flex w-full flex-col items-center justify-center gap-2 py-12 text-gray-500">
             <Search size={36} />
             <div className="text-sm">
               심사 번호 {judgingRoundId}에 해당하는 심사를 찾을 수 없습니다.
@@ -202,7 +202,7 @@ export default function Home() {
 
         {/* 카드 그리드 */}
         {data.result.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {data.result.map((screening) => (
               <ScreeningCard
                 key={screening.id}

@@ -10,7 +10,7 @@ interface EvaluationItem {
 }
 
 interface UseEvaluationMutationArgs {
-  judgeRoundId: number;
+  judgeRoundId: string;
   companyId: number;
   feedback: string;
   evaluations: EvaluationItem[];
@@ -52,10 +52,6 @@ export function useEvaluationMutation() {
       toast.success("평가와 피드백이 성공적으로 저장되었습니다!", {
         position: "top-center",
       });
-      // 관련된 쿼리 재검증
-      queryClient.invalidateQueries();
-      // 다른 페이지로 이동
-      router.back();
     },
     onError: (error: unknown) => {
       toast.error("저장 중 문제가 발생했습니다.");

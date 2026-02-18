@@ -29,7 +29,7 @@ function handleError(error: any) {
 }
 
 export async function getJudgingRoundCompaniesById(
-  judgingRoundId: number
+  judgingRoundId: string
 ): Promise<any> {
   const supabase = await createClient();
 
@@ -93,7 +93,7 @@ export async function updateJudgeCompany(formData: FormData) {
     if (!judgingRoundIdString) {
       throw new Error("judgingRoundId가 없습니다.");
     }
-    const judgingRoundId = parseInt(judgingRoundIdString, 10);
+    const judgingRoundId = judgingRoundIdString;
     // console.log({ judgingRoundId });
 
     // 2) companies JSON 파싱
@@ -284,7 +284,7 @@ interface CompanyPayload2 {
  * DB에 최종 pdf_path 등만 반영하는 Server Action
  */
 export async function updateJudgeCompany2(args: {
-  judgingRoundId: number;
+  judgingRoundId: string;
   companies: CompanyPayload2[];
 }) {
   const supabase = await createClient();
@@ -384,7 +384,7 @@ export async function updateJudgeCompany2(args: {
   }
 }
 
-export async function getJudgingRoundCompaniesPublic(judgingRoundId: number) {
+export async function getJudgingRoundCompaniesPublic(judgingRoundId: string) {
   const supabase = await createAdminClient();
 
   const { data: round, error: roundError } = await supabase

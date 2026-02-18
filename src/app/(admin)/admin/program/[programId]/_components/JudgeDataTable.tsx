@@ -78,7 +78,13 @@ export function JudgeDataTable<TData, TValue>({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.back()}
+          onClick={() => {
+            if (window.history.length > 1) {
+              router.back();
+            } else {
+              router.push("/admin/program");
+            }
+          }}
           className="gap-1.5 text-neutral-600"
         >
           <ArrowLeft className="h-4 w-4" />

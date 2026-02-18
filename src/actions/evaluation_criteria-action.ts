@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * 특정 judgingRoundId에 대한 evaluation_criteria 목록 조회
  */
-export async function getJudgingCriteriaByRound(judgingRoundId: number) {
+export async function getJudgingCriteriaByRound(judgingRoundId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -31,7 +31,7 @@ export interface CriteriaItemPayload {
 }
 
 export interface UpdateJudgeCriteriaData {
-  judgingRoundId: number;
+  judgingRoundId: string;
   criteriaList: CriteriaItemPayload[];
 }
 

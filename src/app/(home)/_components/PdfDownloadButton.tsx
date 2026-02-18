@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 
 type Props = {
-  judgingRoundId: number;
+  judgingRoundId: string;
   programId: number;
   className?: string;
 };

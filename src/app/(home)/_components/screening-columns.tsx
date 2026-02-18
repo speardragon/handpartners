@@ -30,17 +30,17 @@ export const screeningColumns: ColumnDef<ScreeningWithStatus>[] = [
       const startDate = row.original.start_date?.slice(0, 10) ?? "";
       const endDate = row.original.end_date?.slice(0, 10) ?? "";
       return (
-        <div className="text-sm whitespace-nowrap">
+        <div className="whitespace-nowrap text-sm">
           {startDate} ~ {endDate}
         </div>
       );
     },
   },
   {
-    accessorKey: "screeningStatus",
+    accessorKey: "status",
     header: "상태",
     cell: ({ row }) => {
-      return getStatusBadge(row.original.screeningStatus);
+      return getStatusBadge(row.original.status);
     },
   },
 ];

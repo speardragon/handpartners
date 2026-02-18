@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createEvaluation } from "@/actions/evaluation-action";
 
 interface AutoSaveArgs {
-  judgeRoundId: number;
+  judgeRoundId: string;
   companyId: number;
   feedback: string;
   evaluations: { id: number; grade: number }[];

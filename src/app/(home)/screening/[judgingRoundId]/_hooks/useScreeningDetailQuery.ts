@@ -7,18 +7,18 @@ import {
 import { useQuery } from "@tanstack/react-query";
 
 export const useParticipationQuery = (
-  judgingRoundId: number,
+  judgingRoundId: string,
   enabled: boolean = true
 ) => {
   return useQuery<boolean>({
     queryKey: ["participation", judgingRoundId],
     queryFn: () => checkParticipation(judgingRoundId),
-    enabled: judgingRoundId > 0 && enabled,
+    enabled: !!judgingRoundId && enabled,
   });
 };
 
 export const useScreeningDetailQuery = (
-  judgingRoundId: number,
+  judgingRoundId: string,
   isAdmin: boolean,
   isParticipating?: boolean
 ) => {
@@ -34,6 +34,7 @@ export const useScreeningDetailQuery = (
       );
       return result.result[0] ?? null;
     },
-    enabled: judgingRoundId > 0 && (isAdmin ? isParticipating !== undefined : true),
+    enabled:
+      !!judgingRoundId && (isAdmin ? isParticipating !== undefined : true),
   });
 };

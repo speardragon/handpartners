@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Info, Loader2, CircleDot, CheckCircle2 } from "lucide-react";
+import { Info, Loader2, CircleDot, CheckCircle2, Ban } from "lucide-react";
 import { useCompanyQuery } from "../_hooks/useCompanyQuery";
 
 type EvaluationStatus = "ONGOING" | "DONE" | null;
@@ -33,7 +33,7 @@ type EvaluationItem = {
 };
 
 type Props = {
-  judgeRoundId: number;
+  judgeRoundId: string;
   companyId: number;
   isParticipant: boolean;
 };
@@ -73,6 +73,9 @@ export default function EvaluateTable({
   const { data: existEvaluation } = useEvaluationQuery(judgeRoundId, companyId);
   const { data: company } = useCompanyQuery(companyId);
 
+  const isJudgingActive = judgeRound?.status === "IN_PROGRESS";
+  const canEdit = isParticipant && isJudgingActive;
+
   const { mutate: submitEvaluation, isPending } = useEvaluationMutation();
   const { mutate: autoSave, isPending: isAutoSaving } = useAutoSaveMutation();
 
@@ -109,8 +112,7 @@ export default function EvaluateTable({
 
   // 자동 저장
   const triggerAutoSave = useCallback(() => {
-    if (!isInitialized.current || !isParticipant || evaluations.length === 0)
-      return;
+    if (!isInitialized.current || !canEdit || evaluations.length === 0) return;
 
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
@@ -120,7 +122,7 @@ export default function EvaluateTable({
         { onSuccess: () => setStatus("ONGOING") }
       );
     }, DEBOUNCE_MS);
-  }, [judgeRoundId, companyId, feedback, evaluations, isParticipant, autoSave]);
+  }, [judgeRoundId, companyId, feedback, evaluations, canEdit, autoSave]);
 
   useEffect(() => {
     triggerAutoSave();
@@ -143,7 +145,7 @@ export default function EvaluateTable({
   };
 
   const handleClose = () => {
-    if (isParticipant && status === "ONGOING") {
+    if (canEdit && status === "ONGOING") {
       setShowLeaveDialog(true);
     } else {
       router.back();
@@ -151,7 +153,10 @@ export default function EvaluateTable({
   };
 
   const handleSubmit = () => {
-    submitEvaluation({ judgeRoundId, companyId, feedback, evaluations });
+    submitEvaluation(
+      { judgeRoundId, companyId, feedback, evaluations },
+      { onSuccess: () => setStatus("DONE") }
+    );
   };
 
   const totalScore = evaluations.reduce((sum, item) => sum + item.grade, 0);
@@ -175,6 +180,17 @@ export default function EvaluateTable({
         <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           <Info size={16} className="shrink-0" />
           <span>참여 중인 심사가 아니므로 점수를 제출할 수 없습니다.</span>
+        </div>
+      )}
+
+      {isParticipant && !isJudgingActive && (
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+          <Ban size={16} className="shrink-0" />
+          <span>
+            {judgeRound?.status === "PENDING"
+              ? "아직 심사가 시작되지 않았습니다. 심사가 시작되면 평가할 수 있습니다."
+              : "심사가 종료되어 점수를 수정하거나 제출할 수 없습니다."}
+          </span>
         </div>
       )}
 
@@ -206,7 +222,7 @@ export default function EvaluateTable({
                     value={item.grade}
                     max={item.points}
                     onChange={(e) => handleInputChange(item.id, e.target.value)}
-                    disabled={!isParticipant}
+                    disabled={!canEdit}
                     className="w-16 rounded-md border px-2 py-1.5 text-center text-sm font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                   />
                 </td>
@@ -238,7 +254,7 @@ export default function EvaluateTable({
           placeholder="총 피드백을 입력하세요"
           value={feedback}
           onChange={(e) => setFeedback(e.target.value)}
-          disabled={!isParticipant}
+          disabled={!canEdit}
           className="resize-none disabled:cursor-not-allowed disabled:bg-gray-100"
           rows={4}
         />
@@ -258,7 +274,7 @@ export default function EvaluateTable({
         <LoadingButton
           loading={isPending}
           onClick={handleSubmit}
-          disabled={!isParticipant}
+          disabled={!canEdit}
         >
           제출
         </LoadingButton>

@@ -16,7 +16,7 @@ interface Company {
 }
 
 interface CompanySelectProps {
-  judgingRoundId: number;
+  judgingRoundId: string;
   programId: number;
   targetList: Company[];
   onTargetListChange: (newList: Company[]) => void;

@@ -20,8 +20,9 @@ import useDialogOpenStore from "@/store/useDialogOpenStore";
 import { Dispatch, SetStateAction } from "react";
 import { DataTablePagination } from "../../_components/DataTablePagination";
 import ProgramCreateSheet from "./ProgramCreateSheet";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -32,6 +33,8 @@ interface DataTableProps<TData, TValue> {
   setPagination: Dispatch<SetStateAction<PaginationState>>;
   totalPages: number;
   isFetching?: boolean;
+  search: string;
+  onSearchChange: (value: string) => void;
 }
 
 const SKELETON_ROW_COUNT = 5;
@@ -43,6 +46,8 @@ export function ProgramDataTable<TData, TValue>({
   setPagination,
   totalPages,
   isFetching,
+  search,
+  onSearchChange,
 }: DataTableProps<TData, TValue>) {
   const { setCreateOpen } = useDialogOpenStore((state) => state);
 
@@ -70,11 +75,21 @@ export function ProgramDataTable<TData, TValue>({
     <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-3 shadow-sm sm:p-4">
       <ProgramCreateSheet />
 
-      <div className="flex w-full items-center justify-end">
+      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <Input
+            type="text"
+            placeholder="프로그램명으로 검색..."
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-9"
+          />
+        </div>
         <Button
           onClick={() => setCreateOpen(true)}
           size="sm"
-          className="gap-1.5"
+          className="gap-1.5 self-end"
         >
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">프로그램 추가</span>
@@ -168,7 +183,7 @@ export function ProgramDataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center text-sm text-neutral-500"
                 >
-                  데이터가 없습니다.
+                  {search ? "검색 결과가 없습니다." : "데이터가 없습니다."}
                 </TableCell>
               </TableRow>
             )}
