@@ -18,6 +18,7 @@ import Image from "next/image";
 import HandPartnersLogo from "../../../../../public/images/handpartners_logo.png";
 import { Input } from "@/components/ui/input";
 import { useLoginMutation } from "../_hooks/useLoginMutation";
+import Link from "next/link";
 
 const FormSchema = z.object({
   email: z.string().email({ message: "이메일 형식이 올바르지 않습니다." }),
@@ -48,15 +49,15 @@ export default function Login() {
   }
 
   return (
-    <div className="flex w-full py-16 justify-center items-center bg-gray-50 h-screen">
+    <div className="flex h-screen w-full items-center justify-center bg-gray-50 py-16">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col items-center w-[600px] bg-white border shadow-lg "
+          className="flex w-[600px] flex-col items-center border bg-white shadow-lg"
         >
-          <div className="flex flex-col items-center justify-center p-4 px-8 space-y-2">
+          <div className="flex flex-col items-center justify-center space-y-2 p-4 px-8">
             <Image className="w-64" src={HandPartnersLogo} alt="logo" />
-            <div className="flex flex-col items-center justify-center w-full gap-4 p-4">
+            <div className="flex w-full flex-col items-center justify-center gap-4 p-4">
               <div className="mb-4 text-xl font-bold">비밀유지 서약</div>
               <div className="text-center">
                 본 심사위원은 (주) 핸드파트너스가 주관하는 프로그램에 출품된
@@ -71,7 +72,7 @@ export default function Login() {
               control={form.control}
               name="isAgree"
               render={({ field }) => (
-                <FormItem className="flex flex-row w-full items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormItem className="flex w-full flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -87,7 +88,7 @@ export default function Login() {
                 </FormItem>
               )}
             />
-            <div className="flex flex-col w-full gap-2">
+            <div className="flex w-full flex-col gap-2">
               <FormField
                 control={form.control}
                 name="email"
@@ -119,9 +120,15 @@ export default function Login() {
                 )}
               />
             </div>
-            <Button className="w-full mt-4" type="submit">
+            <Button className="mt-4 w-full" type="submit">
               로그인
             </Button>
+            <Link
+              href="/upload"
+              className="text-sm text-muted-foreground hover:underline"
+            >
+              발표 자료 업로드하기
+            </Link>
           </div>
         </form>
       </Form>

@@ -98,8 +98,8 @@ export default function UploadPageClient() {
 
   const initialId = searchParams.get("id");
   const [inputValue, setInputValue] = useState(initialId ?? "");
-  const [judgingRoundId, setJudgingRoundId] = useState<number | null>(
-    initialId ? parseInt(initialId, 10) : null
+  const [judgingRoundId, setJudgingRoundId] = useState<string | null>(
+    initialId ?? null
   );
   const [uploadingIds, setUploadingIds] = useState<Set<number>>(new Set());
   const [selectedFiles, setSelectedFiles] = useState<SelectedFiles>({});
@@ -107,10 +107,9 @@ export default function UploadPageClient() {
 
   useEffect(() => {
     const id = searchParams.get("id");
-    const parsed = id ? parseInt(id, 10) : null;
-    if (parsed && !isNaN(parsed)) {
-      setInputValue(String(parsed));
-      setJudgingRoundId(parsed);
+    if (id) {
+      setInputValue(id);
+      setJudgingRoundId(id);
     }
   }, [searchParams]);
 
@@ -118,13 +117,13 @@ export default function UploadPageClient() {
     useJudgingRoundCompaniesQuery(judgingRoundId);
 
   const handleSearch = () => {
-    const parsed = parseInt(inputValue, 10);
-    if (isNaN(parsed) || parsed <= 0) {
+    const trimmed = inputValue.trim();
+    if (!trimmed) {
       toast.error("유효한 심사 ID를 입력해주세요.");
       return;
     }
     setSelectedFiles({});
-    router.push(`?id=${parsed}`);
+    router.push(`?id=${trimmed}`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -326,7 +325,8 @@ export default function UploadPageClient() {
                   const isUploading = uploadingIds.has(item.id);
                   const selectedFile = selectedFiles[item.id];
                   const submittedAt: string | null = item.submitted_at;
-                  const originalFilename: string | null = item.original_filename;
+                  const originalFilename: string | null =
+                    item.original_filename;
 
                   return (
                     <div
@@ -360,13 +360,14 @@ export default function UploadPageClient() {
                         {hasPdf && (originalFilename || submittedAt) && (
                           <div className="mt-1 flex items-center gap-2 text-xs text-neutral-400">
                             {originalFilename && (
-                              <span className="truncate max-w-[180px]" title={originalFilename}>
+                              <span
+                                className="max-w-[180px] truncate"
+                                title={originalFilename}
+                              >
                                 {originalFilename}
                               </span>
                             )}
-                            {originalFilename && submittedAt && (
-                              <span>·</span>
-                            )}
+                            {originalFilename && submittedAt && <span>·</span>}
                             {submittedAt && (
                               <span className="shrink-0">
                                 {new Date(submittedAt).toLocaleString("ko-KR", {
