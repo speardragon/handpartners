@@ -257,7 +257,7 @@ export default function UploadPageClient() {
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              {(error as Error)?.message || "심사를 찾을 수 없습니다."}
+              {"오류가 발생했습니다. 심사를 찾을 수 없습니다."}
             </p>
           )}
         </div>

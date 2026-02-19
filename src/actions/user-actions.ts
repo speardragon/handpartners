@@ -30,7 +30,9 @@ export async function getUsers(
   let query = supabase.from("user").select("*", { count: "exact" });
 
   if (search) {
-    query = query.or(`username.ilike.%${search}%,affiliation.ilike.%${search}%`);
+    query = query.or(
+      `username.ilike.%${search}%,affiliation.ilike.%${search}%`
+    );
   }
 
   const { data, error, count } = await query.range(

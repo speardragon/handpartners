@@ -24,23 +24,11 @@ export default function Page({ params }: Props) {
     enabled: !!programId,
   });
 
-  console.log("심사 평가표 데이터:", data);
-
   // 중복 저장 방지 플래그
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     const savePDF = async () => {
-      console.log(
-        "savePDF called with - isLoading:",
-        isLoading,
-        "data:",
-        data,
-        "programInfo:",
-        programInfo,
-        "isSaved:",
-        isSaved
-      );
       if (!isLoading && data && !isSaved && programInfo) {
         try {
           const { pdf } = await import("@react-pdf/renderer");

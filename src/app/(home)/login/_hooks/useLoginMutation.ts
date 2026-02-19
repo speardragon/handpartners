@@ -26,7 +26,7 @@ export function useLoginMutation() {
       }
     },
     onSuccess: () => {
-      router.push("/");
+      window.location.href = "/";
     },
     onError: (error: any) => {
       if (error.message === "invalid_credentials") {

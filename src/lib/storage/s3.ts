@@ -7,11 +7,13 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const S3_ENV_KEYS = {
   bucket: ["AWS_S3_BUCKET"] as const,
-  region: ["AWS_REGION", "AWS_S3_REGION"] as const,
-  accessKeyId: ["AWS_ACCESS_KEY_ID", "AWS_S3_ACCESS_KEY_ID"] as const,
+  // AWS_S3_* 를 우선 체크: Vercel/Lambda 환경에서 AWS_REGION, AWS_ACCESS_KEY_ID 등은
+  // Lambda 런타임이 자동 주입하는 예약 변수라 사용자 설정이 덮어씌워짐
+  region: ["AWS_S3_REGION", "AWS_REGION"] as const,
+  accessKeyId: ["AWS_S3_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID"] as const,
   secretAccessKey: [
-    "AWS_SECRET_ACCESS_KEY",
     "AWS_S3_SECRET_ACCESS_KEY",
+    "AWS_SECRET_ACCESS_KEY",
   ] as const,
 };
 

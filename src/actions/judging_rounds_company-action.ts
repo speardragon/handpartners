@@ -389,24 +389,32 @@ export async function getJudgingRoundCompaniesPublic(judgingRoundId: string) {
 
   const { data: round, error: roundError } = await supabase
     .from("judging_round")
-    .select("name")
+    .select("name, status")
     .eq("id", judgingRoundId)
     .single();
 
   if (roundError || !round) {
-    throw new Error("심사를 찾을 수 없습니다.");
+    const notFoundError = new Error("심사를 찾을 수 없습니다.");
+    (notFoundError as any).statusCode = 404;
+    throw notFoundError;
+  }
+
+  if (round.status === "COMPLETED") {
+    const completedError = new Error("이미 완료된 심사입니다.");
+    (completedError as any).statusCode = 403;
+    throw completedError;
   }
 
   const { data: companies, error: companiesError } = await supabase
     .from("judging_round_company")
     .select(
       `id,
-       pdf_path,
-       original_filename,
-       submitted_at,
-       company:company_id (
-         name
-       )`
+        pdf_path,
+        original_filename,
+        submitted_at,
+        company:company_id (
+          name
+        )`
     )
     .eq("judging_round_id", judgingRoundId)
     .order("id", { ascending: true });
