@@ -49,6 +49,12 @@ function getS3ClientAndConfig() {
     );
   }
 
+  console.log("S3 Configuration!!:", {
+    region,
+    accessKeyId,
+    secretAccessKey,
+  });
+
   const client = new S3Client({
     region,
     credentials: {
