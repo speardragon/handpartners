@@ -114,12 +114,6 @@ type UserProfile = {
 export async function getUserProfile(): Promise<UserProfile | null> {
   const supabase = await createClient();
 
-  console.log(
-    "hi!!!",
-    process.env.AWS_S3_ACCESS_KEY_ID,
-    process.env.AWS_S3_SECRET_ACCESS_KEY
-  );
-
   // 인증된 사용자 정보 가져오기
   const {
     data: { user },
