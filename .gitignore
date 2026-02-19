@@ -136,3 +136,5 @@ dist
 .claude
 .agents
 .mcp.json
+
+next-env.d.ts

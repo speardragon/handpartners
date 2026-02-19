@@ -32,7 +32,7 @@ export default function Home() {
   const router = useRouter();
   const { data: profile } = useUserProfileQuery();
 
-  const isAdmin = profile?.role === "관리자";
+  const isAdmin = profile ? profile.role === "관리자" : undefined;
 
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
@@ -83,12 +83,11 @@ export default function Home() {
 
   const stats = useMemo(() => {
     if (!data) return null;
-    const all = data.result;
     return {
       total: data.totalElements,
-      active: all.filter((s) => s.status === "IN_PROGRESS").length,
-      completed: all.filter((s) => s.status === "COMPLETED").length,
-      upcoming: all.filter((s) => s.status === "PENDING").length,
+      active: data.totalActive,
+      completed: data.totalCompleted,
+      upcoming: data.totalPending,
     };
   }, [data]);
 

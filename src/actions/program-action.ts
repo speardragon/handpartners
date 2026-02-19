@@ -185,6 +185,9 @@ export interface AllScreeningsResult {
   currentPage: number;
   totalPages: number;
   totalElements: number;
+  totalActive: number;
+  totalCompleted: number;
+  totalPending: number;
 }
 
 export async function checkParticipation(
@@ -228,58 +231,82 @@ export async function getAllScreenings(
   // 관리자+참여 시 심사자와 동일한 데이터 로직 사용
   const useJudgeLogic = !isAdmin || (isAdmin && isParticipating);
 
-  // Step 1: judging_round 쿼리 (날짜 필터 없이)
-  let query = supabase
-    .from("judging_round")
-    .select(
-      `
+  const t0 = Date.now();
+
+  // Step 1: 페이지 데이터 쿼리와 전체 status 집계 쿼리를 병렬 실행
+  const buildBaseQuery = (selectFields: string, opts?: { count?: "exact" }) => {
+    let q = supabase
+      .from("judging_round")
+      .select(selectFields, opts)
+      .order("start_date", { ascending: false });
+
+    if (useJudgeLogic) {
+      q = q.eq("judging_round_user.user_id", userId);
+    }
+    if (judgingRoundId) {
+      q = q.eq("id", judgingRoundId);
+    }
+    return q;
+  };
+
+  const pageQueryFields = `
+    id,
+    name,
+    start_date,
+    end_date,
+    status,
+    program:program_id (
       id,
       name,
-      start_date,
-      end_date,
-      status,
-      program:program_id (
+      description
+    ),
+    companies:judging_round_company (
+      judge_num,
+      group_name,
+      category,
+      company:company_id (
         id,
         name,
         description
-      ),
-      companies:judging_round_company (
-        judge_num,
-        group_name,
-        category,
-        company:company_id (
-          id,
-          name,
-          description
-        )
-      ),
-      judging_round_user${useJudgeLogic ? "!inner" : ""}(
-        user_id,
-        group_name
       )
-    `,
-      { count: "exact" }
+    ),
+    judging_round_user${useJudgeLogic ? "!inner" : ""}(
+      user_id,
+      group_name
     )
-    .order("start_date", { ascending: false });
+  `;
 
-  // 심사자 로직: 본인 참여 심사만 필터
-  if (useJudgeLogic) {
-    query = query.eq("judging_round_user.user_id", userId);
+  const statsQueryFields = `id, status, judging_round_user${useJudgeLogic ? "!inner" : ""}(user_id)`;
+
+  const [pageResult, statsResult] = await Promise.all([
+    buildBaseQuery(pageQueryFields, { count: "exact" })
+      .range((page - 1) * size, page * size - 1),
+    buildBaseQuery(statsQueryFields),
+  ]);
+
+  if (pageResult.error) {
+    throw new Error(pageResult.error.message);
+  }
+  if (statsResult.error) {
+    throw new Error(statsResult.error.message);
   }
 
-  // 특정 심사 번호로 필터
-  if (judgingRoundId) {
-    query = query.eq("id", judgingRoundId);
-  }
+  console.log(`[getAllScreenings] Step1 (judging_round + stats 병렬): ${Date.now() - t0}ms`);
+  const t1 = Date.now();
 
-  // 페이지네이션
-  query = query.range((page - 1) * size, page * size - 1);
+  const screenings = pageResult.data;
+  const count = pageResult.count;
+  const allStatuses = (statsResult.data as unknown) as { id: string; status: string | null }[];
 
-  const { data: screenings, error, count } = await query;
-
-  if (error) {
-    throw new Error(error.message);
-  }
+  // 전체 status 집계
+  let totalActive = 0;
+  let totalCompleted = 0;
+  let totalPending = 0;
+  allStatuses.forEach((row) => {
+    if (row.status === "IN_PROGRESS") totalActive++;
+    else if (row.status === "COMPLETED") totalCompleted++;
+    else totalPending++;
+  });
 
   // 심사자 로직: 해당 심사자의 group_name에 할당된 company만 필터링
   if (useJudgeLogic) {
@@ -291,36 +318,20 @@ export async function getAllScreenings(
     });
   }
 
-  // Step 2: (judging_round_id, company_id) 쌍을 만든다.
-  const judgingCompanyPairs: {
-    judging_round_id: string;
-    company_id: number;
-  }[] = [];
-  screenings.forEach((screening: any) => {
-    screening.companies.forEach((companyEntry: any) => {
-      judgingCompanyPairs.push({
-        judging_round_id: screening.id,
-        company_id: companyEntry.company.id,
-      });
-    });
-  });
+  console.log(`[getAllScreenings] Step2 (JS 가공): ${Date.now() - t1}ms`);
+  const t2 = Date.now();
 
-  // Step 3: 각 쌍에 대해 evaluation status와 score를 가져온다.
-  let evaluationMap: Record<string, { status: string; totalScore: number }> =
-    {};
+  // Step 2: 현재 페이지 judging_round_id 목록 추출
+  const judgingRoundIds = screenings.map((s: any) => s.id);
 
-  if (judgingCompanyPairs.length > 0) {
+  // Step 3: judging_round_id 기준으로만 evaluation 조회 후 JS에서 쌍 매칭
+  let evaluationMap: Record<string, { status: string; totalScore: number }> = {};
+
+  if (judgingRoundIds.length > 0) {
     let evalQuery = supabase
       .from("evaluation")
       .select("judging_round_id, company_id, status, grade")
-      .in(
-        "judging_round_id",
-        judgingCompanyPairs.map((pair) => pair.judging_round_id)
-      )
-      .in(
-        "company_id",
-        judgingCompanyPairs.map((pair) => pair.company_id)
-      );
+      .in("judging_round_id", judgingRoundIds);
 
     // 심사자 로직: 자기 평가만, 관리자 비참여: 전체 평가
     if (useJudgeLogic) {
@@ -333,7 +344,8 @@ export async function getAllScreenings(
       throw new Error(evalError.message);
     }
 
-    // Group evaluations by judging_round_id and company_id
+    console.log(`[getAllScreenings] Step3 (evaluation 조회): ${Date.now() - t2}ms`);
+
     evaluations.forEach((evaluation) => {
       const key = `${evaluation.judging_round_id}_${evaluation.company_id}`;
       if (!evaluationMap[key]) {
@@ -345,6 +357,8 @@ export async function getAllScreenings(
       evaluationMap[key].totalScore += evaluation.grade;
     });
   }
+
+  const t3 = Date.now();
 
   // Step 4: 심사 상태 판별 및 결과 매핑
   const result: ScreeningWithStatus[] = screenings.map((screening: any) => {
@@ -395,6 +409,9 @@ export async function getAllScreenings(
     };
   });
 
+  console.log(`[getAllScreenings] Step4 (결과 매핑): ${Date.now() - t3}ms`);
+  console.log(`[getAllScreenings] 전체 소요: ${Date.now() - t0}ms`);
+
   const totalElements = count || 0;
   const totalPages = Math.ceil(totalElements / size);
 
@@ -403,6 +420,9 @@ export async function getAllScreenings(
     currentPage: page,
     totalPages,
     totalElements,
+    totalActive,
+    totalCompleted,
+    totalPending,
   };
 }
 
