@@ -5,7 +5,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { programQueries } from "@/queries";
 import { PaginationState } from "@tanstack/react-table";
 import { ProgramDataTable } from "./_components/ProgramDataTable";
-import { programColumns } from "./_components/ProgramColumns2";
+import { programColumns } from "./_components/ProgramColumns";
 import { useDebounce } from "@/app/_hooks/useDebounce";
 
 export default function Page() {

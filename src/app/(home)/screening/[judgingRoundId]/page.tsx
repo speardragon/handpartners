@@ -21,12 +21,12 @@ export default function ScreeningDetailPage() {
   const params = useParams();
   const judgingRoundId = params.judgingRoundId as string;
 
-  const { user } = useAuthStore();
+  const { user, isLoading: isAuthLoading } = useAuthStore();
   const isAdmin = user?.role === USER_ROLES.ADMIN;
 
   const { data: isParticipating } = useQuery({
     ...screeningQueries.participation(judgingRoundId),
-    enabled: !!judgingRoundId && isAdmin !== undefined,
+    enabled: !!judgingRoundId && !isAuthLoading && isAdmin === true,
   });
 
   // 관리자 비참여 시 관리자 뷰, 그 외는 심사자 뷰
@@ -35,11 +35,13 @@ export default function ScreeningDetailPage() {
   const { data: screening, isLoading } = useQuery({
     ...screeningQueries.detail(
       judgingRoundId,
-      isAdmin,
+      isAdmin ?? false,
       isAdmin ? isParticipating : undefined
     ),
     enabled:
-      !!judgingRoundId && (isAdmin ? isParticipating !== undefined : true),
+      !isAuthLoading &&
+      !!judgingRoundId &&
+      (isAdmin ? isParticipating !== undefined : true),
   });
 
   if (isLoading || !screening) {

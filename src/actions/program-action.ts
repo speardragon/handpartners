@@ -279,8 +279,10 @@ export async function getAllScreenings(
   const statsQueryFields = `id, status, judging_round_user${useJudgeLogic ? "!inner" : ""}(user_id)`;
 
   const [pageResult, statsResult] = await Promise.all([
-    buildBaseQuery(pageQueryFields, { count: "exact" })
-      .range((page - 1) * size, page * size - 1),
+    buildBaseQuery(pageQueryFields, { count: "exact" }).range(
+      (page - 1) * size,
+      page * size - 1
+    ),
     buildBaseQuery(statsQueryFields),
   ]);
 
@@ -291,12 +293,14 @@ export async function getAllScreenings(
     throw new Error(statsResult.error.message);
   }
 
-  console.log(`[getAllScreenings] Step1 (judging_round + stats 병렬): ${Date.now() - t0}ms`);
   const t1 = Date.now();
 
   const screenings = pageResult.data;
   const count = pageResult.count;
-  const allStatuses = (statsResult.data as unknown) as { id: string; status: string | null }[];
+  const allStatuses = statsResult.data as unknown as {
+    id: string;
+    status: string | null;
+  }[];
 
   // 전체 status 집계
   let totalActive = 0;
@@ -318,14 +322,14 @@ export async function getAllScreenings(
     });
   }
 
-  console.log(`[getAllScreenings] Step2 (JS 가공): ${Date.now() - t1}ms`);
   const t2 = Date.now();
 
   // Step 2: 현재 페이지 judging_round_id 목록 추출
   const judgingRoundIds = screenings.map((s: any) => s.id);
 
   // Step 3: judging_round_id 기준으로만 evaluation 조회 후 JS에서 쌍 매칭
-  let evaluationMap: Record<string, { status: string; totalScore: number }> = {};
+  let evaluationMap: Record<string, { status: string; totalScore: number }> =
+    {};
 
   if (judgingRoundIds.length > 0) {
     let evalQuery = supabase
@@ -343,8 +347,6 @@ export async function getAllScreenings(
     if (evalError) {
       throw new Error(evalError.message);
     }
-
-    console.log(`[getAllScreenings] Step3 (evaluation 조회): ${Date.now() - t2}ms`);
 
     evaluations.forEach((evaluation) => {
       const key = `${evaluation.judging_round_id}_${evaluation.company_id}`;
@@ -408,9 +410,6 @@ export async function getAllScreenings(
         }),
     };
   });
-
-  console.log(`[getAllScreenings] Step4 (결과 매핑): ${Date.now() - t3}ms`);
-  console.log(`[getAllScreenings] 전체 소요: ${Date.now() - t0}ms`);
 
   const totalElements = count || 0;
   const totalPages = Math.ceil(totalElements / size);

@@ -57,6 +57,8 @@ import {
 import JudgingRoundDetailDialogContent from "./JudgingRoundDetailDialogContent";
 import { Button } from "@/components/ui/button";
 import { judgingRoundQueries } from "@/queries";
+import ScoreToExcelButton from "@/app/(home)/_components/ScoreToExcelButton";
+import FeedbackToExcelButton from "@/app/(home)/_components/FeedbackToExcelButton";
 
 function JudgeActionsCell({
   row,
@@ -244,6 +246,20 @@ function JudgeActionsCell({
           >
             <Download className="h-4 w-4" />
             {isBulkDownloading ? "다운로드 중..." : "보고서 일괄 저장"}
+          </DropdownMenuItem>
+
+          <DropdownMenuItem asChild className="cursor-pointer gap-2 p-0">
+            <ScoreToExcelButton
+              judgingRoundId={judgingRoundId}
+              className="flex w-full items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent"
+            />
+          </DropdownMenuItem>
+
+          <DropdownMenuItem asChild className="cursor-pointer gap-2 p-0">
+            <FeedbackToExcelButton
+              judgingRoundId={judgingRoundId}
+              className="flex w-full items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent"
+            />
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />

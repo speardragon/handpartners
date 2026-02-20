@@ -181,6 +181,9 @@ export async function getDetailedEvaluationsByUser(
     .single();
 
   if (jruError) {
+    if (jruError.code === "PGRST116") {
+      return [];
+    }
     handleError(jruError);
     throw new Error(`Failed to fetch judging_round_user: ${jruError.message}`);
   }

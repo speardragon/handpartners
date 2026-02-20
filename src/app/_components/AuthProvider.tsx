@@ -9,35 +9,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { setUser, setLoading, setAccessToken, clearAuth } = useAuthStore();
 
   useEffect(() => {
+    console.log("[AuthProvider] useEffect called");
     const supabase = createClient();
     let mounted = true;
-
-    const initialize = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session && mounted) {
-          const profile = await getUserProfile();
-          if (mounted) {
-            setUser(profile);
-            setAccessToken(session.access_token);
-          }
-        }
-      } catch (error) {
-        console.error("[AuthProvider] init error:", error);
-        if (mounted) setUser(null);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    initialize();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+      if (event === "INITIAL_SESSION") {
+        try {
+          if (session) {
+            const profile = await getUserProfile();
+            if (mounted) {
+              setUser(profile);
+              setAccessToken(session.access_token);
+            }
+          } else {
+            if (mounted) setUser(null);
+          }
+        } catch (error) {
+          if (mounted) setUser(null);
+        } finally {
+          if (mounted) setLoading(false);
+        }
+      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
         try {
           const profile = await getUserProfile();
           if (mounted) {
