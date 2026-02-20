@@ -4,7 +4,9 @@ import { Database } from "types_db";
 import { createClient } from "@/lib/supabase/server";
 
 export type ProgramCompanyRow =
-  Database["public"]["Tables"]["program_company"]["Row"];
+  Database["public"]["Tables"]["program_company"]["Row"] & {
+    company: { name: string } | null;
+  };
 type ProgramRowUpdate = Database["public"]["Tables"]["program"]["Update"];
 
 function handleError(error: any) {

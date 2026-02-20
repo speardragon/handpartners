@@ -1,12 +1,8 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useUserProfileQuery } from "@/app/_hooks/useUserQuery";
-
-import {
-  useScreeningDetailQuery,
-  useParticipationQuery,
-} from "./_hooks/useScreeningDetailQuery";
+import { useQuery } from "@tanstack/react-query";
+import { userQueries, screeningQueries } from "@/queries";
 import { columns } from "@/app/(home)/_components/columns";
 import { DataTable } from "@/app/(home)/_components/data-table";
 import ScreeningHeader from "./_components/screening-header";
@@ -23,22 +19,26 @@ export default function ScreeningDetailPage() {
   const params = useParams();
   const judgingRoundId = params.judgingRoundId as string;
 
-  const { data: profile } = useUserProfileQuery();
+  const { data: profile } = useQuery(userQueries.profile());
   const isAdmin = profile?.role === "관리자";
 
-  const { data: isParticipating } = useParticipationQuery(
-    judgingRoundId,
-    isAdmin
-  );
+  const { data: isParticipating } = useQuery({
+    ...screeningQueries.participation(judgingRoundId),
+    enabled: !!judgingRoundId && isAdmin !== undefined,
+  });
 
   // 관리자 비참여 시 관리자 뷰, 그 외는 심사자 뷰
   const isAdminView = isAdmin && !isParticipating;
 
-  const { data: screening, isLoading } = useScreeningDetailQuery(
-    judgingRoundId,
-    isAdmin,
-    isAdmin ? isParticipating : undefined
-  );
+  const { data: screening, isLoading } = useQuery({
+    ...screeningQueries.detail(
+      judgingRoundId,
+      isAdmin,
+      isAdmin ? isParticipating : undefined
+    ),
+    enabled:
+      !!judgingRoundId && (isAdmin ? isParticipating !== undefined : true),
+  });
 
   if (isLoading || !screening) {
     return <ProgramSkeleton />;

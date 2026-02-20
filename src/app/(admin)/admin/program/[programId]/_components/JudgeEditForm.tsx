@@ -11,8 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { useCallback, useState } from "react";
 import {
   JudgeUpdateFormSchema,
@@ -20,15 +19,7 @@ import {
 } from "../_lib/JudgeFormSchema";
 import JudgeCompanySelect from "./JudgeCompanySelect";
 import JudgeUserSelect from "./JudgeUserSelect";
-
-import { updateJudgeBasic } from "@/actions/judging_round-action";
-import {
-  createJudgeCompanyPdfUploadUrl,
-  updateJudgeCompany2,
-} from "@/actions/judging_rounds_company-action";
-import { updateJudgeUser } from "@/actions/judging_round_user-action";
 import JudgeCriteriaSelect from "./JudgeCriteriaSelect";
-import { updateJudgeCriteria } from "@/actions/evaluation_criteria-action";
 import { FileText, GripVertical } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -48,12 +39,12 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useJudgeEditMutations } from "../_hooks/useJudgeEditMutations";
 
 type Props = {
   programId: number;
   judgingRoundId?: string;
   judgingRoundInfo: JudgeUpdateFormType;
-  setOpenEdit: (open: boolean) => void;
 };
 
 export interface SimpleCompany {
@@ -173,16 +164,14 @@ export default function JudgeEditForm({
   programId,
   judgingRoundId,
   judgingRoundInfo,
-  setOpenEdit,
 }: Props) {
-  const queryClient = useQueryClient();
-
   const [targetList, setTargetList] = useState<SimpleCompany[]>([]);
   const [targetUserList, setTargetUserList] = useState<SimpleUser[]>([]);
+  const [targetCriteriaList, setTargetCriteriaList] = useState<SimpleCriteria[]>([]);
   const [pdfEditMap, setPdfEditMap] = useState<Record<number, boolean>>({});
-  const [targetCriteriaList, setTargetCriteriaList] = useState<
-    SimpleCriteria[]
-  >([]);
+
+  const { basicMutation, usersMutation, companiesMutation, criteriaMutation } =
+    useJudgeEditMutations(judgingRoundId);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -214,48 +203,6 @@ export default function JudgeEditForm({
     setTargetUserList(newList);
   }, []);
 
-  const handleSubmitBasic = async (data: JudgeUpdateFormType) => {
-    try {
-      const payload = {
-        judgingRoundId: judgingRoundId ?? "",
-        name: data.name ?? "",
-        description: data.description ?? "",
-        start_date: data.start_date ?? "",
-        end_date: data.end_date ?? "",
-      };
-      const result = await updateJudgeBasic(payload);
-      if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ["judging_rounds"] });
-        toast.success("기본 심사 정보를 수정하였습니다.");
-      } else {
-        toast.error("기본 정보 수정 중 오류가 발생했습니다.");
-      }
-    } catch (error: any) {
-      toast.error(`업데이트 중 오류가 발생했습니다: ${error.message}`);
-    }
-  };
-
-  const handleSubmitUsers = async () => {
-    try {
-      const payload = {
-        judgingRoundId: judgingRoundId ?? "",
-        users: targetUserList.map((u) => ({
-          user_id: u.id,
-          group_name: u.group_name ?? "",
-        })),
-      };
-      const result = await updateJudgeUser(payload);
-      if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ["judging_round_users"] });
-        toast.success("심사자 정보를 수정하였습니다.");
-      } else {
-        toast.error("심사자 정보 수정 중 오류가 발생했습니다.");
-      }
-    } catch (error: any) {
-      toast.error(`사용자 업데이트 중 오류가 발생했습니다: ${error.message}`);
-    }
-  };
-
   const handleClickPdfEdit = (companyId: number) => {
     setPdfEditMap((prev) => ({ ...prev, [companyId]: true }));
   };
@@ -282,100 +229,6 @@ export default function JudgeEditForm({
       newArr[index] = { ...newArr[index], group_name: value };
       return newArr;
     });
-  };
-
-  const handleSubmitCompanies = async () => {
-    try {
-      const updatedList = [...targetList];
-
-      if (!judgingRoundId) {
-        toast.error("심사 라운드 ID가 없습니다.");
-        return;
-      }
-
-      for (let i = 0; i < updatedList.length; i++) {
-        const c = updatedList[i];
-        if (c.pdf_file) {
-          const { uploadUrl, objectKey } = await createJudgeCompanyPdfUploadUrl(
-            {
-              fileName: c.pdf_file.name,
-              contentType: c.pdf_file.type || "application/pdf",
-            }
-          );
-
-          const uploadResponse = await fetch(uploadUrl, {
-            method: "PUT",
-            headers: {
-              "Content-Type": c.pdf_file.type || "application/pdf",
-            },
-            body: c.pdf_file,
-          });
-
-          if (!uploadResponse.ok) {
-            throw new Error("PDF 업로드에 실패했습니다.");
-          }
-
-          updatedList[i] = {
-            ...updatedList[i],
-            pdf_path: objectKey,
-          };
-        }
-      }
-
-      const companiesPayload = updatedList.map((c, i) => ({
-        company_id: c.id,
-        group_name: c.group_name ?? "",
-        pdf_path: c.pdf_path || null,
-        judge_num: i + 1,
-      }));
-
-      const result = await updateJudgeCompany2({
-        judgingRoundId: judgingRoundId,
-        companies: companiesPayload,
-      });
-
-      if (result?.success) {
-        setTargetList(updatedList);
-        await queryClient.invalidateQueries({
-          queryKey: ["judging_round_companies"],
-        });
-        await queryClient.invalidateQueries({
-          queryKey: ["screeningDetail"],
-        });
-        toast.success("기업 정보를 수정하였습니다.");
-      } else {
-        toast.error("기업 정보 수정 중 오류가 발생했습니다.");
-      }
-    } catch (error: any) {
-      toast.error(`기업 업데이트 중 오류가 발생했습니다: ${error.message}`);
-    }
-  };
-
-  const handleSubmitCriteria = async () => {
-    try {
-      const payload = {
-        judgingRoundId: judgingRoundId ?? "",
-        criteriaList: targetCriteriaList.map((c) => ({
-          id: c.id,
-          item_name: c.item_name,
-          points: c.points,
-          description: c.description ?? null,
-        })),
-      };
-      const result = await updateJudgeCriteria(payload);
-      if (result.success) {
-        await queryClient.invalidateQueries({
-          queryKey: ["judging_round_criteria"],
-        });
-        toast.success("심사 기준을 수정하였습니다.");
-      } else {
-        toast.error("심사 기준 수정 중 오류가 발생했습니다.");
-      }
-    } catch (error: any) {
-      toast.error(
-        `심사 기준 업데이트 중 오류가 발생했습니다: ${error.message}`
-      );
-    }
   };
 
   return (
@@ -406,7 +259,9 @@ export default function JudgeEditForm({
             </div>
             <Form {...form}>
               <form
-                onSubmit={form.handleSubmit(handleSubmitBasic)}
+                onSubmit={form.handleSubmit((data) =>
+                  basicMutation.mutate(data)
+                )}
                 className="space-y-4 p-4"
               >
                 <FormField
@@ -469,9 +324,13 @@ export default function JudgeEditForm({
                   />
                 </div>
                 <div className="flex justify-end pt-2">
-                  <Button type="submit" size="sm">
+                  <LoadingButton
+                    type="submit"
+                    size="sm"
+                    loading={basicMutation.isPending}
+                  >
                     기본 정보 수정
-                  </Button>
+                  </LoadingButton>
                 </div>
               </form>
             </Form>
@@ -532,9 +391,18 @@ export default function JudgeEditForm({
               )}
 
               <div className="flex justify-end">
-                <Button type="button" size="sm" onClick={handleSubmitCompanies}>
+                <LoadingButton
+                  type="button"
+                  size="sm"
+                  loading={companiesMutation.isPending}
+                  onClick={() =>
+                    companiesMutation.mutate(targetList, {
+                      onSuccess: (updatedList) => setTargetList(updatedList),
+                    })
+                  }
+                >
                   기업 정보 수정
-                </Button>
+                </LoadingButton>
               </div>
             </div>
           </section>
@@ -589,9 +457,14 @@ export default function JudgeEditForm({
               )}
 
               <div className="flex justify-end">
-                <Button type="button" size="sm" onClick={handleSubmitUsers}>
+                <LoadingButton
+                  type="button"
+                  size="sm"
+                  loading={usersMutation.isPending}
+                  onClick={() => usersMutation.mutate(targetUserList)}
+                >
                   심사자 정보 수정
-                </Button>
+                </LoadingButton>
               </div>
             </div>
           </section>
@@ -612,9 +485,14 @@ export default function JudgeEditForm({
                 onTargetListChange={setTargetCriteriaList}
               />
               <div className="flex justify-end">
-                <Button type="button" size="sm" onClick={handleSubmitCriteria}>
+                <LoadingButton
+                  type="button"
+                  size="sm"
+                  loading={criteriaMutation.isPending}
+                  onClick={() => criteriaMutation.mutate(targetCriteriaList)}
+                >
                   심사 기준 수정
-                </Button>
+                </LoadingButton>
               </div>
             </div>
           </section>

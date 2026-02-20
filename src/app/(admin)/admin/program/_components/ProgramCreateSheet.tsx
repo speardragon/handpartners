@@ -27,6 +27,7 @@ import { createProgram, ProgramRowInsert } from "@/actions/program-action";
 import CompanySelect from "./CompanySelect";
 import { useState } from "react";
 import { CompanyRow } from "@/actions/company-action";
+import { programQueries } from "@/queries";
 
 export default function ProgramCreateSheet() {
   const { createOpen, setCreateOpen } = useDialogOpenStore((state) => state);
@@ -51,7 +52,7 @@ export default function ProgramCreateSheet() {
       data as ProgramRowInsert,
       targetList.map((company) => company.id)
     );
-    queryClient.invalidateQueries({ queryKey: ["programs"] });
+    queryClient.invalidateQueries({ queryKey: programQueries.all() });
     setCreateOpen(false);
     toast.success("새로운 프로그램 추가되었습니다.");
   };

@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { programQueries } from "@/queries";
 
 export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
   {
@@ -105,7 +106,7 @@ export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
       const deleteHandler = async (programId: number) => {
         await deleteProgram(programId);
         toast.success("프로그램이 삭제되었습니다.");
-        queryClient.invalidateQueries({ queryKey: ["programs"] });
+        queryClient.invalidateQueries({ queryKey: programQueries.all() });
       };
 
       const programId = Number(row.original.id?.toString());

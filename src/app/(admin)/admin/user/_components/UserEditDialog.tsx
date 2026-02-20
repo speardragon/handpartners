@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
+import { userQueries } from "@/queries";
 
 type Props = {
   userId?: string;
@@ -77,7 +78,7 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
 
     if (Object.keys(updatedData).length > 0) {
       await updateUser({ ...updatedData, id: userId });
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: userQueries.all() });
       setOpen(false);
       toast.success("유저 정보를 수정하였습니다.");
     } else {
@@ -92,7 +93,7 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
     await deleteUser(userId);
     toast.success("사용자가 삭제되었습니다.");
     setOpen(false);
-    queryClient.invalidateQueries({ queryKey: ["users"] });
+    queryClient.invalidateQueries({ queryKey: userQueries.all() });
   };
 
   return (
@@ -119,11 +120,7 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
                       이름 <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        autoComplete="off"
-                        placeholder="이름"
-                        {...field}
-                      />
+                      <Input autoComplete="off" placeholder="이름" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -2,12 +2,15 @@
 
 import { memo, useState } from "react";
 import Loading from "@/app/_components/Loading";
-import { useJudgeQuery } from "./_hooks/useJudgeQuery";
+import { useQuery } from "@tanstack/react-query";
+import {
+  judgingRoundQueries,
+  evaluationQueries,
+  screeningQueries,
+} from "@/queries";
 import PdfViewer from "./_components/pdf-viewer";
 import EvaluateTable from "./_components/evaluate-table";
-import { useEvaluationQuery } from "./_hooks/useEvaluationQuery";
 import { useParams } from "next/navigation";
-import { useParticipationQuery } from "@/app/(home)/screening/[judgingRoundId]/_hooks/useScreeningDetailQuery";
 import { FileText, ClipboardList } from "lucide-react";
 
 const Page = () => {
@@ -16,9 +19,15 @@ const Page = () => {
   const judgeRoundId = params.judgeRoundId;
   const companyId = parseInt(params.companyId);
 
-  const { data: judgeRound } = useJudgeQuery(judgeRoundId);
-  const { data: existEvaluation } = useEvaluationQuery(judgeRoundId, companyId);
-  const { data: isParticipant } = useParticipationQuery(judgeRoundId);
+  const { data: judgeRound } = useQuery(
+    judgingRoundQueries.judge(judgeRoundId)
+  );
+  const { data: existEvaluation } = useQuery(
+    evaluationQueries.byUser(judgeRoundId, companyId)
+  );
+  const { data: isParticipant } = useQuery(
+    screeningQueries.participation(judgeRoundId)
+  );
 
   const [isFull, setIsFull] = useState<boolean>(false);
 

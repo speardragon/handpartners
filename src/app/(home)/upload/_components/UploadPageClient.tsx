@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
-import { useJudgingRoundCompaniesQuery } from "../_hooks/useJudgingRoundCompaniesQuery";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { judgingRoundQueries } from "@/queries";
 import {
   createJudgeCompanyPdfUploadUrl,
   updateCompanyPdfPath,
@@ -113,8 +113,10 @@ export default function UploadPageClient() {
     }
   }, [searchParams]);
 
-  const { data, isLoading, isError, error } =
-    useJudgingRoundCompaniesQuery(judgingRoundId);
+  const { data, isLoading, isError, error } = useQuery({
+    ...judgingRoundQueries.companies.public(judgingRoundId ?? ""),
+    enabled: !!judgingRoundId,
+  });
 
   const handleSearch = () => {
     const trimmed = inputValue.trim();
@@ -172,7 +174,8 @@ export default function UploadPageClient() {
       });
 
       queryClient.invalidateQueries({
-        queryKey: ["public_judging_round_companies", judgingRoundId],
+        queryKey: judgingRoundQueries.companies.public(judgingRoundId ?? "")
+          .queryKey,
       });
 
       toast.success("PDF 업로드 완료");

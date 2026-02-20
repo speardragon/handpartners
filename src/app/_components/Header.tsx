@@ -1,6 +1,7 @@
 "use client";
 
-import { useUserProfileQuery } from "../_hooks/useUserQuery";
+import { useQuery } from "@tanstack/react-query";
+import { userQueries } from "@/queries";
 import { useAuth } from "../_hooks/useAuth"; // 새로 만든 훅 import
 import Image from "next/image";
 import Link from "next/link";
@@ -8,7 +9,10 @@ import handpartnersLogo from "../../../public/images/handpartners_logo.png";
 
 export default function Header() {
   const { user } = useAuth();
-  const { data: userProfile } = useUserProfileQuery(!!user);
+  const { data: userProfile } = useQuery({
+    ...userQueries.profile(),
+    enabled: !!user,
+  });
 
   const isAdmin = userProfile?.role === "관리자";
 

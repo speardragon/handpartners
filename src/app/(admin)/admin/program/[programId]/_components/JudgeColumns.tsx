@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/dialog";
 import JudgingRoundDetailDialogContent from "./JudgingRoundDetailDialogContent";
 import { Button } from "@/components/ui/button";
+import { judgingRoundQueries } from "@/queries";
 
 function JudgeActionsCell({
   row,
@@ -88,7 +89,7 @@ function JudgeActionsCell({
             ? "심사 종료"
             : "심사전";
       toast.success(`상태가 '${statusLabel}'(으)로 변경되었습니다.`);
-      queryClient.invalidateQueries({ queryKey: ["judging_rounds"] });
+      queryClient.invalidateQueries({ queryKey: judgingRoundQueries.all() });
     } catch {
       toast.error("상태 변경 중 오류가 발생했습니다.");
     } finally {
@@ -99,7 +100,7 @@ function JudgeActionsCell({
   const deleteHandler = async (id: string) => {
     await deleteJudgingRound(id);
     toast.success("심사가 삭제되었습니다.");
-    queryClient.invalidateQueries({ queryKey: ["judging_rounds"] });
+    queryClient.invalidateQueries({ queryKey: judgingRoundQueries.all() });
   };
 
   const handleBulkDownload = async () => {
@@ -156,7 +157,6 @@ function JudgeActionsCell({
             <SheetDescription>{row.original.name}</SheetDescription>
           </SheetHeader>
           <JudgeEditForm
-            setOpenEdit={setOpenEdit}
             programId={programId}
             judgingRoundId={judgingRoundId}
             judgingRoundInfo={{

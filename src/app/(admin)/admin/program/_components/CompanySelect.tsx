@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useCompanyInfiniteQuery } from "../../company/_hooks/useCompanyInfiniteQuery";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { companyQueries } from "@/queries";
 import { useInfiniteScroll } from "@/app/_hooks/useInfiniteScroll";
 import { CompanyRow } from "@/actions/company-action";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,7 @@ export default function CompanySelect({
   const [selectedTargetIds, setSelectedTargetIds] = useState<number[]>([]);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useCompanyInfiniteQuery(search);
+    useInfiniteQuery(companyQueries.infinite(search));
 
   const sentinelRef = useInfiniteScroll({
     fetchNextPage,

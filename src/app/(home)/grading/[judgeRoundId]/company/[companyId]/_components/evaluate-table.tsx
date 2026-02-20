@@ -3,9 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { useJudgeQuery } from "../_hooks/useJudgeQuery";
+import { useQuery } from "@tanstack/react-query";
+import {
+  judgingRoundQueries,
+  evaluationQueries,
+  companyQueries,
+} from "@/queries";
 import { Textarea } from "@/components/ui/textarea";
-import { useEvaluationQuery } from "../_hooks/useEvaluationQuery";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { useEvaluationMutation } from "../_hooks/useEvaluationMutation";
 import { useAutoSaveMutation } from "../_hooks/useAutoSaveMutation";
@@ -20,7 +24,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Info, Loader2, CircleDot, CheckCircle2, Ban } from "lucide-react";
-import { useCompanyQuery } from "../_hooks/useCompanyQuery";
 
 type EvaluationStatus = "ONGOING" | "DONE" | null;
 
@@ -69,9 +72,13 @@ export default function EvaluateTable({
 }: Props) {
   const router = useRouter();
 
-  const { data: judgeRound } = useJudgeQuery(judgeRoundId);
-  const { data: existEvaluation } = useEvaluationQuery(judgeRoundId, companyId);
-  const { data: company } = useCompanyQuery(companyId);
+  const { data: judgeRound } = useQuery(
+    judgingRoundQueries.judge(judgeRoundId)
+  );
+  const { data: existEvaluation } = useQuery(
+    evaluationQueries.byUser(judgeRoundId, companyId)
+  );
+  const { data: company } = useQuery(companyQueries.detail(companyId));
 
   const isJudgingActive = judgeRound?.status === "IN_PROGRESS";
   const canEdit = isParticipant && isJudgingActive;

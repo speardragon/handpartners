@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { ProgramRow, updateProgram } from "@/actions/program-action";
+import { companyQueries } from "@/queries";
 import {
   CompanyCreateFormType,
   CompanyUpdateFormSchema,
@@ -55,7 +56,7 @@ export default function CompanyEditForm({ companyId, companyInfo }: Props) {
 
     if (Object.keys(updatedData).length > 0) {
       const result = await updateCompany({ ...updatedData, id: companyId });
-      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      queryClient.invalidateQueries({ queryKey: companyQueries.all() });
       toast.success("프로그램 정보를 수정하였습니다.");
     } else {
       toast.error("수정사항이 존재하지 않습니다.");
@@ -68,10 +69,10 @@ export default function CompanyEditForm({ companyId, companyInfo }: Props) {
         autoComplete="off"
         autoFocus={false}
         onSubmit={form.handleSubmit(onSubmit)}
-        className="items-start w-full space-y-6"
+        className="w-full items-start space-y-6"
       >
         <div className="space-y-6 pt-4">
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <div className="w-1/3 text-gray-800">기업명</div>
             <FormField
               control={form.control}
@@ -91,7 +92,7 @@ export default function CompanyEditForm({ companyId, companyInfo }: Props) {
               )}
             />
           </div>
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <div className="w-1/3 text-gray-800">설명</div>
             <FormField
               control={form.control}

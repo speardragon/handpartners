@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useJudgingCriteriaQuery } from "../_hooks/useJudgingCriteriaQuery";
+import { useQuery } from "@tanstack/react-query";
+import { judgingRoundQueries } from "@/queries";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
@@ -29,8 +30,8 @@ export default function JudgeCriteriaSelect({
     value: string;
   } | null>(null);
 
-  const { data, isLoading, isError, error } = useJudgingCriteriaQuery(
-    judgingRoundId || "0"
+  const { data, isLoading, isError, error } = useQuery(
+    judgingRoundQueries.criteria.byRound(judgingRoundId || "0")
   );
 
   useEffect(() => {

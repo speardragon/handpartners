@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useProgramCompanyQuery } from "../../../company/_hooks/useProgramCompanyQuery";
-import { useJudgingRoundCompanyQuery } from "../_hooks/useJudgingRoundCompanyQuery";
+import { useQuery } from "@tanstack/react-query";
+import { programQueries, judgingRoundQueries } from "@/queries";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronRight, ChevronLeft } from "lucide-react";
@@ -31,9 +31,10 @@ export default function JudgeCompanySelect({
   const [selectedSourceIds, setSelectedSourceIds] = useState<number[]>([]);
   const [selectedTargetIds, setSelectedTargetIds] = useState<number[]>([]);
 
-  const { data: allCompanies } = useProgramCompanyQuery(programId);
-  const { data: judgingRoundCompanies } =
-    useJudgingRoundCompanyQuery(judgingRoundId);
+  const { data: allCompanies } = useQuery(programQueries.companies(programId));
+  const { data: judgingRoundCompanies } = useQuery(
+    judgingRoundQueries.companies.byRound(judgingRoundId)
+  );
 
   useEffect(() => {
     if (judgingRoundCompanies && judgingRoundCompanies.length > 0) {
@@ -51,8 +52,10 @@ export default function JudgeCompanySelect({
   }, [judgingRoundCompanies, onTargetListChange]);
 
   const sourceList =
-    allCompanies?.map((c) => ({ id: c.company_id, name: c.company.name })) ??
-    [];
+    allCompanies?.map((c) => ({
+      id: c.company_id,
+      name: c.company?.name ?? "",
+    })) ?? [];
 
   const areAllSelected =
     sourceList.length > 0 &&

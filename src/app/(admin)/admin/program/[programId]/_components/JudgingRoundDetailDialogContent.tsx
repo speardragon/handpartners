@@ -1,7 +1,8 @@
 "use client";
 
 import Loading from "@/app/_components/Loading";
-import { useJudgingRoundDetailQuery } from "../_hooks/useJudgingRoundDetailQuery";
+import { useQuery } from "@tanstack/react-query";
+import { judgingRoundQueries } from "@/queries";
 
 type JudgingRoundDetailDialogContentProps = {
   judgingRoundId: string;
@@ -15,7 +16,7 @@ export default function JudgingRoundDetailDialogContent({
     isLoading,
     isError,
     error,
-  } = useJudgingRoundDetailQuery(judgingRoundId);
+  } = useQuery(judgingRoundQueries.detail(judgingRoundId));
 
   if (isLoading) {
     return <Loading />;

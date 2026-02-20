@@ -5,7 +5,8 @@ import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
 import { Button } from "@/components/ui/button";
 import { FileDigit } from "lucide-react";
-import { useScoresQuery } from "../_hooks/useScoresQuery";
+import { useQuery } from "@tanstack/react-query";
+import { judgingRoundQueries } from "@/queries";
 
 // 헬퍼 함수
 import {
@@ -23,10 +24,10 @@ export default function ScoreToExcelButton({
   judgingRoundId,
 }: Props) {
   // 심사 점수 쿼리
-  const { data, isLoading, isError, refetch } = useScoresQuery(
-    judgingRoundId,
-    false
-  );
+  const { data, isLoading, isError, refetch } = useQuery({
+    ...judgingRoundQueries.scores(judgingRoundId),
+    enabled: false,
+  });
 
   const handleExport = async () => {
     try {

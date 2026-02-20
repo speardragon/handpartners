@@ -19,6 +19,7 @@ import { ProgramRow } from "@/actions/program-action";
 import CompanySelectForModify from "./CompanySelectForModify";
 import { useState } from "react";
 import { updateProgramAndCompanies } from "@/actions/program-company-action";
+import { programQueries } from "@/queries";
 
 interface Company {
   id: number;
@@ -58,7 +59,7 @@ export default function ProgramEditForm({
       targetList.map((company) => company.id)
     );
     if (result.success) {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
+      queryClient.invalidateQueries({ queryKey: programQueries.all() });
       toast.success("프로그램 정보를 수정하였습니다.");
     } else {
       toast.error("예상치 못한 오류가 발생했습니다.");

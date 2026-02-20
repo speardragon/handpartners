@@ -17,7 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useJudgingRoundDetailQuery } from "../program/[programId]/_hooks/useJudgingRoundDetailQuery";
+import { useQuery } from "@tanstack/react-query";
+import { judgingRoundQueries } from "@/queries";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 
@@ -31,7 +32,7 @@ export default function JudgingRoundDetailPage() {
     isLoading,
     isError,
     error,
-  } = useJudgingRoundDetailQuery(judgingRoundId);
+  } = useQuery(judgingRoundQueries.detail(judgingRoundId));
 
   if (isLoading) {
     return (

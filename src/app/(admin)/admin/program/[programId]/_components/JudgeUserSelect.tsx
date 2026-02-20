@@ -1,8 +1,8 @@
 "use client";
 
 import { memo, useEffect, useState } from "react";
-import { useJudgingRoundUserQuery } from "../_hooks/useJudgingRoundUserQuery";
-import { useUserInfiniteQuery } from "../_hooks/useUserInfiniteQuery";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { judgingRoundQueries, userQueries } from "@/queries";
 import { useInfiniteScroll } from "@/app/_hooks/useInfiniteScroll";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,8 +35,11 @@ function JudgeUserSelect({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useUserInfiniteQuery(search);
-  const { data: judgingRoundUsers } = useJudgingRoundUserQuery(judgingRoundId);
+    isLoading: isLoadingUsers,
+  } = useInfiniteQuery(userQueries.infinite(search));
+  const { data: judgingRoundUsers, isLoading: isLoadingRoundUsers } = useQuery(
+    judgingRoundQueries.users.byRound(judgingRoundId)
+  );
 
   const sentinelRef = useInfiniteScroll({
     fetchNextPage,
@@ -122,48 +125,56 @@ function JudgeUserSelect({
           </div>
         </div>
         <div className="h-52 overflow-y-auto">
-          {sourceList.map((user) => {
-            const isSelected = selectedSourceIds.includes(user.id);
-            const isInTarget = targetList.some((t) => t.id === user.id);
-            return (
-              <label
-                key={user.id}
-                className={`flex items-center gap-2.5 border-b border-neutral-50 px-3 py-2 text-sm transition-colors ${
-                  isInTarget
-                    ? "cursor-default bg-neutral-50 text-neutral-400"
-                    : isSelected
-                      ? "cursor-pointer bg-neutral-100"
-                      : "cursor-pointer hover:bg-neutral-50"
-                }`}
-              >
-                <Checkbox
-                  checked={isSelected || isInTarget}
-                  disabled={isInTarget}
-                  onCheckedChange={() => handleSelectSource(user.id)}
-                  className="h-4 w-4"
-                />
-                <div className="flex flex-col">
-                  <span>{user.name}</span>
-                  {user.affiliation && (
-                    <span className="text-xs text-neutral-400">
-                      {user.affiliation}
-                    </span>
-                  )}
-                </div>
-                {isInTarget && (
-                  <span className="ml-auto text-xs text-neutral-400">
-                    추가됨
-                  </span>
-                )}
-              </label>
-            );
-          })}
-          {isFetchingNextPage && (
-            <div className="flex justify-center py-3">
+          {isLoadingUsers ? (
+            <div className="flex h-full items-center justify-center">
               <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
             </div>
+          ) : (
+            <>
+              {sourceList.map((user) => {
+                const isSelected = selectedSourceIds.includes(user.id);
+                const isInTarget = targetList.some((t) => t.id === user.id);
+                return (
+                  <label
+                    key={user.id}
+                    className={`flex items-center gap-2.5 border-b border-neutral-50 px-3 py-2 text-sm transition-colors ${
+                      isInTarget
+                        ? "cursor-default bg-neutral-50 text-neutral-400"
+                        : isSelected
+                          ? "cursor-pointer bg-neutral-100"
+                          : "cursor-pointer hover:bg-neutral-50"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={isSelected || isInTarget}
+                      disabled={isInTarget}
+                      onCheckedChange={() => handleSelectSource(user.id)}
+                      className="h-4 w-4"
+                    />
+                    <div className="flex flex-col">
+                      <span>{user.name}</span>
+                      {user.affiliation && (
+                        <span className="text-xs text-neutral-400">
+                          {user.affiliation}
+                        </span>
+                      )}
+                    </div>
+                    {isInTarget && (
+                      <span className="ml-auto text-xs text-neutral-400">
+                        추가됨
+                      </span>
+                    )}
+                  </label>
+                );
+              })}
+              {isFetchingNextPage && (
+                <div className="flex justify-center py-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
+                </div>
+              )}
+              <div ref={sentinelRef} />
+            </>
           )}
-          <div ref={sentinelRef} />
         </div>
       </div>
 
@@ -202,7 +213,11 @@ function JudgeUserSelect({
           </span>
         </div>
         <div className="h-52 overflow-y-auto">
-          {targetList.length === 0 ? (
+          {isLoadingRoundUsers ? (
+            <div className="flex h-full items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
+            </div>
+          ) : targetList.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-neutral-400">
               심사자를 선택해주세요
             </div>

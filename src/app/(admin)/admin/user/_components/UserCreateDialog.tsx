@@ -33,6 +33,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { userQueries } from "@/queries";
 
 export default function UserCreateDialog() {
   const { createOpen, setCreateOpen } = useDialogOpenStore((state) => state);
@@ -58,7 +59,7 @@ export default function UserCreateDialog() {
   ) => {
     try {
       await registerUser(userData);
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: userQueries.all() });
       setCreateOpen(false);
       form.reset();
       toast.success("새로운 사용자가 추가되었습니다.");
@@ -91,11 +92,7 @@ export default function UserCreateDialog() {
                       이름 <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        autoComplete="off"
-                        placeholder="이름"
-                        {...field}
-                      />
+                      <Input autoComplete="off" placeholder="이름" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -133,10 +130,7 @@ export default function UserCreateDialog() {
                     구분 <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="구분을 선택해주세요" />
                       </SelectTrigger>

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { useAllScreeningsQuery } from "./_hooks/useAllScreeningsQuery";
+import { useQuery } from "@tanstack/react-query";
+import { screeningQueries, userQueries } from "@/queries";
 import { ScreeningWithStatus } from "@/actions/program-action";
 import ProgramSkeleton from "./_components/ProgramSkeleton";
 import { ScreeningCard } from "./_components/screening-card";
 import { useRouter } from "next/navigation";
-import { useUserProfileQuery } from "../_hooks/useUserQuery";
 import {
   CalendarX2,
   Search,
@@ -30,7 +30,7 @@ const PAGE_SIZE = 10;
 
 export default function Home() {
   const router = useRouter();
-  const { data: profile } = useUserProfileQuery();
+  const { data: profile } = useQuery(userQueries.profile());
 
   const isAdmin = profile ? profile.role === "관리자" : undefined;
 
@@ -67,12 +67,10 @@ export default function Home() {
     [debounceTimer]
   );
 
-  const { data, isLoading } = useAllScreeningsQuery(
-    page,
-    PAGE_SIZE,
-    isAdmin,
-    judgingRoundId
-  );
+  const { data, isLoading } = useQuery({
+    ...screeningQueries.list(page, PAGE_SIZE, isAdmin ?? false, judgingRoundId),
+    enabled: isAdmin !== undefined,
+  });
 
   const handleRowClick = useCallback(
     (screening: ScreeningWithStatus) => {

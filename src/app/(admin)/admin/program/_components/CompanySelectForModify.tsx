@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useProgramCompanyQuery } from "../../company/_hooks/useProgramCompanyQuery";
-import { useCompanyInfiniteQuery } from "../../company/_hooks/useCompanyInfiniteQuery";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { programQueries, companyQueries } from "@/queries";
 import { useInfiniteScroll } from "@/app/_hooks/useInfiniteScroll";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export default function CompanySelectForModify({
   const [selectedSourceIds, setSelectedSourceIds] = useState<number[]>([]);
   const [selectedTargetIds, setSelectedTargetIds] = useState<number[]>([]);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useCompanyInfiniteQuery(search);
+    useInfiniteQuery(companyQueries.infinite(search));
 
   const sentinelRef = useInfiniteScroll({
     fetchNextPage,
@@ -37,9 +37,10 @@ export default function CompanySelectForModify({
     isFetchingNextPage,
   });
 
-  const { data: allCompanies, isLoading } = useProgramCompanyQuery(
-    programId ?? 0
-  );
+  const { data: allCompanies, isLoading } = useQuery({
+    ...programQueries.companies(programId ?? 0),
+    enabled: !!programId,
+  });
   const sourceList = data?.pages.flatMap((page) => page.result) ?? [];
 
   useEffect(() => {

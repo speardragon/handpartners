@@ -34,6 +34,7 @@ import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 import { CompanyRow, deleteCompany } from "@/actions/company-action";
 import CompanyEditForm from "./CompanyEditForm";
+import { companyQueries } from "@/queries";
 
 export const companyColumns: ColumnDef<Partial<CompanyRow>>[] = [
   {
@@ -52,13 +53,8 @@ export const companyColumns: ColumnDef<Partial<CompanyRow>>[] = [
     cell: ({ getValue }) => {
       const description = (getValue() ?? "").toString();
       return (
-        <div
-          className="max-w-[400px] truncate"
-          title={description}
-        >
-          {description || (
-            <span className="text-neutral-400">소개 없음</span>
-          )}
+        <div className="max-w-[400px] truncate" title={description}>
+          {description || <span className="text-neutral-400">소개 없음</span>}
         </div>
       );
     },
@@ -75,7 +71,7 @@ export const companyColumns: ColumnDef<Partial<CompanyRow>>[] = [
       const deleteHandler = async (companyId: number) => {
         await deleteCompany(companyId);
         toast.success("기업이 삭제되었습니다.");
-        queryClient.invalidateQueries({ queryKey: ["companies"] });
+        queryClient.invalidateQueries({ queryKey: companyQueries.all() });
       };
 
       const companyId = Number(row.original.id?.toString());

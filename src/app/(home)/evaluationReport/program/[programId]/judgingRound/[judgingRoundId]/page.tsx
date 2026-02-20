@@ -2,9 +2,9 @@
 
 import { use, useEffect, useState } from "react";
 import { saveAs } from "file-saver";
-import { useEvaluationReportQuery } from "@/app/(home)/_hooks/useEvaluationReportQuery";
+import { useQuery } from "@tanstack/react-query";
+import { evaluationQueries, programQueries } from "@/queries";
 import EvaluationDocument from "@/app/(home)/_components/EvaluationDocument";
-import { useProgramQuery } from "./_hooks/useProgramQuery";
 
 type Props = {
   params: Promise<{ judgingRoundId: string; programId: string }>;
@@ -16,11 +16,12 @@ export default function Page({ params }: Props) {
   const judgingRoundId = parseInt(judgingRoundIdStr);
   const programId = parseInt(programIdStr);
 
-  // useEvaluationReportQuery를 사용해 데이터 불러오기
-  const { data, isLoading } = useEvaluationReportQuery(judgingRoundIdStr, {
+  const { data, isLoading } = useQuery({
+    ...evaluationQueries.report(judgingRoundIdStr),
     enabled: !!judgingRoundId,
   });
-  const { data: programInfo } = useProgramQuery(programId, {
+  const { data: programInfo } = useQuery({
+    ...programQueries.detail(programId),
     enabled: !!programId,
   });
 
