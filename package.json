@@ -6,7 +6,7 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "next lint .",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "type-check": "tsc --noEmit",
     "generate-types": "npx supabase gen types typescript --project-id uuzolxhkftufatffeeec --schema public > types_db.ts"

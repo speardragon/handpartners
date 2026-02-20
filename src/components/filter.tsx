@@ -10,7 +10,6 @@ declare module "@tanstack/react-table" {
 }
 export const Filter = React.memo(
   ({ column }: { column: Column<unknown, unknown> }) => {
-    // const Filter = React.memo({ column }: { column: Column<any, unknown> }) {
     const { filterVariant } = column.columnDef.meta ?? {};
 
     const columnFilterValue = column.getFilterValue();
@@ -60,3 +59,5 @@ export const Filter = React.memo(
     );
   }
 );
+
+Filter.displayName = "Filter";

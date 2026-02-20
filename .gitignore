@@ -137,9 +137,10 @@ dist
 .agents
 .mcp.json
 
-next-env.d.ts
 .sisyphus
 .opencode
 
 .pnpm-store
 .vscode
+
+next-env.d.ts
