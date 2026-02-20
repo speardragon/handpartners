@@ -10,10 +10,11 @@ import { useMemo } from "react";
 export type ReviewStatus = {
   score: number; // 접수번호
   companyName: string; // 기업(팀)명/이름
-  description: string; // 아이디어/창업아이템 명
+  description: string | null; // 아이디어/창업아이템 명
   category: string; // 지원분야
   status: string; // 심사현황
   companyId: number;
+  judgeRoundId: string;
 };
 
 export const columns: ColumnDef<ReviewStatus>[] = [
@@ -51,11 +52,11 @@ export const columns: ColumnDef<ReviewStatus>[] = [
       };
 
       return (
-        <Badge variant="outline" className="flex gap-2 px-1.5 justify-center">
+        <Badge variant="outline" className="flex justify-center gap-2 px-1.5">
           {answerType === "심사 완료" ? (
             <CircleCheck
               size={12}
-              className="fill-green-500 dark:fill-green-400 text-white"
+              className="fill-green-500 text-white dark:fill-green-400"
             />
           ) : (
             <Loader size={12} />
@@ -71,7 +72,7 @@ export const columns: ColumnDef<ReviewStatus>[] = [
   {
     id: "action",
     header: "",
-    cell: ({ row }: any) => {
+    cell: ({ row }) => {
       const judgeRoundId = row.original.judgeRoundId; // 수정된 데이터에서 가져옴
       const companyId = row.original.companyId; // 기존 company의 id
 
@@ -79,7 +80,7 @@ export const columns: ColumnDef<ReviewStatus>[] = [
         <Link href={`/grading/${judgeRoundId}/company/${companyId}`}>
           <Button
             variant="secondary"
-            className="flex w-full px-4 border border-gray-200 hover:bg-gray-200"
+            className="flex w-full border border-gray-200 px-4 hover:bg-gray-200"
           >
             심사하기
           </Button>

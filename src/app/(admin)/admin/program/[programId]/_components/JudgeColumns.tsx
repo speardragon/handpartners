@@ -56,7 +56,7 @@ import {
 } from "@/components/ui/dialog";
 import JudgingRoundDetailDialogContent from "./JudgingRoundDetailDialogContent";
 import { Button } from "@/components/ui/button";
-import { judgingRoundQueries } from "@/queries";
+import { judgingRoundQueries, screeningQueries } from "@/queries";
 import ScoreToExcelButton from "@/app/(home)/_components/ScoreToExcelButton";
 import FeedbackToExcelButton from "@/app/(home)/_components/FeedbackToExcelButton";
 
@@ -92,6 +92,7 @@ function JudgeActionsCell({
             : "심사전";
       toast.success(`상태가 '${statusLabel}'(으)로 변경되었습니다.`);
       queryClient.invalidateQueries({ queryKey: judgingRoundQueries.all() });
+      queryClient.invalidateQueries({ queryKey: screeningQueries.all() });
     } catch {
       toast.error("상태 변경 중 오류가 발생했습니다.");
     } finally {
@@ -103,6 +104,7 @@ function JudgeActionsCell({
     await deleteJudgingRound(id);
     toast.success("심사가 삭제되었습니다.");
     queryClient.invalidateQueries({ queryKey: judgingRoundQueries.all() });
+    queryClient.invalidateQueries({ queryKey: screeningQueries.all() });
   };
 
   const handleBulkDownload = async () => {
@@ -153,8 +155,8 @@ function JudgeActionsCell({
   return (
     <>
       <Sheet open={openEdit} onOpenChange={setOpenEdit}>
-        <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-xl lg:max-w-2xl">
-          <SheetHeader className="border-b border-neutral-100 px-6 py-4">
+        <SheetContent className="min-w-[50%] overflow-y-auto p-0 sm:max-w-xl lg:max-w-2xl">
+          <SheetHeader className="px-6 py-4 border-b border-neutral-100">
             <SheetTitle>심사 수정</SheetTitle>
             <SheetDescription>{row.original.name}</SheetDescription>
           </SheetHeader>
@@ -193,69 +195,69 @@ function JudgeActionsCell({
 
       <DropdownMenu open={openMenu} onOpenChange={setOpenMenu}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <EllipsisVertical className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="w-8 h-8">
+            <EllipsisVertical className="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem
-            className="cursor-pointer gap-2"
+            className="gap-2 cursor-pointer"
             onClick={() => {
               setOpenEdit(true);
               setOpenMenu(false);
             }}
           >
-            <Pencil className="h-4 w-4" /> 심사 수정
+            <Pencil className="w-4 h-4" /> 심사 수정
           </DropdownMenuItem>
 
           <DropdownMenuItem
-            className="cursor-pointer gap-2"
+            className="gap-2 cursor-pointer"
             onClick={() => router.push(`/admin/${judgingRoundId}`)}
           >
-            <NotepadText className="h-4 w-4" /> 심사 결과 확인
+            <NotepadText className="w-4 h-4" /> 심사 결과 확인
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
 
           {currentStatus !== "IN_PROGRESS" && (
             <DropdownMenuItem
-              className="cursor-pointer gap-2"
+              className="gap-2 cursor-pointer"
               disabled={isStatusUpdating}
               onClick={() => handleStatusChange("IN_PROGRESS")}
             >
-              <Play className="h-4 w-4" /> 심사 시작
+              <Play className="w-4 h-4" /> 심사 시작
             </DropdownMenuItem>
           )}
 
           {currentStatus !== "COMPLETED" && (
             <DropdownMenuItem
-              className="cursor-pointer gap-2"
+              className="gap-2 cursor-pointer"
               disabled={isStatusUpdating}
               onClick={() => handleStatusChange("COMPLETED")}
             >
-              <Square className="h-4 w-4" /> 심사 종료
+              <Square className="w-4 h-4" /> 심사 종료
             </DropdownMenuItem>
           )}
 
           <DropdownMenuSeparator />
 
           <DropdownMenuItem
-            className="cursor-pointer gap-2"
+            className="gap-2 cursor-pointer"
             disabled={isBulkDownloading}
             onClick={handleBulkDownload}
           >
-            <Download className="h-4 w-4" />
+            <Download className="w-4 h-4" />
             {isBulkDownloading ? "다운로드 중..." : "보고서 일괄 저장"}
           </DropdownMenuItem>
 
-          <DropdownMenuItem asChild className="cursor-pointer gap-2 p-0">
+          <DropdownMenuItem asChild className="gap-2 p-0 cursor-pointer">
             <ScoreToExcelButton
               judgingRoundId={judgingRoundId}
               className="flex w-full items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent"
             />
           </DropdownMenuItem>
 
-          <DropdownMenuItem asChild className="cursor-pointer gap-2 p-0">
+          <DropdownMenuItem asChild className="gap-2 p-0 cursor-pointer">
             <FeedbackToExcelButton
               judgingRoundId={judgingRoundId}
               className="flex w-full items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent"
@@ -265,13 +267,13 @@ function JudgeActionsCell({
           <DropdownMenuSeparator />
 
           <DropdownMenuItem
-            className="cursor-pointer gap-2 text-red-600 focus:text-red-600"
+            className="gap-2 text-red-600 cursor-pointer focus:text-red-600"
             onClick={() => {
               setOpenDelete(true);
               setOpenMenu(false);
             }}
           >
-            <Trash2 className="h-4 w-4" /> 심사 삭제
+            <Trash2 className="w-4 h-4" /> 심사 삭제
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -293,7 +295,7 @@ export const judgeColumns: ColumnDef<JudgingRoundWithCounts>[] = [
       const judgingRoundId = String(row.original.id);
       return (
         <Dialog>
-          <DialogTrigger className="cursor-pointer break-all text-left font-medium text-neutral-900 hover:underline">
+          <DialogTrigger className="font-medium text-left break-all cursor-pointer text-neutral-900 hover:underline">
             {`${getValue()}`}
           </DialogTrigger>
           <DialogContent className="h-[80vh] max-w-[90vw] lg:max-w-[80vw]">

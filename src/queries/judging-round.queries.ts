@@ -80,6 +80,7 @@ export const judgingRoundQueries = {
           judgingRoundId,
         ] as const,
         queryFn: () => getJudgingRoundCompaniesPublic(judgingRoundId),
+        retry: 0,
       }),
   },
   users: {

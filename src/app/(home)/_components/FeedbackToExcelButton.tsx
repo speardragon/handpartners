@@ -60,9 +60,9 @@ export default function FeedbackToExcelButton({
         new Blob([wbOut], { type: "application/octet-stream" }),
         "심사 정리.xlsx"
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert(err.message || "Export failed.");
+      alert(err instanceof Error ? err.message : "Export failed.");
     }
   };
 

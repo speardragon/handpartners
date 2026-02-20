@@ -9,6 +9,10 @@ interface AutoSaveArgs {
   evaluations: { id: number; grade: number }[];
 }
 
+type EvaluationQueryData = Awaited<
+  ReturnType<typeof import("@/actions/evaluation-action").getEvaluationByUser>
+>;
+
 export function useAutoSaveMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -35,14 +39,14 @@ export function useAutoSaveMutation() {
         queryKey: screeningQueries.detailKeyPrefix(),
       });
       // evaluation query cache의 status를 ONGOING으로 동기화
-      queryClient.setQueryData(
+      queryClient.setQueryData<EvaluationQueryData>(
         evaluationQueries.byUser(variables.judgeRoundId, variables.companyId)
           .queryKey,
-        (old: any) =>
+        (old) =>
           old
             ? {
                 ...old,
-                evaluations: old.evaluations.map((e: any) => ({
+                evaluations: old.evaluations.map((e) => ({
                   ...e,
                   status: "ONGOING",
                 })),

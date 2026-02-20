@@ -74,7 +74,7 @@ export function useJudgeEditMutations(judgingRoundId: string | undefined) {
       for (let i = 0; i < updatedList.length; i++) {
         const c = updatedList[i];
         if (c.pdf_file) {
-          const { uploadUrl, objectKey } = await createJudgeCompanyPdfUploadUrl(
+          const { uploadUrl, publicUrl } = await createJudgeCompanyPdfUploadUrl(
             {
               fileName: c.pdf_file.name,
               contentType: c.pdf_file.type || "application/pdf",
@@ -86,7 +86,12 @@ export function useJudgeEditMutations(judgingRoundId: string | undefined) {
             body: c.pdf_file,
           });
           if (!uploadResponse.ok) throw new Error("PDF 업로드에 실패했습니다.");
-          updatedList[i] = { ...updatedList[i], pdf_path: objectKey };
+          updatedList[i] = {
+            ...updatedList[i],
+            pdf_path: publicUrl,
+            original_filename: c.pdf_file.name,
+            submitted_at: new Date().toISOString(),
+          };
         }
       }
 
@@ -97,6 +102,8 @@ export function useJudgeEditMutations(judgingRoundId: string | undefined) {
           group_name: c.group_name ?? "",
           pdf_path: c.pdf_path || null,
           judge_num: i + 1,
+          original_filename: c.original_filename ?? null,
+          submitted_at: c.submitted_at ?? null,
         })),
       });
       if (!result?.success)

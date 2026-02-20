@@ -7,19 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 
-interface Company {
-  id: number;
-  name: string;
-  pdfFile?: File;
-  pdfPath?: string;
-  groupName?: string;
-}
+import type { SimpleCompany } from "./JudgeEditForm";
 
 interface CompanySelectProps {
   judgingRoundId: string;
   programId: number;
-  targetList: Company[];
-  onTargetListChange: (newList: Company[]) => void;
+  targetList: SimpleCompany[];
+  onTargetListChange: (newList: SimpleCompany[]) => void;
 }
 
 export default function JudgeCompanySelect({
@@ -38,12 +32,14 @@ export default function JudgeCompanySelect({
 
   useEffect(() => {
     if (judgingRoundCompanies && judgingRoundCompanies.length > 0) {
-      const mapped = judgingRoundCompanies.map((item: any) => ({
+      const mapped = judgingRoundCompanies.map((item) => ({
         id: item.company_id,
         name: item.company?.name || "",
-        pdf_path: item.pdf_path,
-        group_name: item.group_name,
-        judge_num: item.judge_num,
+        pdf_path: item.pdf_path ?? undefined,
+        group_name: item.group_name ?? undefined,
+        judge_num: item.judge_num ?? undefined,
+        original_filename: item.original_filename ?? undefined,
+        submitted_at: item.submitted_at ?? undefined,
       }));
       onTargetListChange(mapped);
     } else if (judgingRoundCompanies && judgingRoundCompanies.length === 0) {

@@ -60,9 +60,9 @@ export default function ScoreToExcelButton({
         new Blob([wbOut], { type: "application/octet-stream" }),
         "결과 점수.xlsx"
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert(err.message || "Export failed");
+      alert(err instanceof Error ? err.message : "Export failed");
     }
   };
 

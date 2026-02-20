@@ -50,7 +50,7 @@ export default function ScreeningDetailPage() {
 
   return (
     <main className="flex w-full flex-col items-center">
-      <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4">
+      <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4 pb-10">
         {/* 뒤로가기 */}
         <Button
           variant="ghost"

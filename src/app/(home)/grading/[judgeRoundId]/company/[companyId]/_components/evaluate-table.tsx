@@ -99,7 +99,7 @@ export default function EvaluateTable({
     if (isInitialized.current) return;
     if (!judgeRound?.criterias || !existEvaluation?.evaluations) return;
 
-    const initialEvaluations = judgeRound.criterias.map((item: any) => {
+    const initialEvaluations = judgeRound.criterias.map((item) => {
       const existing = existEvaluation.evaluations.find(
         (e) => e.evaluation_criterion_id === item.id
       );

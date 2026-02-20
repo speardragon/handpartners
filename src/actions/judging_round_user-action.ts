@@ -17,14 +17,19 @@ export type JudgingRoundUserInsert =
 export type JudgingRoundUserUpdate =
   Database["public"]["Tables"]["judging_round_user"]["Update"];
 
-function handleError(error: any) {
-  console.error(error);
-  throw new Error(error.message);
+function handleError(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(message);
+  throw new Error(message);
 }
+
+export type JudgingRoundUserWithUser = JudgingRoundUserRow & {
+  user: { username: string; affiliation: string | null } | null;
+};
 
 export async function getJudgingRoundUsersById(
   judgingRoundId: string
-): Promise<any> {
+): Promise<JudgingRoundUserWithUser[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -43,7 +48,7 @@ export async function getJudgingRoundUsersById(
     handleError(error);
   }
 
-  return data;
+  return (data ?? []) as JudgingRoundUserWithUser[];
 }
 
 export interface UserPayload {
@@ -155,8 +160,9 @@ export async function updateJudgeUser(data: UpdateJudgeUserData) {
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("updateJudgeUser error:", error);
-    return { success: false, message: error.message };
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, message };
   }
 }

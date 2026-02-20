@@ -55,8 +55,10 @@ export default function CompanyCreateSheet() {
       queryClient.invalidateQueries({ queryKey: companyQueries.all() });
       form.reset();
       setCreateOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "오류가 발생했습니다.");
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "오류가 발생했습니다."
+      );
     }
   };
 

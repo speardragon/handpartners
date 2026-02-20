@@ -49,9 +49,9 @@ function JudgeUserSelect({
 
   useEffect(() => {
     if (judgingRoundUsers && judgingRoundUsers.length > 0) {
-      const mapped = judgingRoundUsers.map((item: any) => ({
+      const mapped = judgingRoundUsers.map((item) => ({
         id: item.user_id,
-        name: item.user.username || "",
+        name: item.user?.username || "",
         affiliation: item.user?.affiliation || "",
         group_name: item.group_name,
       }));

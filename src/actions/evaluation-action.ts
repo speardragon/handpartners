@@ -16,9 +16,10 @@ export type EvaluationRowInsert =
 export type EvaluationRowUpdate =
   Database["public"]["Tables"]["evaluation"]["Update"];
 
-function handleError(error: any) {
-  console.error("Database error:", error.message);
-  throw new Error(error.message);
+function handleError(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error("Database error:", message);
+  throw new Error(message);
 }
 
 /**
@@ -163,13 +164,12 @@ export async function getDetailedEvaluationsByUser(
 
   if (userError) {
     handleError(userError);
-    throw new Error(`Failed to fetch user profile: ${userError.message}`);
   }
 
   const userProfile: UserProfile = {
-    name: userData.username,
-    affiliation: userData.affiliation,
-    position: userData.position,
+    name: userData!.username,
+    affiliation: userData!.affiliation,
+    position: userData!.position,
   };
 
   // 3. 사용자의 group_name 가져오기
@@ -185,11 +185,9 @@ export async function getDetailedEvaluationsByUser(
       return [];
     }
     handleError(jruError);
-    throw new Error(`Failed to fetch judging_round_user: ${jruError.message}`);
   }
 
-  const jruData = jru as any;
-  const userGroupName = jruData.group_name;
+  const userGroupName = jru!.group_name;
 
   // 4. 해당 group_name에 해당하는 company_id 목록 가져오기
   const { data: jrc, error: jrcError } = await supabase
@@ -204,16 +202,25 @@ export async function getDetailedEvaluationsByUser(
     );
   }
 
-  const jrcData = jrc as any;
-  const companyIds = jrcData?.map((c: any) => c.company_id) || [];
+  const companyIds = jrc?.map((c) => c.company_id) ?? [];
 
   // 회사가 없으면 빈 배열 반환
   if (companyIds.length === 0) {
     return [];
   }
 
+  type EvalJoinRow = {
+    grade: number;
+    feedback: string | null;
+    company: { name: string; description: string | null } | null;
+    evaluation_criterion: {
+      item_name: string;
+      description: string | null;
+      points: number;
+    } | null;
+  };
+
   // 3. 평가 데이터 가져오기 (evaluation + company + evaluation_criteria)
-  // 관계 설정이 되어 있다고 가정하고, 다음과 같이 조인하여 데이터 가져옴.
   const { data: evaluations, error: evaluationsError } = await supabase
     .from("evaluation")
     .select(
@@ -232,29 +239,14 @@ export async function getDetailedEvaluationsByUser(
     throw new Error(`Failed to fetch evaluations: ${evaluationsError.message}`);
   }
 
-  // evaluationsData는 다음과 같은 형태의 배열:
-  // [
-  //   {
-  //     grade: number,
-  //     feedback: string|null,
-  //     company: { name: string, description: string|null },
-  //     evaluation_criterion: { item_name: string, description: string|null, points: number }
-  //   },
-  //   ...
-  // ]
-
   // 4. company_id 별로 그룹화하기
-  // 위 select 구조 상 company와 evaluation_criterion을 직접 받았으므로,
-  // company를 key로 그룹화해야 한다. company의 name, description으로 그룹화 가능.
-  // (참고: 실제로는 id를 함께 가져와 그룹화하는 것이 안정적이나, 위 select에서는 id를 직접 가져오지 않았으므로 name 기반으로 그룹)
   const resultMap = new Map<
     string,
     { company: CompanyInfo; evaluations: EvaluationItem[] }
   >();
 
-  const evaluationsData = evaluations as any;
-
-  for (const evalItem of evaluationsData || []) {
+  for (const evalItem of (evaluations as unknown as EvalJoinRow[]) || []) {
+    if (!evalItem.company || !evalItem.evaluation_criterion) continue;
     const companyKey = `${evalItem.company.name}`;
 
     if (!resultMap.has(companyKey)) {
@@ -311,13 +303,12 @@ export async function getDetailedEvaluationsByUserId(
 
   if (userError) {
     handleError(userError);
-    throw new Error(`Failed to fetch user profile: ${userError.message}`);
   }
 
   const userProfile: UserProfile = {
-    name: userData.username,
-    affiliation: userData.affiliation,
-    position: userData.position,
+    name: userData!.username,
+    affiliation: userData!.affiliation,
+    position: userData!.position,
   };
 
   // group_name 가져오기
@@ -330,10 +321,9 @@ export async function getDetailedEvaluationsByUserId(
 
   if (jruError) {
     handleError(jruError);
-    throw new Error(`Failed to fetch judging_round_user: ${jruError.message}`);
   }
 
-  const userGroupName = (jru as any).group_name;
+  const userGroupName = jru!.group_name;
 
   // 해당 group_name의 company_id 목록
   const { data: jrc, error: jrcError } = await supabase
@@ -348,11 +338,22 @@ export async function getDetailedEvaluationsByUserId(
     );
   }
 
-  const companyIds = (jrc as any)?.map((c: any) => c.company_id) || [];
+  const companyIds = jrc?.map((c) => c.company_id) ?? [];
 
   if (companyIds.length === 0) {
     return [];
   }
+
+  type EvalJoinRow2 = {
+    grade: number;
+    feedback: string | null;
+    company: { name: string; description: string | null } | null;
+    evaluation_criterion: {
+      item_name: string;
+      description: string | null;
+      points: number;
+    } | null;
+  };
 
   // 평가 데이터 조회
   const { data: evaluations, error: evaluationsError } = await supabase
@@ -378,9 +379,8 @@ export async function getDetailedEvaluationsByUserId(
     { company: CompanyInfo; evaluations: EvaluationItem[] }
   >();
 
-  const evaluationsData = evaluations as any;
-
-  for (const evalItem of evaluationsData || []) {
+  for (const evalItem of (evaluations as unknown as EvalJoinRow2[]) || []) {
+    if (!evalItem.company || !evalItem.evaluation_criterion) continue;
     const companyKey = `${evalItem.company.name}`;
 
     if (!resultMap.has(companyKey)) {
@@ -443,7 +443,10 @@ export async function getAllJudgeEvaluations(
 
   const results: JudgeEvaluationResult[] = [];
 
-  for (const judge of judges as any[]) {
+  for (const judge of judges as unknown as {
+    user_id: string;
+    user: { username: string } | null;
+  }[]) {
     const evaluations = await getDetailedEvaluationsByUserId(
       judgingRoundId,
       judge.user_id
@@ -451,7 +454,7 @@ export async function getAllJudgeEvaluations(
 
     results.push({
       userId: judge.user_id,
-      username: judge.user.username,
+      username: judge.user?.username ?? "(이름 없음)",
       evaluations,
     });
   }

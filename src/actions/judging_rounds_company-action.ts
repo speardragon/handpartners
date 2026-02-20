@@ -23,14 +23,19 @@ export type JudgingRoundCompanyInsert =
 export type JudgingRoundCompanyUpdate =
   Database["public"]["Tables"]["judging_round_company"]["Update"];
 
-function handleError(error: any) {
-  console.error(error);
-  throw new Error(error.message);
+function handleError(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(message);
+  throw new Error(message);
 }
+
+export type JudgingRoundCompanyWithCompany = JudgingRoundCompanyRow & {
+  company: { name: string } | null;
+};
 
 export async function getJudgingRoundCompaniesById(
   judgingRoundId: string
-): Promise<any> {
+): Promise<JudgingRoundCompanyWithCompany[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -49,7 +54,7 @@ export async function getJudgingRoundCompaniesById(
     handleError(error);
   }
 
-  return data;
+  return (data ?? []) as unknown as JudgingRoundCompanyWithCompany[];
 }
 
 interface CompanyPayload {
@@ -255,9 +260,10 @@ export async function updateJudgeCompany(formData: FormData) {
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("updateJudgeCompany error:", error);
-    return { success: false, message: error.message };
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, message };
   }
 }
 
@@ -266,6 +272,8 @@ interface CompanyPayload2 {
   group_name?: string;
   pdf_path?: string | null;
   judge_num?: number;
+  original_filename?: string | null;
+  submitted_at?: string | null;
 }
 
 /**
@@ -284,11 +292,14 @@ export async function updateJudgeCompany2(args: {
       throw new Error("judgingRoundId가 없습니다.");
     }
 
-    // 1) DB에서 기존 기업 목록 조회
+    const companyIds = companies.map((c) => c.company_id);
+
+    // 1) DB에서 기존 기업 목록 조회 (judging_round_id + company_id 동시 일치)
     const { data: oldCompanies, error: oldCompaniesError } = await supabase
       .from("judging_round_company")
       .select("*")
-      .eq("judging_round_id", judgingRoundId);
+      .eq("judging_round_id", judgingRoundId)
+      .in("company_id", companyIds.length > 0 ? companyIds : [-1]);
 
     if (oldCompaniesError) throw oldCompaniesError;
     if (!oldCompanies)
@@ -323,6 +334,8 @@ export async function updateJudgeCompany2(args: {
           group_name: c.group_name?.length === 0 ? "A" : c.group_name,
           pdf_path: c.pdf_path || null,
           judge_num: c.judge_num ?? null,
+          original_filename: c.original_filename ?? null,
+          submitted_at: c.submitted_at ?? null,
         });
       } else {
         // 기존에도 있던 기업 → 업데이트
@@ -354,22 +367,37 @@ export async function updateJudgeCompany2(args: {
     // 5) 업데이트 처리
     for (const item of toUpdate) {
       const { rowId, payload } = item;
-      const { group_name, pdf_path, judge_num } = payload;
+      const {
+        group_name,
+        pdf_path,
+        judge_num,
+        original_filename,
+        submitted_at,
+      } = payload;
+
+      const updateData: Record<string, unknown> = {
+        group_name: group_name?.length === 0 ? "A" : group_name,
+        pdf_path: pdf_path ?? null,
+        judge_num: judge_num ?? null,
+      };
+
+      if (pdf_path && original_filename !== undefined) {
+        updateData.original_filename = original_filename;
+        updateData.submitted_at = submitted_at ?? null;
+      }
+
       const { error: updateError } = await supabase
         .from("judging_round_company")
-        .update({
-          group_name: group_name?.length === 0 ? "A" : group_name,
-          pdf_path: pdf_path ?? null,
-          judge_num: judge_num ?? null,
-        })
+        .update(updateData)
         .eq("id", rowId);
       if (updateError) throw updateError;
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("updateJudgeCompany2 error:", error);
-    return { success: false, message: error.message };
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, message };
   }
 }
 
@@ -383,15 +411,15 @@ export async function getJudgingRoundCompaniesPublic(judgingRoundId: string) {
     .single();
 
   if (roundError || !round) {
-    const notFoundError = new Error("심사를 찾을 수 없습니다.");
-    (notFoundError as any).statusCode = 404;
-    throw notFoundError;
+    throw Object.assign(new Error("심사를 찾을 수 없습니다."), {
+      statusCode: 404,
+    });
   }
 
   if (round.status === "COMPLETED") {
-    const completedError = new Error("이미 완료된 심사입니다.");
-    (completedError as any).statusCode = 403;
-    throw completedError;
+    throw Object.assign(new Error("이미 완료된 심사입니다."), {
+      statusCode: 403,
+    });
   }
 
   const { data: companies, error: companiesError } = await supabase

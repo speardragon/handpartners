@@ -46,12 +46,12 @@ const Page = () => {
       }`}
     >
       <div
-        className={`flex min-h-0 flex-col border-l bg-gray-50 ${
+        className={`flex min-h-0 flex-col ${
           isFull ? "h-full w-full" : "w-1/2"
         }`}
       >
         {!isFull && (
-          <div className="flex shrink-0 items-center gap-2 border-b bg-white px-6 py-3">
+          <div className="flex items-center gap-2 px-6 py-3 bg-white border-b shrink-0">
             <FileText size={14} className="text-muted-foreground" />
             <span className="text-sm font-medium text-muted-foreground">
               제출 서류
@@ -66,12 +66,12 @@ const Page = () => {
       </div>
 
       <div
-        className={`flex min-h-0 flex-1 flex-col overflow-y-auto ${
+        className={`flex min-h-0 flex-1 flex-col overflow-y-auto border-l bg-gray-50 ${
           isFull ? "hidden" : "w-1/2"
         }`}
       >
-        <div className="border-b bg-white px-6 py-4">
-          <div className="mb-1 flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="px-6 py-4 bg-white border-b">
+          <div className="flex items-center gap-2 mb-1 text-sm text-muted-foreground">
             <ClipboardList size={14} />
             <span>{judgeRound.program.name}</span>
           </div>

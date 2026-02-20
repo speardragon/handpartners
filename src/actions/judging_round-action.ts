@@ -30,9 +30,10 @@ export type JudgingRoundUserInsert =
 export type JudgingRoundUserUpdate =
   Database["public"]["Tables"]["judging_round_user"]["Update"];
 
-function handleError(error: any) {
-  console.error(error);
-  throw new Error(error.message);
+function handleError(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(message);
+  throw new Error(message);
 }
 
 /**
@@ -234,7 +235,9 @@ export interface JudgingRoundWithCriterias extends JudgingRoundRow {
     description: string;
   }[];
 }
-export async function getJudgeById(judgeRoundId: string): Promise<any> {
+export async function getJudgeById(
+  judgeRoundId: string
+): Promise<JudgingRoundWithCriterias | null> {
   const supabase = await createClient();
 
   const { data: judgingRoundData, error: judgingRoundError } = await supabase
@@ -409,9 +412,10 @@ export async function updateJudge(formData: FormData) {
     // await supabase.from("judging_round_user").insert(usersPayload);
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("updateJudge error:", error);
-    return { success: false, message: error.message };
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, message };
   }
 }
 
@@ -448,9 +452,10 @@ export async function updateJudgeBasic(data: JudgeBasicData) {
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("updateJudgeBasic error:", error);
-    return { success: false, message: error.message };
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, message };
   }
 }
 
@@ -572,13 +577,26 @@ export async function getJudgingRoundDetails(
   }
 
   // 5) 회사별로 evaluation 그룹핑 -> 유저 단위로 재그룹
-  const companyMap = new Map<number, any>();
+  type UserEval = {
+    user_id: string;
+    username: string;
+    feedback: string | null;
+    criteriaScores: { evaluation_criterion_id: number; grade: number }[];
+  };
+  type CompanyEntry = {
+    company_id: number;
+    company_name: string;
+    description: string | null;
+    evaluations: UserEval[];
+    totalScore: number;
+  };
+  const companyMap = new Map<number, CompanyEntry>();
   for (const comp of companyList) {
     companyMap.set(comp.company_id, {
       company_id: comp.company_id,
       company_name: comp.company_name,
       description: comp.description,
-      evaluations: [] as any[],
+      evaluations: [],
       totalScore: 0,
     });
   }
@@ -589,7 +607,7 @@ export async function getJudgingRoundDetails(
 
     // 유저별로 그룹핑이 이미 되어 있는지 확인
     let userEval = companyEntry.evaluations.find(
-      (u: any) => u.user_id === evalItem.user_id
+      (u) => u.user_id === evalItem.user_id
     );
     if (!userEval) {
       // 없다면 새로 삽입
@@ -599,10 +617,7 @@ export async function getJudgingRoundDetails(
           (evalItem.user as unknown as { username: string })?.username ??
           "(이름 없음)",
         feedback: evalItem.feedback, // 동일한 피드백이 들어오므로 일단 첫 레코드 feedback만 저장
-        criteriaScores: [] as {
-          evaluation_criterion_id: number;
-          grade: number;
-        }[],
+        criteriaScores: [],
       };
       companyEntry.evaluations.push(userEval);
     }

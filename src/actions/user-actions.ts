@@ -16,9 +16,10 @@ export interface UserResult {
   result: UserRow[];
 }
 
-function handleError(error: any) {
-  console.error(error);
-  throw new Error(error.message);
+function handleError(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(message);
+  throw new Error(message);
 }
 
 export async function getUsers(

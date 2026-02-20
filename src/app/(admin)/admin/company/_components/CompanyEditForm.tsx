@@ -45,7 +45,7 @@ export default function CompanyEditForm({ companyId, companyInfo }: Props) {
   } = form;
 
   const onSubmit = async (data: z.infer<typeof CompanyUpdateFormSchema>) => {
-    const updatedData: any = {};
+    const updatedData: Partial<CompanyCreateFormType> = {};
 
     Object.keys(dirtyFields).forEach((key) => {
       const fieldKey = key as keyof z.infer<typeof CompanyUpdateFormSchema>; // 'key'를 'UserData'의 키로 타입 단언

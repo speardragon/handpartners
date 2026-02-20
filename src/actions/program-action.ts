@@ -12,8 +12,8 @@ export type ProgramRowUpdate =
 export interface Screening {
   id: string; // 심사 ID(judging_round)
   name: string; // 심사 이름(judging_round)
-  start_date: string;
-  end_date: string;
+  start_date: string | null;
+  end_date: string | null;
   program: Program; // 프로그램 정보
   companies: Company[]; // 심사 대상 팀 목록
 }
@@ -25,7 +25,7 @@ export interface Program {
 export interface Company {
   score: number; // 심사 대상 기업 총 점수(evaluation)
   companyName: string; // 기업 이름 (Company)
-  description: string; // 사업 아이템 이름 (Company)
+  description: string | null; // 사업 아이템 이름 (Company)
   category: string; // 지원 분야
   status: string; // 심사 상태 (Evalutaion)
   companyId: number; // 기업 ID
@@ -39,9 +39,10 @@ interface Result {
   result: ProgramRow[];
 }
 
-function handleError(error: any) {
-  console.error(error);
-  throw new Error(error.message);
+function handleError(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(message);
+  throw new Error(message);
 }
 
 export async function getProgramById(programId: number) {
@@ -313,11 +314,28 @@ export async function getAllScreenings(
   });
 
   // 심사자 로직: 해당 심사자의 group_name에 할당된 company만 필터링
+  type ScreeningRow = {
+    id: string;
+    name: string;
+    start_date: string | null;
+    end_date: string | null;
+    status: string | null;
+    program: { id: number; name: string; description: string } | null;
+    companies: {
+      judge_num: number | null;
+      group_name: string | null;
+      category: string | null;
+      company: { id: number; name: string; description: string | null } | null;
+    }[];
+    judging_round_user: { user_id: string; group_name: string | null }[];
+  };
+  const typedScreenings = screenings as unknown as ScreeningRow[];
+
   if (useJudgeLogic) {
-    screenings.forEach((screening: any) => {
+    typedScreenings.forEach((screening) => {
       const userGroupName = screening.judging_round_user?.[0]?.group_name;
       screening.companies = screening.companies.filter(
-        (company: any) => company.group_name === userGroupName
+        (company) => company.group_name === userGroupName
       );
     });
   }
@@ -325,7 +343,7 @@ export async function getAllScreenings(
   const t2 = Date.now();
 
   // Step 2: 현재 페이지 judging_round_id 목록 추출
-  const judgingRoundIds = screenings.map((s: any) => s.id);
+  const judgingRoundIds = typedScreenings.map((s) => s.id);
 
   // Step 3: judging_round_id 기준으로만 evaluation 조회 후 JS에서 쌍 매칭
   let evaluationMap: Record<string, { status: string; totalScore: number }> =
@@ -363,9 +381,10 @@ export async function getAllScreenings(
   const t3 = Date.now();
 
   // Step 4: 심사 상태 판별 및 결과 매핑
-  const result: ScreeningWithStatus[] = screenings.map((screening: any) => {
+  const result: ScreeningWithStatus[] = typedScreenings.map((screening) => {
     const status: "PENDING" | "IN_PROGRESS" | "COMPLETED" =
-      screening.status ?? "PENDING";
+      (screening.status as "PENDING" | "IN_PROGRESS" | "COMPLETED") ??
+      "PENDING";
 
     const screeningStatus =
       status === "IN_PROGRESS"
@@ -382,22 +401,22 @@ export async function getAllScreenings(
       screeningStatus,
       status,
       program: {
-        id: screening.program.id,
-        name: screening.program.name,
-        description: screening.program.description,
+        id: screening.program!.id,
+        name: screening.program!.name,
+        description: screening.program!.description,
       },
       companies: screening.companies
-        .sort((a: any, b: any) => a.judge_num - b.judge_num)
-        .map((company: any) => {
-          const key = `${screening.id}_${company.company.id}`;
+        .sort((a, b) => (a.judge_num ?? 0) - (b.judge_num ?? 0))
+        .map((company) => {
+          const key = `${screening.id}_${company.company?.id}`;
           const evaluation = evaluationMap[key] || {
             status: "PENDING",
             totalScore: 0,
           };
           return {
-            companyName: company.company.name,
-            description: company.company.description,
-            category: company.category,
+            companyName: company.company?.name ?? "",
+            description: company.company?.description ?? null,
+            category: company.category ?? "",
             status:
               evaluation.status === "PENDING"
                 ? "심사 예정"
@@ -405,7 +424,7 @@ export async function getAllScreenings(
                   ? "심사 중"
                   : "심사 완료",
             score: evaluation.totalScore,
-            companyId: company.company.id,
+            companyId: company.company?.id ?? 0,
           };
         }),
     };
@@ -425,7 +444,7 @@ export async function getAllScreenings(
   };
 }
 
-export async function getScreenings(): Promise<any> {
+export async function getScreenings(): Promise<Screening[]> {
   const supabase = await createClient();
 
   const {
@@ -480,10 +499,27 @@ export async function getScreenings(): Promise<any> {
   }
 
   // 해당 심사자의 group_name에 할당된 company만 필터링
-  screenings.forEach((screening) => {
+  type ScreeningCompany = {
+    judge_num: number | null;
+    group_name: string | null;
+    category: string | null;
+    company: { id: number; name: string; description: string | null } | null;
+  };
+  type ScreeningItem = {
+    id: string;
+    name: string;
+    start_date: string | null;
+    end_date: string | null;
+    program: { id: number; name: string; description: string } | null;
+    companies: ScreeningCompany[];
+    judging_round_user: { user_id: string; group_name: string | null }[];
+  };
+  const typedScreenings = screenings as unknown as ScreeningItem[];
+
+  typedScreenings.forEach((screening) => {
     const userGroupName = screening.judging_round_user?.[0]?.group_name;
     screening.companies = screening.companies.filter(
-      (company: any) => company.group_name === userGroupName
+      (company) => company.group_name === userGroupName
     );
   });
 
@@ -492,8 +528,9 @@ export async function getScreenings(): Promise<any> {
     judging_round_id: string;
     company_id: number;
   }[] = [];
-  screenings.forEach((screening) => {
-    screening.companies.forEach((companyEntry: any) => {
+  typedScreenings.forEach((screening) => {
+    screening.companies.forEach((companyEntry) => {
+      if (!companyEntry.company) return;
       judgingCompanyPairs.push({
         judging_round_id: screening.id,
         company_id: companyEntry.company.id,
@@ -535,47 +572,38 @@ export async function getScreenings(): Promise<any> {
   });
 
   // Step 5: Map screenings data with evaluation status and scores
-  const result = screenings.map((screening) => ({
+  const result: Screening[] = typedScreenings.map((screening) => ({
     id: screening.id,
     name: screening.name,
     start_date: screening.start_date,
     end_date: screening.end_date,
-    program: (() => {
-      const program = screening.program as unknown as {
-        id: number;
-        name: string;
-        description: string;
-      };
-      return {
-        id: program.id,
-        name: program.name,
-        description: program.description,
-      };
-    })(),
+    program: {
+      id: screening.program!.id,
+      name: screening.program!.name,
+      description: screening.program!.description,
+    },
     companies: screening.companies
-      .sort((a: any, b: any) => a.judge_num - b.judge_num)
-      .map((company: any) => {
-        const key = `${screening.id}_${company.company.id}`;
+      .sort((a, b) => (a.judge_num ?? 0) - (b.judge_num ?? 0))
+      .map((company) => {
+        const key = `${screening.id}_${company.company?.id}`;
         const evaluation = evaluationMap[key] || {
           status: "PENDING",
           totalScore: 0,
         };
         return {
-          // judge_num: company.judge_num.toString(),
-          companyName: company.company.name,
-          description: company.company.description,
-          category: company.category,
+          companyName: company.company?.name ?? "",
+          description: company.company?.description ?? null,
+          category: company.category ?? "",
           status:
             evaluation.status === "PENDING"
               ? "심사 예정"
               : evaluation.status === "ONGOING"
                 ? "심사 중"
                 : "심사 완료",
-          score: evaluation.totalScore, // Add total score here
-          companyId: company.company.id,
+          score: evaluation.totalScore,
+          companyId: company.company?.id ?? 0,
         };
       }),
-    // .sort((a, b) => a.companyName.localeCompare(b.companyName)),
   }));
 
   return result;

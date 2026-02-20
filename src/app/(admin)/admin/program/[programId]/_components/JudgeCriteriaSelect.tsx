@@ -67,7 +67,7 @@ export default function JudgeCriteriaSelect({
     value: string | number
   ) => {
     const newList = [...targetList];
-    (newList[index] as any)[key] = value;
+    newList[index] = { ...newList[index], [key]: value };
     onTargetListChange(newList);
   };
 
