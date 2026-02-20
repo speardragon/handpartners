@@ -34,6 +34,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { userQueries } from "@/queries";
+import { USER_ROLES } from "@/constants/auth";
 
 export default function UserCreateDialog() {
   const { createOpen, setCreateOpen } = useDialogOpenStore((state) => state);
@@ -135,8 +136,8 @@ export default function UserCreateDialog() {
                         <SelectValue placeholder="구분을 선택해주세요" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="심사자">심사자</SelectItem>
-                        <SelectItem value="관리자">관리자</SelectItem>
+                        <SelectItem value={USER_ROLES.JUDGE}>심사자</SelectItem>
+                        <SelectItem value={USER_ROLES.ADMIN}>관리자</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>

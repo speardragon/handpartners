@@ -1,20 +1,22 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { UserProfile } from "@/actions/user-actions";
 
-interface AuthStoreInterface {
-  authenticated: boolean;
-  setAuthenticated: (val: boolean) => void;
-  user: any;
-  setUser: (user: any) => void;
+interface AuthStoreState {
+  isLoading: boolean;
+  user: UserProfile | null;
   accessToken: string | null;
-  setAccessToken: (finished: string) => void;
+  setLoading: (loading: boolean) => void;
+  setUser: (user: UserProfile | null) => void;
+  setAccessToken: (token: string | null) => void;
+  clearAuth: () => void;
 }
 
-export const useAuthStore = create<AuthStoreInterface>((set) => ({
-  authenticated: false,
-  setAuthenticated: (val) => set((state) => ({ authenticated: val })),
-  user: {},
-  setUser: (user) => set({ user }),
+export const useAuthStore = create<AuthStoreState>((set) => ({
+  isLoading: true,
+  user: null,
   accessToken: null,
-  setAccessToken: (token) => set((state) => ({ accessToken: token })),
+  setLoading: (loading) => set({ isLoading: loading }),
+  setUser: (user) => set({ user }),
+  setAccessToken: (token) => set({ accessToken: token }),
+  clearAuth: () => set({ user: null, accessToken: null, isLoading: false }),
 }));

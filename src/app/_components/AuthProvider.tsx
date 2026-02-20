@@ -1,29 +1,62 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { getUserProfile } from "@/actions/user-actions";
+import { useAuthStore } from "@/store/useAuthStore";
 import React, { useEffect } from "react";
 
-export default function AuthProvider({ accessToken, children }: { accessToken: string | null; children: React.ReactNode }) {
-  const supabase = createClient();
-  const router = useRouter();
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { setUser, setLoading, setAccessToken, clearAuth } = useAuthStore();
 
   useEffect(() => {
-    const {
-      data: { subscription: authListner },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        router.push("login");
+    const supabase = createClient();
+    let mounted = true;
+
+    const initialize = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session && mounted) {
+          const profile = await getUserProfile();
+          if (mounted) {
+            setUser(profile);
+            setAccessToken(session.access_token);
+          }
+        }
+      } catch (error) {
+        console.error("[AuthProvider] init error:", error);
+        if (mounted) setUser(null);
+      } finally {
+        if (mounted) setLoading(false);
       }
-      if (session?.access_token !== accessToken) {
-        router.refresh();
+    };
+
+    initialize();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        try {
+          const profile = await getUserProfile();
+          if (mounted) {
+            setUser(profile);
+            setAccessToken(session?.access_token ?? null);
+          }
+        } catch (error) {
+          console.error("[AuthProvider] profile fetch error:", error);
+        }
+      } else if (event === "SIGNED_OUT") {
+        if (mounted) clearAuth();
       }
     });
 
     return () => {
-      authListner.unsubscribe();
+      mounted = false;
+      subscription.unsubscribe();
     };
-  }, [accessToken, supabase, router]);
+  }, []);
 
-  return children;
+  return <>{children}</>;
 }

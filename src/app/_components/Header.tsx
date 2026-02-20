@@ -1,20 +1,16 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { userQueries } from "@/queries";
-import { useAuth } from "../_hooks/useAuth"; // 새로 만든 훅 import
+import { useAuthStore } from "@/store/useAuthStore";
+import { USER_ROLES } from "@/constants/auth";
+import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
 import handpartnersLogo from "../../../public/images/handpartners_logo.png";
 
 export default function Header() {
-  const { user } = useAuth();
-  const { data: userProfile } = useQuery({
-    ...userQueries.profile(),
-    enabled: !!user,
-  });
+  const { user } = useAuthStore();
 
-  const isAdmin = userProfile?.role === "관리자";
+  const isAdmin = user?.role === USER_ROLES.ADMIN;
 
   return (
     <header className="z-50 flex h-16 w-full items-center border-b border-gray-200">
@@ -47,9 +43,8 @@ export default function Header() {
 
 // 공통 로그아웃 로직을 위한 커스텀 훅
 function useSignOut() {
-  const { supabase } = useAuth();
-
   return async () => {
+    const supabase = createClient();
     await supabase.auth.signOut();
     window.location.href = "/";
   };

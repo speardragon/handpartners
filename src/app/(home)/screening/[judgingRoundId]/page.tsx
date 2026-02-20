@@ -2,7 +2,9 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { userQueries, screeningQueries } from "@/queries";
+import { screeningQueries } from "@/queries";
+import { useAuthStore } from "@/store/useAuthStore";
+import { USER_ROLES } from "@/constants/auth";
 import { columns } from "@/app/(home)/_components/columns";
 import { DataTable } from "@/app/(home)/_components/data-table";
 import ScreeningHeader from "./_components/screening-header";
@@ -19,8 +21,8 @@ export default function ScreeningDetailPage() {
   const params = useParams();
   const judgingRoundId = params.judgingRoundId as string;
 
-  const { data: profile } = useQuery(userQueries.profile());
-  const isAdmin = profile?.role === "관리자";
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === USER_ROLES.ADMIN;
 
   const { data: isParticipating } = useQuery({
     ...screeningQueries.participation(judgingRoundId),

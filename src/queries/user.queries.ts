@@ -1,9 +1,5 @@
 import { queryOptions, infiniteQueryOptions } from "@tanstack/react-query";
-import {
-  getUsers,
-  getUserProfile,
-  type UserResult,
-} from "@/actions/user-actions";
+import { getUsers, type UserResult } from "@/actions/user-actions";
 
 export const userQueries = {
   all: () => ["users"] as const,
@@ -16,11 +12,6 @@ export const userQueries = {
       queryKey: [...userQueries.lists(), pagination, search] as const,
       queryFn: () =>
         getUsers(pagination.pageIndex + 1, pagination.pageSize, search),
-    }),
-  profile: () =>
-    queryOptions({
-      queryKey: [...userQueries.all(), "me"] as const,
-      queryFn: () => getUserProfile(),
     }),
   infinite: (search?: string) =>
     infiniteQueryOptions({

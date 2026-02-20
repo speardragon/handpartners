@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { USER_ROLES } from "@/constants/auth";
 
 const PUBLIC_PATHS = ["/login", "/api", "/auth", "/upload"];
 
@@ -73,7 +74,7 @@ export async function updateSession(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    if (!userProfile || userProfile.role !== "관리자") {
+    if (!userProfile || userProfile.role !== USER_ROLES.ADMIN) {
       const rootUrl = request.nextUrl.clone();
       rootUrl.pathname = "/";
       return NextResponse.redirect(rootUrl);

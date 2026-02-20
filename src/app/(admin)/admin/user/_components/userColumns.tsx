@@ -1,11 +1,11 @@
 "use client";
 
+import { USER_ROLES } from "@/constants/auth";
 import { UserRow } from "@/actions/user-actions";
 import { formatDate } from "@/lib/utils";
 import { ColumnDef } from "@tanstack/react-table";
 
 declare module "@tanstack/react-table" {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
     className?: string;
   }
@@ -29,7 +29,7 @@ export const userColumns: ColumnDef<Partial<UserRow>>[] = [
       return (
         <span
           className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-            role === "관리자"
+            role === USER_ROLES.ADMIN
               ? "bg-neutral-900 text-white"
               : "bg-neutral-100 text-neutral-700"
           }`}

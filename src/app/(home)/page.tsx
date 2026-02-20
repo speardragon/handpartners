@@ -2,7 +2,9 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { screeningQueries, userQueries } from "@/queries";
+import { screeningQueries } from "@/queries";
+import { useAuthStore } from "@/store/useAuthStore";
+import { USER_ROLES } from "@/constants/auth";
 import { ScreeningWithStatus } from "@/actions/program-action";
 import ProgramSkeleton from "./_components/ProgramSkeleton";
 import { ScreeningCard } from "./_components/screening-card";
@@ -30,9 +32,9 @@ const PAGE_SIZE = 10;
 
 export default function Home() {
   const router = useRouter();
-  const { data: profile } = useQuery(userQueries.profile());
+  const { user, isLoading: authLoading } = useAuthStore();
 
-  const isAdmin = profile ? profile.role === "관리자" : undefined;
+  const isAdmin = user ? user.role === USER_ROLES.ADMIN : undefined;
 
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");

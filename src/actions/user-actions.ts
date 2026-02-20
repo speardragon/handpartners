@@ -100,7 +100,7 @@ export async function deleteUser(userId: string) {
   return data;
 }
 
-type UserProfile = {
+export type UserProfile = {
   id: string;
   username: string;
   created_at: string;
