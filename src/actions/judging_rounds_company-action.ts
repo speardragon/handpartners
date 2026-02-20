@@ -72,7 +72,11 @@ export async function createJudgeCompanyPdfUploadUrl(args: {
 }) {
   const safeName = sanitizeFileName(args.fileName || "company.pdf");
   const uniqueId = uuidv4();
-  const objectKey = `judging-round-pdfs/${Date.now()}-${uniqueId}-${safeName}`;
+  const keyPrefix =
+    process.env.NODE_ENV === "development"
+      ? "dev/judging-round-pdfs"
+      : "judging-round-pdfs";
+  const objectKey = `${keyPrefix}/${Date.now()}-${uniqueId}-${safeName}`;
 
   return createPresignedUploadUrl({
     objectKey,
