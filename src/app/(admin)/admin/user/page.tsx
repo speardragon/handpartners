@@ -1,6 +1,8 @@
 "use client";
 
-import { useUserQuery } from "@/app/_hooks/useUserQuery";
+import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData } from "@tanstack/react-query";
+import { userQueries } from "@/queries";
 import { UserDataTable } from "./_components/UserDataTable";
 import { userColumns } from "./_components/userColumns";
 import { useState } from "react";
@@ -15,7 +17,10 @@ export default function Page() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
-  const { data: users, isFetching } = useUserQuery(pagination, debouncedSearch);
+  const { data: users, isFetching } = useQuery({
+    ...userQueries.list(pagination, debouncedSearch),
+    placeholderData: keepPreviousData,
+  });
 
   return (
     <div className="flex min-h-screen w-full flex-col space-y-4 p-4 sm:p-6 lg:p-10">

@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { PaginationState } from "@tanstack/react-table";
 import { CompanyDataTable } from "./_components/CompanyDataTable";
-import { useCompanyQuery } from "./_hooks/useCompanyQuery";
+import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData } from "@tanstack/react-query";
+import { companyQueries } from "@/queries";
 import { companyColumns } from "./_components/CompanyColumns";
 import { useDebounce } from "@/app/_hooks/useDebounce";
 
@@ -15,10 +17,10 @@ export default function Page() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
-  const { data: companies, isFetching } = useCompanyQuery(
-    pagination,
-    debouncedSearch
-  );
+  const { data: companies, isFetching } = useQuery({
+    ...companyQueries.list(pagination, debouncedSearch),
+    placeholderData: keepPreviousData,
+  });
 
   return (
     <div className="flex min-h-screen w-full flex-col space-y-4 p-4 sm:p-6 lg:p-10">

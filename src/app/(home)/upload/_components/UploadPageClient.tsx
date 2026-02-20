@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
-import { useJudgingRoundCompaniesQuery } from "../_hooks/useJudgingRoundCompaniesQuery";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { judgingRoundQueries } from "@/queries";
 import {
   createJudgeCompanyPdfUploadUrl,
   updateCompanyPdfPath,
@@ -113,8 +113,10 @@ export default function UploadPageClient() {
     }
   }, [searchParams]);
 
-  const { data, isLoading, isError, error } =
-    useJudgingRoundCompaniesQuery(judgingRoundId);
+  const { data, isLoading, isError, error } = useQuery({
+    ...judgingRoundQueries.companies.public(judgingRoundId ?? ""),
+    enabled: !!judgingRoundId,
+  });
 
   const handleSearch = () => {
     const trimmed = inputValue.trim();
@@ -172,12 +174,15 @@ export default function UploadPageClient() {
       });
 
       queryClient.invalidateQueries({
-        queryKey: ["public_judging_round_companies", judgingRoundId],
+        queryKey: judgingRoundQueries.companies.public(judgingRoundId ?? "")
+          .queryKey,
       });
 
       toast.success("PDF 업로드 완료");
-    } catch (err: any) {
-      toast.error(err.message || "업로드 중 오류가 발생했습니다.");
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "업로드 중 오류가 발생했습니다."
+      );
     } finally {
       setUploadingIds((prev) => {
         const next = new Set(prev);
@@ -187,8 +192,7 @@ export default function UploadPageClient() {
     }
   };
 
-  const uploadedCount =
-    data?.companies.filter((c: any) => c.pdf_path).length ?? 0;
+  const uploadedCount = data?.companies.filter((c) => c.pdf_path).length ?? 0;
   const totalCount = data?.companies.length ?? 0;
 
   return (
@@ -257,7 +261,9 @@ export default function UploadPageClient() {
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              {"오류가 발생했습니다. 심사를 찾을 수 없습니다."}
+              {error instanceof Error
+                ? error.message
+                : "데이터를 불러오는 중 오류가 발생했습니다."}
             </p>
           )}
         </div>
@@ -318,9 +324,10 @@ export default function UploadPageClient() {
               </div>
             ) : (
               <div className="space-y-2">
-                {data.companies.map((item: any, index: number) => {
+                {data.companies.map((item, index: number) => {
                   const companyName =
-                    (item.company as any)?.name ?? "알 수 없음";
+                    (item.company as { name: string } | null)?.name ??
+                    "알 수 없음";
                   const hasPdf = !!item.pdf_path;
                   const isUploading = uploadingIds.has(item.id);
                   const selectedFile = selectedFiles[item.id];

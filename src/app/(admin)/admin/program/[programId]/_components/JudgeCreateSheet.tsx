@@ -27,6 +27,7 @@ import {
 } from "../_lib/JudgeFormSchema";
 import { createJudgingRound } from "@/actions/judging_round-action";
 import { useQueryClient } from "@tanstack/react-query";
+import { judgingRoundQueries } from "@/queries";
 
 interface JudgeCreateType {
   name: string;
@@ -63,11 +64,13 @@ export default function JudgeCreateSheet({ programId }: Props) {
   const onSubmit = async (data: JudgeCreateType) => {
     try {
       await createJudgingRound({ ...data, program_id: programId });
-      queryClient.invalidateQueries({ queryKey: ["judging_rounds"] });
+      queryClient.invalidateQueries({ queryKey: judgingRoundQueries.all() });
       toast.success("새로운 심사가 생성되었습니다.");
       setCreateOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "오류가 발생했습니다.");
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "오류가 발생했습니다."
+      );
     }
   };
 

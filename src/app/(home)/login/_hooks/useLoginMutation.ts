@@ -28,7 +28,7 @@ export function useLoginMutation() {
     onSuccess: () => {
       window.location.href = "/";
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       if (error.message === "invalid_credentials") {
         toast.error("이메일 또는 비밀번호가 잘못되었습니다");
         return;

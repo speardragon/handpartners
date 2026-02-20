@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/ui/loading-button";
 import {
@@ -19,6 +19,7 @@ import {
   type JudgingRoundStatus,
 } from "@/actions/judging_round-action";
 import { useQueryClient } from "@tanstack/react-query";
+import { judgingRoundQueries, screeningQueries } from "@/queries";
 
 interface AdminPanelProps {
   judgingRoundId: string;
@@ -65,16 +66,23 @@ export default function AdminPanel({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [status, setStatus] = useState<JudgingRoundStatus>(currentStatus);
 
+  useEffect(() => {
+    setStatus(currentStatus);
+  }, [currentStatus]);
+
   const handleStatusChange = async (nextStatus: JudgingRoundStatus) => {
     setIsUpdatingStatus(true);
     try {
       await updateJudgingRoundStatus(judgingRoundId, nextStatus);
       setStatus(nextStatus);
       queryClient.invalidateQueries({
-        queryKey: ["screeningDetail", judgingRoundId],
+        queryKey: screeningQueries.detailKeyPrefix(),
       });
       queryClient.invalidateQueries({
-        queryKey: ["allScreenings"],
+        queryKey: screeningQueries.all(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: judgingRoundQueries.all(),
       });
       toast.success(
         `심사 상태가 "${STATUS_LABEL[nextStatus]}"(으)로 변경되었습니다.`

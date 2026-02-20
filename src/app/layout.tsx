@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "sonner";
 import ReactQueryClientProvider from "@/config/ReactQueryClientProvider";
+import { AuthProvider } from "@/app/_components/AuthProvider";
 import "core-js/full/promise/with-resolvers";
 
 const pretendard = localFont({
@@ -35,10 +36,10 @@ export default async function RootLayout({
       </head>
       <body className={`${pretendard.className} antialiased`}>
         <ReactQueryClientProvider>
-          <>
+          <AuthProvider>
             <Toaster richColors />
             {children}
-          </>
+          </AuthProvider>
         </ReactQueryClientProvider>
       </body>
     </html>

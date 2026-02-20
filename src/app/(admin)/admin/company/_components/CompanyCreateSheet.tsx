@@ -26,6 +26,7 @@ import { CompanyCreateFormType } from "../_lib/CompanyFormSchema";
 import { JudgeCreateFormSchema } from "../../program/[programId]/_lib/JudgeFormSchema";
 import { CompanyRowInsert, createCompany } from "@/actions/company-action";
 import { useQueryClient } from "@tanstack/react-query";
+import { companyQueries } from "@/queries";
 
 export default function CompanyCreateSheet() {
   const queryClient = useQueryClient();
@@ -51,18 +52,20 @@ export default function CompanyCreateSheet() {
     try {
       await createCompany(data as CompanyRowInsert);
       toast.success("새로운 기업이 생성되었습니다.");
-      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      queryClient.invalidateQueries({ queryKey: companyQueries.all() });
       form.reset();
       setCreateOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "오류가 발생했습니다.");
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "오류가 발생했습니다."
+      );
     }
   };
 
   return (
     <Sheet open={createOpen} onOpenChange={setCreateOpen}>
-      <SheetContent className="overflow-y-auto min-w-[600px] p-0">
-        <SheetHeader className="p-4 border-b">
+      <SheetContent className="min-w-[600px] overflow-y-auto p-0">
+        <SheetHeader className="border-b p-4">
           <SheetTitle>기업 추가</SheetTitle>
           <SheetDescription>새로운 기업을 생성합니다.</SheetDescription>
         </SheetHeader>
@@ -76,7 +79,7 @@ export default function CompanyCreateSheet() {
             <div className="flex flex-col gap-4 p-6">
               <div className="flex justify-between">
                 <div className="w-1/3 font-medium">기업 정보</div>
-                <div className="flex flex-col w-2/3 space-y-6">
+                <div className="flex w-2/3 flex-col space-y-6">
                   <FormField
                     control={control}
                     name="name"
@@ -111,7 +114,7 @@ export default function CompanyCreateSheet() {
               </div>
             </div>
 
-            <div className="flex justify-center w-full mt-4">
+            <div className="mt-4 flex w-full justify-center">
               <Button type="submit" disabled={isSubmitting}>
                 기업 생성
               </Button>

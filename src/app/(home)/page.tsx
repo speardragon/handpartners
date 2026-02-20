@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { useAllScreeningsQuery } from "./_hooks/useAllScreeningsQuery";
+import { useQuery } from "@tanstack/react-query";
+import { screeningQueries } from "@/queries";
+import { useAuthStore } from "@/store/useAuthStore";
+import { USER_ROLES } from "@/constants/auth";
 import { ScreeningWithStatus } from "@/actions/program-action";
 import ProgramSkeleton from "./_components/ProgramSkeleton";
 import { ScreeningCard } from "./_components/screening-card";
 import { useRouter } from "next/navigation";
-import { useUserProfileQuery } from "../_hooks/useUserQuery";
 import {
   CalendarX2,
   Search,
@@ -30,9 +32,9 @@ const PAGE_SIZE = 10;
 
 export default function Home() {
   const router = useRouter();
-  const { data: profile } = useUserProfileQuery();
+  const { user, isLoading: authLoading } = useAuthStore();
 
-  const isAdmin = profile?.role === "관리자";
+  const isAdmin = user ? user.role === USER_ROLES.ADMIN : undefined;
 
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
@@ -67,12 +69,10 @@ export default function Home() {
     [debounceTimer]
   );
 
-  const { data, isLoading } = useAllScreeningsQuery(
-    page,
-    PAGE_SIZE,
-    isAdmin,
-    judgingRoundId
-  );
+  const { data, isLoading } = useQuery({
+    ...screeningQueries.list(page, PAGE_SIZE, isAdmin ?? false, judgingRoundId),
+    enabled: isAdmin !== undefined,
+  });
 
   const handleRowClick = useCallback(
     (screening: ScreeningWithStatus) => {
@@ -83,12 +83,11 @@ export default function Home() {
 
   const stats = useMemo(() => {
     if (!data) return null;
-    const all = data.result;
     return {
       total: data.totalElements,
-      active: all.filter((s) => s.status === "IN_PROGRESS").length,
-      completed: all.filter((s) => s.status === "COMPLETED").length,
-      upcoming: all.filter((s) => s.status === "PENDING").length,
+      active: data.totalActive,
+      completed: data.totalCompleted,
+      upcoming: data.totalPending,
     };
   }, [data]);
 

@@ -9,8 +9,7 @@ declare module "@tanstack/react-table" {
   }
 }
 export const Filter = React.memo(
-  ({ column }: { column: Column<any, unknown> }) => {
-    // const Filter = React.memo({ column }: { column: Column<any, unknown> }) {
+  ({ column }: { column: Column<unknown, unknown> }) => {
     const { filterVariant } = column.columnDef.meta ?? {};
 
     const columnFilterValue = column.getFilterValue();
@@ -27,7 +26,7 @@ export const Filter = React.memo(
 
     return filterVariant === "select" ? (
       <select
-        className="w-full text-center rounded-md border border-gray-200"
+        className="w-full rounded-md border border-gray-200 text-center"
         onChange={(e) => column.setFilterValue(e.target.value)}
         value={columnFilterValue?.toString()}
       >
@@ -43,7 +42,7 @@ export const Filter = React.memo(
       <>
         {/* Autocomplete suggestions from faceted values feature */}
         <datalist id={column.id + "list"}>
-          {sortedUniqueValues.map((value: any) => (
+          {sortedUniqueValues.map((value) => (
             <option value={value} key={value} />
           ))}
         </datalist>
@@ -60,3 +59,5 @@ export const Filter = React.memo(
     );
   }
 );
+
+Filter.displayName = "Filter";

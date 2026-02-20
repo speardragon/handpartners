@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
-import { useFeedbacksQuery } from "../_hooks/useFeedbacksQuery";
+import { useQuery } from "@tanstack/react-query";
+import { judgingRoundQueries } from "@/queries";
 import { Button } from "@/components/ui/button";
 import {
   applySheetStylesAndWidths,
@@ -21,10 +22,10 @@ export default function FeedbackToExcelButton({
   className,
 }: Props) {
   // React Query 훅 사용
-  const { data, isLoading, isError, refetch } = useFeedbacksQuery(
-    judgingRoundId,
-    false
-  );
+  const { data, isLoading, isError, refetch } = useQuery({
+    ...judgingRoundQueries.feedbacks(judgingRoundId),
+    enabled: false,
+  });
 
   /**
    * 버튼을 누르면, refetch를 호출해 데이터를 가져온 뒤
@@ -59,9 +60,9 @@ export default function FeedbackToExcelButton({
         new Blob([wbOut], { type: "application/octet-stream" }),
         "심사 정리.xlsx"
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert(err.message || "Export failed.");
+      alert(err instanceof Error ? err.message : "Export failed.");
     }
   };
 

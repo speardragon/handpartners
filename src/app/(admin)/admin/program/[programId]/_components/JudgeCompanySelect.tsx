@@ -1,25 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useProgramCompanyQuery } from "../../../company/_hooks/useProgramCompanyQuery";
-import { useJudgingRoundCompanyQuery } from "../_hooks/useJudgingRoundCompanyQuery";
+import { useQuery } from "@tanstack/react-query";
+import { programQueries, judgingRoundQueries } from "@/queries";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 
-interface Company {
-  id: number;
-  name: string;
-  pdfFile?: File;
-  pdfPath?: string;
-  groupName?: string;
-}
+import type { SimpleCompany } from "./JudgeEditForm";
 
 interface CompanySelectProps {
   judgingRoundId: string;
   programId: number;
-  targetList: Company[];
-  onTargetListChange: (newList: Company[]) => void;
+  targetList: SimpleCompany[];
+  onTargetListChange: (newList: SimpleCompany[]) => void;
 }
 
 export default function JudgeCompanySelect({
@@ -31,18 +25,21 @@ export default function JudgeCompanySelect({
   const [selectedSourceIds, setSelectedSourceIds] = useState<number[]>([]);
   const [selectedTargetIds, setSelectedTargetIds] = useState<number[]>([]);
 
-  const { data: allCompanies } = useProgramCompanyQuery(programId);
-  const { data: judgingRoundCompanies } =
-    useJudgingRoundCompanyQuery(judgingRoundId);
+  const { data: allCompanies } = useQuery(programQueries.companies(programId));
+  const { data: judgingRoundCompanies } = useQuery(
+    judgingRoundQueries.companies.byRound(judgingRoundId)
+  );
 
   useEffect(() => {
     if (judgingRoundCompanies && judgingRoundCompanies.length > 0) {
-      const mapped = judgingRoundCompanies.map((item: any) => ({
+      const mapped = judgingRoundCompanies.map((item) => ({
         id: item.company_id,
         name: item.company?.name || "",
-        pdf_path: item.pdf_path,
-        group_name: item.group_name,
-        judge_num: item.judge_num,
+        pdf_path: item.pdf_path ?? undefined,
+        group_name: item.group_name ?? undefined,
+        judge_num: item.judge_num ?? undefined,
+        original_filename: item.original_filename ?? undefined,
+        submitted_at: item.submitted_at ?? undefined,
       }));
       onTargetListChange(mapped);
     } else if (judgingRoundCompanies && judgingRoundCompanies.length === 0) {
@@ -51,8 +48,10 @@ export default function JudgeCompanySelect({
   }, [judgingRoundCompanies, onTargetListChange]);
 
   const sourceList =
-    allCompanies?.map((c) => ({ id: c.company_id, name: c.company.name })) ??
-    [];
+    allCompanies?.map((c) => ({
+      id: c.company_id,
+      name: c.company?.name ?? "",
+    })) ?? [];
 
   const areAllSelected =
     sourceList.length > 0 &&

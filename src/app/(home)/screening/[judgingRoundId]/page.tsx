@@ -1,12 +1,10 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useUserProfileQuery } from "@/app/_hooks/useUserQuery";
-
-import {
-  useScreeningDetailQuery,
-  useParticipationQuery,
-} from "./_hooks/useScreeningDetailQuery";
+import { useQuery } from "@tanstack/react-query";
+import { screeningQueries } from "@/queries";
+import { useAuthStore } from "@/store/useAuthStore";
+import { USER_ROLES } from "@/constants/auth";
 import { columns } from "@/app/(home)/_components/columns";
 import { DataTable } from "@/app/(home)/_components/data-table";
 import ScreeningHeader from "./_components/screening-header";
@@ -23,22 +21,28 @@ export default function ScreeningDetailPage() {
   const params = useParams();
   const judgingRoundId = params.judgingRoundId as string;
 
-  const { data: profile } = useUserProfileQuery();
-  const isAdmin = profile?.role === "관리자";
+  const { user, isLoading: isAuthLoading } = useAuthStore();
+  const isAdmin = user?.role === USER_ROLES.ADMIN;
 
-  const { data: isParticipating } = useParticipationQuery(
-    judgingRoundId,
-    isAdmin
-  );
+  const { data: isParticipating } = useQuery({
+    ...screeningQueries.participation(judgingRoundId),
+    enabled: !!judgingRoundId && !isAuthLoading && isAdmin === true,
+  });
 
   // 관리자 비참여 시 관리자 뷰, 그 외는 심사자 뷰
   const isAdminView = isAdmin && !isParticipating;
 
-  const { data: screening, isLoading } = useScreeningDetailQuery(
-    judgingRoundId,
-    isAdmin,
-    isAdmin ? isParticipating : undefined
-  );
+  const { data: screening, isLoading } = useQuery({
+    ...screeningQueries.detail(
+      judgingRoundId,
+      isAdmin ?? false,
+      isAdmin ? isParticipating : undefined
+    ),
+    enabled:
+      !isAuthLoading &&
+      !!judgingRoundId &&
+      (isAdmin ? isParticipating !== undefined : true),
+  });
 
   if (isLoading || !screening) {
     return <ProgramSkeleton />;
@@ -46,7 +50,7 @@ export default function ScreeningDetailPage() {
 
   return (
     <main className="flex w-full flex-col items-center">
-      <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4">
+      <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4 pb-10">
         {/* 뒤로가기 */}
         <Button
           variant="ghost"

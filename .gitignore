@@ -136,3 +136,11 @@ dist
 .claude
 .agents
 .mcp.json
+
+.sisyphus
+.opencode
+
+.pnpm-store
+.vscode
+
+next-env.d.ts

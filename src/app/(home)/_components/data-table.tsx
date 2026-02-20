@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Column,
   ColumnDef,
   ColumnFiltersState,
   flexRender,
@@ -45,7 +46,7 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <div className="rounded-md border overflow-y-auto">
+    <div className="overflow-y-auto rounded-md border">
       <Table>
         <TableHeader className="sticky top-0 bg-gray-100">
           {table.getHeaderGroups().map((headerGroup) => (
@@ -63,7 +64,9 @@ export function DataTable<TData, TValue>({
                           header.getContext()
                         )}
                     {header.column.getCanFilter() ? (
-                      <Filter column={header.column} />
+                      <Filter
+                        column={header.column as Column<unknown, unknown>}
+                      />
                     ) : null}
                   </TableHead>
                 );

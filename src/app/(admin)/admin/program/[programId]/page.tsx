@@ -1,9 +1,10 @@
 "use client";
 
 import { use, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { PaginationState } from "@tanstack/react-table";
 import { JudgeDataTable } from "./_components/JudgeDataTable";
-import { useJudgingRoundsByProgram } from "./_hooks/useJudgingRoundsByProgram";
+import { judgingRoundQueries } from "@/queries";
 import { judgeColumns } from "./_components/JudgeColumns";
 
 type Props = {
@@ -21,10 +22,10 @@ export default function Page({ params }: Props) {
     pageSize: 10,
   });
 
-  const { data, isFetching } = useJudgingRoundsByProgram(
-    programIdNumber,
-    pagination
-  );
+  const { data, isFetching } = useQuery({
+    ...judgingRoundQueries.byProgram(programIdNumber, pagination),
+    placeholderData: keepPreviousData,
+  });
 
   return (
     <div className="flex min-h-screen w-full flex-col space-y-4 p-4 sm:p-6 lg:p-8">

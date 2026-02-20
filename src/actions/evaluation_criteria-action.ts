@@ -154,8 +154,9 @@ export async function updateJudgeCriteria(data: UpdateJudgeCriteriaData) {
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("updateJudgeCriteria error:", error);
-    return { success: false, message: error.message };
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, message };
   }
 }

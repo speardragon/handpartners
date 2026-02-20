@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createEvaluation } from "@/actions/evaluation-action";
+import { screeningQueries, evaluationQueries } from "@/queries";
 
 interface AutoSaveArgs {
   judgeRoundId: string;
@@ -7,6 +8,10 @@ interface AutoSaveArgs {
   feedback: string;
   evaluations: { id: number; grade: number }[];
 }
+
+type EvaluationQueryData = Awaited<
+  ReturnType<typeof import("@/actions/evaluation-action").getEvaluationByUser>
+>;
 
 export function useAutoSaveMutation() {
   const queryClient = useQueryClient();
@@ -30,15 +35,18 @@ export function useAutoSaveMutation() {
       return createEvaluation(judgeRoundId, companyId, evaluationRecords);
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["screeningDetail"] });
+      queryClient.invalidateQueries({
+        queryKey: screeningQueries.detailKeyPrefix(),
+      });
       // evaluation query cache의 status를 ONGOING으로 동기화
-      queryClient.setQueryData(
-        ["evaluation", variables.judgeRoundId, variables.companyId],
-        (old: any) =>
+      queryClient.setQueryData<EvaluationQueryData>(
+        evaluationQueries.byUser(variables.judgeRoundId, variables.companyId)
+          .queryKey,
+        (old) =>
           old
             ? {
                 ...old,
-                evaluations: old.evaluations.map((e: any) => ({
+                evaluations: old.evaluations.map((e) => ({
                   ...e,
                   status: "ONGOING",
                 })),
