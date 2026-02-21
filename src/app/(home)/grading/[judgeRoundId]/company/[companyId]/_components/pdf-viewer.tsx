@@ -11,7 +11,13 @@ import { memo, useCallback, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
-import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Maximize2,
+  Minimize2,
+} from "lucide-react";
 
 type Props = {
   isFull: boolean;
@@ -23,6 +29,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 const maxWidth = 400;
 const resizeObserverOptions = {};
+
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center p-8">
+    <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+  </div>
+);
 
 const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
   const [numPages, setNumPages] = useState(0);
@@ -90,6 +102,8 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
     }
   };
 
+  const hasPdfPath = typeof pdfPath === "string" && pdfPath.trim().length > 0;
+
   return (
     <div
       className={`flex flex-col items-center gap-2 p-4 ${
@@ -106,26 +120,29 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
             : ""
         }`}
       >
-        <Document
-          file={pdfPath}
-          onLoadSuccess={onDocumentLoadSuccess}
-          className="overflow-hidden rounded-lg shadow-lg"
-        >
-          <Page
-            className="flex justify-center"
-            loading={
-              <div className="flex items-center justify-center">로딩 중...</div>
-            }
-            pageNumber={pageNumber}
-            {...(isFull
-              ? {
-                  height: containerHeight ? containerHeight - 60 : undefined,
-                }
-              : {
-                  width: containerWidth ? containerWidth - 32 : maxWidth,
-                })}
-          />
-        </Document>
+        {!hasPdfPath ? (
+          <LoadingSpinner />
+        ) : (
+          <Document
+            file={pdfPath}
+            onLoadSuccess={onDocumentLoadSuccess}
+            loading={<LoadingSpinner />}
+            className="overflow-hidden rounded-lg shadow-lg"
+          >
+            <Page
+              className="flex justify-center"
+              loading={<LoadingSpinner />}
+              pageNumber={pageNumber}
+              {...(isFull
+                ? {
+                    height: containerHeight ? containerHeight - 60 : undefined,
+                  }
+                : {
+                    width: containerWidth ? containerWidth - 32 : maxWidth,
+                  })}
+            />
+          </Document>
+        )}
       </div>
 
       {/* 컨트롤바 */}

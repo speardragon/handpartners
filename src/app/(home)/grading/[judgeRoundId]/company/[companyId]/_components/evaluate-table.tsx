@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { useEvaluationMutation } from "../_hooks/useEvaluationMutation";
 import { useAutoSaveMutation } from "../_hooks/useAutoSaveMutation";
+import { EvaluateTableSkeleton } from "./evaluate-table-skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,13 +73,17 @@ export default function EvaluateTable({
 }: Props) {
   const router = useRouter();
 
-  const { data: judgeRound } = useQuery(
+  const { data: judgeRound, isLoading: isLoadingJudgeRound } = useQuery(
     judgingRoundQueries.judge(judgeRoundId)
   );
-  const { data: existEvaluation } = useQuery(
+  const { data: existEvaluation, isLoading: isLoadingEvaluation } = useQuery(
     evaluationQueries.byUser(judgeRoundId, companyId)
   );
-  const { data: company } = useQuery(companyQueries.detail(companyId));
+  const { data: company, isLoading: isLoadingCompany } = useQuery(
+    companyQueries.detail(companyId)
+  );
+  const isLoading =
+    isLoadingJudgeRound || isLoadingEvaluation || isLoadingCompany;
 
   const isJudgingActive = judgeRound?.status === "IN_PROGRESS";
   const canEdit = isParticipant && isJudgingActive;
@@ -168,6 +173,10 @@ export default function EvaluateTable({
 
   const totalScore = evaluations.reduce((sum, item) => sum + item.grade, 0);
   const maxScore = evaluations.reduce((sum, item) => sum + item.points, 0);
+
+  if (isLoading) {
+    return <EvaluateTableSkeleton />;
+  }
 
   return (
     <div className="w-full space-y-4">
