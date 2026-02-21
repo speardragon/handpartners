@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
@@ -19,6 +18,7 @@ import HandPartnersLogo from "../../../../../public/images/handpartners_logo.png
 import { Input } from "@/components/ui/input";
 import { useLoginMutation } from "../_hooks/useLoginMutation";
 import Link from "next/link";
+import { LoadingButton } from "@/components/ui/loading-button";
 
 const FormSchema = z.object({
   email: z.string().email({ message: "이메일 형식이 올바르지 않습니다." }),
@@ -32,7 +32,7 @@ const FormSchema = z.object({
 });
 
 export default function Login() {
-  const { mutate } = useLoginMutation();
+  const { mutate, isPending } = useLoginMutation();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -120,9 +120,13 @@ export default function Login() {
                 )}
               />
             </div>
-            <Button className="mt-4 w-full" type="submit">
+            <LoadingButton
+              className="mt-4 w-full"
+              type="submit"
+              loading={isPending}
+            >
               로그인
-            </Button>
+            </LoadingButton>
             <Link
               href="/upload"
               className="text-sm text-muted-foreground hover:underline"
