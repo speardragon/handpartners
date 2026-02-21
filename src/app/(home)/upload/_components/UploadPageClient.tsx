@@ -180,9 +180,7 @@ export default function UploadPageClient() {
 
       toast.success("PDF 업로드 완료");
     } catch (err: unknown) {
-      toast.error(
-        err instanceof Error ? err.message : "업로드 중 오류가 발생했습니다."
-      );
+      toast.error("업로드 중 오류가 발생했습니다.");
     } finally {
       setUploadingIds((prev) => {
         const next = new Set(prev);
@@ -262,7 +260,7 @@ export default function UploadPageClient() {
                 />
               </svg>
               {error instanceof Error
-                ? error.message
+                ? "심사가 종료되었거나 존재하지 않습니다."
                 : "데이터를 불러오는 중 오류가 발생했습니다."}
             </p>
           )}
