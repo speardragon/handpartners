@@ -189,6 +189,7 @@ export interface AllScreeningsResult {
   totalActive: number;
   totalCompleted: number;
   totalPending: number;
+  isAdminView?: boolean;
 }
 
 export async function checkParticipation(
@@ -229,8 +230,20 @@ export async function getAllScreenings(
     throw new Error("User not authenticated");
   }
 
+  // isParticipating이 미제공(undefined)이고 관리자인 경우, 서버에서 직접 체크
+  let resolvedIsParticipating = isParticipating;
+  if (isAdmin && resolvedIsParticipating === undefined) {
+    const { data: participationData } = await supabase
+      .from("judging_round_user")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("judging_round_id", judgingRoundId ?? "")
+      .maybeSingle();
+    resolvedIsParticipating = !!participationData;
+  }
+
   // 관리자+참여 시 심사자와 동일한 데이터 로직 사용
-  const useJudgeLogic = !isAdmin || (isAdmin && isParticipating);
+  const useJudgeLogic = !isAdmin || (isAdmin && resolvedIsParticipating);
 
   const t0 = Date.now();
 
@@ -441,6 +454,7 @@ export async function getAllScreenings(
     totalActive,
     totalCompleted,
     totalPending,
+    isAdminView: isAdmin && !resolvedIsParticipating,
   };
 }
 

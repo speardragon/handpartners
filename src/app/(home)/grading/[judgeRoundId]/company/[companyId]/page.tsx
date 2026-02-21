@@ -1,7 +1,6 @@
 "use client";
 
 import { memo, useState } from "react";
-import Loading from "@/app/_components/Loading";
 import { useQuery } from "@tanstack/react-query";
 import {
   judgingRoundQueries,
@@ -11,7 +10,7 @@ import {
 import PdfViewer from "./_components/pdf-viewer";
 import EvaluateTable from "./_components/evaluate-table";
 import { useParams } from "next/navigation";
-import { FileText, ClipboardList } from "lucide-react";
+import { FileText, ClipboardList, Loader2 } from "lucide-react";
 
 const Page = () => {
   const params = useParams<{ judgeRoundId: string; companyId: string }>();
@@ -36,7 +35,11 @@ const Page = () => {
   };
 
   if (!judgeRound) {
-    return <Loading />;
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
@@ -51,7 +54,7 @@ const Page = () => {
         }`}
       >
         {!isFull && (
-          <div className="flex items-center gap-2 px-6 py-3 bg-white border-b shrink-0">
+          <div className="flex shrink-0 items-center gap-2 border-b bg-white px-6 py-3">
             <FileText size={14} className="text-muted-foreground" />
             <span className="text-sm font-medium text-muted-foreground">
               제출 서류
@@ -70,8 +73,8 @@ const Page = () => {
           isFull ? "hidden" : "w-1/2"
         }`}
       >
-        <div className="px-6 py-4 bg-white border-b">
-          <div className="flex items-center gap-2 mb-1 text-sm text-muted-foreground">
+        <div className="border-b bg-white px-6 py-4">
+          <div className="mb-1 flex items-center gap-2 text-sm text-muted-foreground">
             <ClipboardList size={14} />
             <span>{judgeRound.program.name}</span>
           </div>
