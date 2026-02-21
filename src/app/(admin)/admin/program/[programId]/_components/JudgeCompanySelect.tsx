@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { programQueries, judgingRoundQueries } from "@/queries";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import { ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
 
 import type { SimpleCompany } from "./JudgeEditForm";
 
@@ -25,10 +25,13 @@ export default function JudgeCompanySelect({
   const [selectedSourceIds, setSelectedSourceIds] = useState<number[]>([]);
   const [selectedTargetIds, setSelectedTargetIds] = useState<number[]>([]);
 
-  const { data: allCompanies } = useQuery(programQueries.companies(programId));
-  const { data: judgingRoundCompanies } = useQuery(
-    judgingRoundQueries.companies.byRound(judgingRoundId)
+  const { data: allCompanies, isLoading: isLoadingCompanies } = useQuery(
+    programQueries.companies(programId)
   );
+  const { data: judgingRoundCompanies, isLoading: isLoadingRoundCompanies } =
+    useQuery(
+      judgingRoundQueries.companies.byRound(judgingRoundId)
+    );
 
   useEffect(() => {
     if (judgingRoundCompanies && judgingRoundCompanies.length > 0) {
@@ -121,36 +124,42 @@ export default function JudgeCompanySelect({
           </button>
         </div>
         <div className="h-52 overflow-y-auto">
-          {sourceList.map((company) => {
-            const isSelected = selectedSourceIds.includes(company.id);
-            const isInTarget = targetList.some((t) => t.id === company.id);
-            return (
-              <label
-                key={company.id}
-                className={`flex items-center gap-2.5 border-b border-neutral-50 px-3 py-2 text-sm transition-colors ${
-                  isInTarget
-                    ? "cursor-default bg-neutral-50 text-neutral-400"
-                    : isSelected
-                      ? "cursor-pointer bg-neutral-100"
-                      : "cursor-pointer hover:bg-neutral-50"
-                }`}
-              >
-                <Checkbox
-                  checked={isSelected || isInTarget}
-                  disabled={isInTarget}
-                  onCheckedChange={() => handleSelectSource(company.id)}
-                  className="h-4 w-4"
-                />
-                <span>{company.name}</span>
-                {isInTarget && (
-                  <span className="ml-auto text-xs text-neutral-400">
-                    추가됨
-                  </span>
-                )}
-              </label>
-            );
-          })}
-          {sourceList.length === 0 && (
+          {isLoadingCompanies ? (
+            <div className="flex h-full items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
+            </div>
+          ) : (
+            sourceList.map((company) => {
+              const isSelected = selectedSourceIds.includes(company.id);
+              const isInTarget = targetList.some((t) => t.id === company.id);
+              return (
+                <label
+                  key={company.id}
+                  className={`flex items-center gap-2.5 border-b border-neutral-50 px-3 py-2 text-sm transition-colors ${
+                    isInTarget
+                      ? "cursor-default bg-neutral-50 text-neutral-400"
+                      : isSelected
+                        ? "cursor-pointer bg-neutral-100"
+                        : "cursor-pointer hover:bg-neutral-50"
+                  }`}
+                >
+                  <Checkbox
+                    checked={isSelected || isInTarget}
+                    disabled={isInTarget}
+                    onCheckedChange={() => handleSelectSource(company.id)}
+                    className="h-4 w-4"
+                  />
+                  <span>{company.name}</span>
+                  {isInTarget && (
+                    <span className="ml-auto text-xs text-neutral-400">
+                      추가됨
+                    </span>
+                  )}
+                </label>
+              );
+            })
+          )}
+          {!isLoadingCompanies && sourceList.length === 0 && (
             <div className="flex h-full items-center justify-center text-sm text-neutral-400">
               프로그램에 등록된 기업이 없습니다
             </div>
@@ -193,7 +202,11 @@ export default function JudgeCompanySelect({
           </span>
         </div>
         <div className="h-60 overflow-y-auto">
-          {targetList.length === 0 ? (
+          {isLoadingRoundCompanies ? (
+            <div className="flex h-full items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
+            </div>
+          ) : targetList.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-neutral-400">
               기업을 선택해주세요
             </div>

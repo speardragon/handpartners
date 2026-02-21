@@ -1,6 +1,6 @@
 "use client";
 
-import Loading from "@/app/_components/Loading";
+import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { judgingRoundQueries } from "@/queries";
 
@@ -19,7 +19,11 @@ export default function JudgingRoundDetailDialogContent({
   } = useQuery(judgingRoundQueries.detail(judgingRoundId));
 
   if (isLoading) {
-    return <Loading />;
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
   if (isError) {
     return (

@@ -26,27 +26,24 @@ export const screeningQueries = {
       queryFn: () => getAllScreenings(page, size, isAdmin, judgingRoundId),
     }),
   detailKeyPrefix: () => [...screeningQueries.all(), "detail"] as const,
-  detail: (
-    judgingRoundId: string,
-    isAdmin: boolean,
-    isParticipating?: boolean
-  ) =>
+  detail: (judgingRoundId: string, isAdmin: boolean) =>
     queryOptions({
       queryKey: [
         ...screeningQueries.detailKeyPrefix(),
         judgingRoundId,
         isAdmin,
-        isParticipating,
       ] as const,
       queryFn: async () => {
         const result: AllScreeningsResult = await getAllScreenings(
           1,
           1,
           isAdmin,
-          judgingRoundId,
-          isParticipating
+          judgingRoundId
         );
-        return result.result[0] ?? null;
+        const screening = result.result[0] ?? null;
+        return screening
+          ? { ...screening, isAdminView: result.isAdminView ?? false }
+          : null;
       },
     }),
   participation: (judgingRoundId: string) =>

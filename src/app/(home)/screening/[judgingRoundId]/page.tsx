@@ -12,9 +12,26 @@ import ScoreDistributionTable from "./_components/score-distribution-table";
 import StatusDistributionTable from "./_components/status-distribution-table";
 import ExportDropdown from "./_components/export-dropdown";
 import AdminPanel from "./_components/admin-panel";
-import ProgramSkeleton from "@/app/(home)/_components/ProgramSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+
+function ScreeningDetailSkeleton() {
+  return (
+    <main className="flex w-full flex-col items-center">
+      <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4 pb-10">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Skeleton className="h-32 w-full rounded-lg" />
+          <Skeleton className="h-32 w-full rounded-lg" />
+        </div>
+        <Skeleton className="h-16 w-full rounded-lg" />
+        <Skeleton className="h-64 w-full rounded-lg" />
+      </div>
+    </main>
+  );
+}
 
 export default function ScreeningDetailPage() {
   const router = useRouter();
@@ -24,34 +41,20 @@ export default function ScreeningDetailPage() {
   const { user, isLoading: isAuthLoading } = useAuthStore();
   const isAdmin = user?.role === USER_ROLES.ADMIN;
 
-  const { data: isParticipating } = useQuery({
-    ...screeningQueries.participation(judgingRoundId),
-    enabled: !!judgingRoundId && !isAuthLoading && isAdmin === true,
-  });
-
-  // 관리자 비참여 시 관리자 뷰, 그 외는 심사자 뷰
-  const isAdminView = isAdmin && !isParticipating;
-
   const { data: screening, isLoading } = useQuery({
-    ...screeningQueries.detail(
-      judgingRoundId,
-      isAdmin ?? false,
-      isAdmin ? isParticipating : undefined
-    ),
-    enabled:
-      !isAuthLoading &&
-      !!judgingRoundId &&
-      (isAdmin ? isParticipating !== undefined : true),
+    ...screeningQueries.detail(judgingRoundId, isAdmin ?? false),
+    enabled: !isAuthLoading && !!judgingRoundId,
   });
 
   if (isLoading || !screening) {
-    return <ProgramSkeleton />;
+    return <ScreeningDetailSkeleton />;
   }
+
+  const isAdminView = screening.isAdminView;
 
   return (
     <main className="flex w-full flex-col items-center">
       <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4 pb-10">
-        {/* 뒤로가기 */}
         <Button
           variant="ghost"
           className="flex items-center gap-1 self-start px-2 text-gray-600 hover:text-gray-900"
@@ -61,10 +64,8 @@ export default function ScreeningDetailPage() {
           목록으로 돌아가기
         </Button>
 
-        {/* 헤더 */}
         <ScreeningHeader screening={screening} isAdminView={isAdminView} />
 
-        {/* 관리자 전용 패널 */}
         {isAdmin && (
           <AdminPanel
             judgingRoundId={screening.id}
@@ -74,7 +75,6 @@ export default function ScreeningDetailPage() {
           />
         )}
 
-        {/* 통계 카드 그리드 */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <ScoreDistributionTable
             companies={screening.companies}
@@ -86,13 +86,11 @@ export default function ScreeningDetailPage() {
           />
         </div>
 
-        {/* 내보내기 */}
         <ExportDropdown
           judgingRoundId={screening.id}
           programId={screening.program.id}
         />
 
-        {/* 기업 DataTable */}
         <div className="rounded-lg border bg-white shadow-sm">
           <DataTable
             columns={columns}
