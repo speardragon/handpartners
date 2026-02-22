@@ -110,19 +110,17 @@ const EvaluationDocument = ({ evaluationReport, programInfo }: Props) => {
                 <Text
                   style={[
                     styles.tableCell,
+                    styles.w36,
                     styles.bgTotal,
                     styles.fontBold,
                     styles.textCenter,
-                    { flex: 1, borderRightWidth: 0 },
+                    { flex: 1 },
                   ]}
                 >
                   합계
                 </Text>
                 <Text
-                  style={[
-                    styles.tableCell,
-                    { flex: 3, textAlign: "center", borderLeftWidth: 0 },
-                  ]}
+                  style={[styles.tableCell, { flex: 3, textAlign: "center" }]}
                 >
                   {totalScore}
                 </Text>
@@ -189,7 +187,6 @@ const styles = StyleSheet.create({
   page: {
     fontFamily: "Pretendard",
     padding: 24, // p-6: 1.5rem * 16 = 24px
-    paddingTop: 48,
   },
   section: {
     marginBottom: 10, // space-y-10: 2.5rem * 16 = 40px
@@ -197,8 +194,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     height: 82, // h-36: 9rem * 16 = 144px
     width: "100%",
-    borderRadius: 4, // rounded-md ~4px
-    backgroundColor: "#1E293B",
+    backgroundColor: "#ffffff",
     justifyContent: "center",
   },
   headerInner: {
@@ -213,13 +209,13 @@ const styles = StyleSheet.create({
     fontSize: 24, // text-4xl: ~2.25rem * 16 = 36px
     textAlign: "center",
     fontWeight: "semibold",
-    color: "#ffffff",
+    color: "#000000",
   },
   // Table styles
   tableContainer: {
     width: "100%",
-    borderWidth: 1,
-    borderColor: "#E2E8F0", // gray-200
+    borderWidth: 0.5,
+    borderColor: "#000000",
   },
   tableRow: {
     flexDirection: "row",
@@ -227,12 +223,12 @@ const styles = StyleSheet.create({
   },
   tableHeaderRow: {
     flexDirection: "row",
-    backgroundColor: "#F1F5F9", // slate-50
+    backgroundColor: "#DFE6F7",
     textAlign: "center",
   },
   tableHeaderCell: {
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderWidth: 0.5,
+    borderColor: "#000000",
     justifyContent: "center",
     paddingVertical: 4,
     paddingHorizontal: 8,
@@ -240,8 +236,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   tableCell: {
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderWidth: 0.5,
+    borderColor: "#000000",
     paddingVertical: 4,
     paddingHorizontal: 8,
     fontSize: 12,
@@ -285,17 +281,18 @@ const styles = StyleSheet.create({
   // For company info table
   infoTableContainer: {
     flexDirection: "column",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderWidth: 0.5,
+    borderColor: "#000000",
   },
   infoTableRow: {
     flexDirection: "row",
-    borderColor: "#E2E8F0",
+    borderColor: "#000000",
+    borderBottomWidth: 0.5,
   },
   infoTableLabel: {
-    backgroundColor: "#F1F5F9",
-    borderRightWidth: 1,
-    borderColor: "#E2E8F0",
+    backgroundColor: "#DFE6F7",
+    borderRightWidth: 0.5,
+    borderColor: "#000000",
     padding: 8,
     fontWeight: "bold",
     width: 144,
@@ -308,16 +305,16 @@ const styles = StyleSheet.create({
   },
   // For evaluation opinion
   opinionContainer: {
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderWidth: 0.5,
+    borderColor: "#000000",
   },
   opinionRow: {
     flexDirection: "row",
   },
   opinionLabel: {
-    backgroundColor: "#F1F5F9",
-    borderRightWidth: 1,
-    borderColor: "#E2E8F0",
+    backgroundColor: "#DFE6F7",
+    borderRightWidth: 0.5,
+    borderColor: "#000000",
     paddingVertical: 32,
     paddingHorizontal: 48,
     fontWeight: "bold",
@@ -326,31 +323,31 @@ const styles = StyleSheet.create({
     width: 144,
   },
   opinionValue: {
-    borderColor: "#E2E8F0",
+    borderColor: "#000000",
     flex: 1,
     padding: 16,
     fontSize: 12,
   },
   // For judge info table
   judgeContainer: {
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderWidth: 0.5,
+    borderColor: "#000000",
   },
   judgeHeaderRow: {
     flexDirection: "row",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: "#DFE6F7",
     fontWeight: "bold",
     textAlign: "center",
   },
   judgeHeaderCell: {
-    borderColor: "#E2E8F0",
-    borderRightWidth: 1,
+    borderColor: "#000000",
+    borderRightWidth: 0.5,
     padding: 8,
     fontSize: 12,
     flex: 1,
   },
   judgeHeaderCellLast: {
-    borderColor: "#E2E8F0",
+    borderColor: "#000000",
     padding: 8,
     fontSize: 12,
     flex: 1,
@@ -361,8 +358,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   judgeCell: {
-    borderColor: "#E2E8F0",
-    borderRightWidth: 1,
+    borderColor: "#000000",
+    borderRightWidth: 0.5,
     padding: 8,
     fontSize: 12,
     flex: 1,
@@ -392,7 +389,7 @@ const styles = StyleSheet.create({
     flexDirection: "column",
   },
   judgeCellLast: {
-    borderColor: "#E2E8F0",
+    borderColor: "#000000",
     padding: 8,
     fontSize: 12,
     flex: 1,
