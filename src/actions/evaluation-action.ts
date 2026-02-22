@@ -158,7 +158,7 @@ export async function getDetailedEvaluationsByUser(
   // 2. 사용자 프로필 정보 가져오기
   const { data: userData, error: userError } = await supabase
     .from("user")
-    .select("username, affiliation, position")
+    .select("username, affiliation, position, signature_url")
     .eq("id", userId)
     .single();
 
@@ -166,10 +166,23 @@ export async function getDetailedEvaluationsByUser(
     handleError(userError);
   }
 
+  let signaturePresignedUrl: string | null = null;
+  if (userData!.signature_url) {
+    try {
+      const { downloadUrl } = await createPresignedDownloadUrl({
+        objectPathOrUrl: userData!.signature_url,
+        expiresInSeconds: 600,
+      });
+      signaturePresignedUrl = downloadUrl;
+    } catch {
+      signaturePresignedUrl = null;
+    }
+  }
   const userProfile: UserProfile = {
     name: userData!.username,
     affiliation: userData!.affiliation,
     position: userData!.position,
+    signature_url: signaturePresignedUrl,
   };
 
   // 3. 사용자의 group_name 가져오기
@@ -297,7 +310,7 @@ export async function getDetailedEvaluationsByUserId(
   // 사용자 프로필 정보
   const { data: userData, error: userError } = await supabase
     .from("user")
-    .select("username, affiliation, position")
+    .select("username, affiliation, position, signature_url")
     .eq("id", userId)
     .single();
 
@@ -305,10 +318,22 @@ export async function getDetailedEvaluationsByUserId(
     handleError(userError);
   }
 
+  let signaturePresignedUrl2: string | null = null;
+  if (userData!.signature_url) {
+    try {
+      const { downloadUrl } = await createPresignedDownloadUrl({
+        objectPathOrUrl: userData!.signature_url,
+      });
+      signaturePresignedUrl2 = downloadUrl;
+    } catch {
+      signaturePresignedUrl2 = null;
+    }
+  }
   const userProfile: UserProfile = {
     name: userData!.username,
     affiliation: userData!.affiliation,
     position: userData!.position,
+    signature_url: signaturePresignedUrl2,
   };
 
   // group_name 가져오기
