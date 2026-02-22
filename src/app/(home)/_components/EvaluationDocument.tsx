@@ -1,12 +1,12 @@
 "use client";
 
-import React from "react";
 import {
   Document,
   Page,
   Text,
   View,
   Font,
+  Image as PImage,
   StyleSheet,
 } from "@react-pdf/renderer";
 import {
@@ -110,19 +110,17 @@ const EvaluationDocument = ({ evaluationReport, programInfo }: Props) => {
                 <Text
                   style={[
                     styles.tableCell,
-                    styles.bgBlue100,
+                    styles.w36,
+                    styles.bgTotal,
                     styles.fontBold,
                     styles.textCenter,
-                    { flex: 1, borderRightWidth: 0 },
+                    { flex: 1 },
                   ]}
                 >
                   합계
                 </Text>
                 <Text
-                  style={[
-                    styles.tableCell,
-                    { flex: 3, textAlign: "center", borderLeftWidth: 0 },
-                  ]}
+                  style={[styles.tableCell, { flex: 3, textAlign: "center" }]}
                 >
                   {totalScore}
                 </Text>
@@ -149,12 +147,12 @@ const EvaluationDocument = ({ evaluationReport, programInfo }: Props) => {
                 <Text style={styles.judgeHeaderCellLast}>성명</Text>
               </View>
               <View style={styles.judgeRow}>
-                <Text style={styles.judgeCell}>
-                  {report.user_profile.affiliation || ""}
-                </Text>
-                <Text style={styles.judgeCell}>
-                  {report.user_profile.position || ""}
-                </Text>
+                <View style={styles.judgeCell}>
+                  <Text>{report.user_profile.affiliation || ""}</Text>
+                </View>
+                <View style={styles.judgeCell}>
+                  <Text>{report.user_profile.position || ""}</Text>
+                </View>
                 <View style={styles.judgeCellLastContainer}>
                   {/* 왼쪽 영역: 빈 뷰 (좌우 균형을 맞추기 위해 flex: 1 할당) */}
                   <View style={styles.judgeLeft} />
@@ -164,9 +162,16 @@ const EvaluationDocument = ({ evaluationReport, programInfo }: Props) => {
                     <Text>{report.user_profile.name || ""}</Text>
                   </View>
 
-                  {/* 오른쪽 영역: 우측 끝에 “(서명)” 배치 */}
+                  {/* 오른쪽 영역: 우측 끝에 "(서명)" 배치 + 서명 이미지 오버레이 */}
                   <View style={styles.judgeRight}>
-                    <Text>(서명)</Text>
+                    {report.user_profile?.signature_url ? (
+                      <PImage
+                        src={report.user_profile.signature_url}
+                        style={styles.signatureImage}
+                      />
+                    ) : (
+                      <Text>(서명)</Text>
+                    )}
                   </View>
                 </View>
               </View>
@@ -182,7 +187,6 @@ const styles = StyleSheet.create({
   page: {
     fontFamily: "Pretendard",
     padding: 24, // p-6: 1.5rem * 16 = 24px
-    paddingTop: 48,
   },
   section: {
     marginBottom: 10, // space-y-10: 2.5rem * 16 = 40px
@@ -190,14 +194,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     height: 82, // h-36: 9rem * 16 = 144px
     width: "100%",
-    borderRadius: 4, // rounded-md ~4px
-    borderWidth: 1,
-    borderColor: "#ffffff",
-    // Tailwind had a gradient: bg-gradient-to-r from-blue-100 to-blue-300
-    // React-pdf doesn't support gradient, using from-blue-100 (#DBEAFE) as fallback
-    backgroundColor: "#DBEAFE",
-    paddingTop: 4, // py-1 ~4px top/bottom
-    paddingBottom: 4,
+    backgroundColor: "#ffffff",
     justifyContent: "center",
   },
   headerInner: {
@@ -206,18 +203,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     height: "100%",
     width: "100%",
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
   },
   headerText: {
     fontSize: 24, // text-4xl: ~2.25rem * 16 = 36px
     textAlign: "center",
     fontWeight: "semibold",
+    color: "#000000",
   },
   // Table styles
   tableContainer: {
     width: "100%",
-    borderWidth: 1,
-    borderColor: "#D1D5DB", // gray-300
+    borderWidth: 0.5,
+    borderColor: "#000000",
   },
   tableRow: {
     flexDirection: "row",
@@ -225,21 +223,23 @@ const styles = StyleSheet.create({
   },
   tableHeaderRow: {
     flexDirection: "row",
-    backgroundColor: "#DBEAFE", // bg-blue-100
+    backgroundColor: "#DFE6F7",
     textAlign: "center",
   },
   tableHeaderCell: {
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderWidth: 0.5,
+    borderColor: "#000000",
     justifyContent: "center",
-    padding: 8,
-    fontWeight: "bold", // font-bold
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    fontWeight: "bold",
     fontSize: 12,
   },
   tableCell: {
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    padding: 8,
+    borderWidth: 0.5,
+    borderColor: "#000000",
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     fontSize: 12,
     justifyContent: "center",
     textAlign: "center",
@@ -262,6 +262,11 @@ const styles = StyleSheet.create({
     textAlign: "right",
     flex: 1,
   },
+  signatureImage: {
+    width: 60,
+    height: 30,
+    objectFit: "contain",
+  },
   signTextRight: {
     position: "absolute",
     flex: 1,
@@ -270,23 +275,24 @@ const styles = StyleSheet.create({
   fontBold: {
     fontWeight: "bold",
   },
-  bgBlue100: {
-    backgroundColor: "#DBEAFE",
+  bgTotal: {
+    backgroundColor: "#E2E8F0", // gray-200
   },
   // For company info table
   infoTableContainer: {
     flexDirection: "column",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderWidth: 0.5,
+    borderColor: "#000000",
   },
   infoTableRow: {
     flexDirection: "row",
-    borderColor: "#D1D5DB",
+    borderColor: "#000000",
+    borderBottomWidth: 0.5,
   },
   infoTableLabel: {
-    backgroundColor: "#DBEAFE",
-    borderRightWidth: 1,
-    borderColor: "#D1D5DB",
+    backgroundColor: "#DFE6F7",
+    borderRightWidth: 0.5,
+    borderColor: "#000000",
     padding: 8,
     fontWeight: "bold",
     width: 144,
@@ -299,49 +305,49 @@ const styles = StyleSheet.create({
   },
   // For evaluation opinion
   opinionContainer: {
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderWidth: 0.5,
+    borderColor: "#000000",
   },
   opinionRow: {
     flexDirection: "row",
   },
   opinionLabel: {
-    backgroundColor: "#DBEAFE",
-    borderRightWidth: 1,
-    borderColor: "#D1D5DB",
-    paddingVertical: 64, // py-24 ~24*4px=96px
-    paddingHorizontal: 48, // px-12 ~12*4px=48px
+    backgroundColor: "#DFE6F7",
+    borderRightWidth: 0.5,
+    borderColor: "#000000",
+    paddingVertical: 32,
+    paddingHorizontal: 48,
     fontWeight: "bold",
     textAlign: "center",
     fontSize: 12,
     width: 144,
   },
   opinionValue: {
-    borderColor: "#D1D5DB",
+    borderColor: "#000000",
     flex: 1,
     padding: 16,
     fontSize: 12,
   },
   // For judge info table
   judgeContainer: {
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderWidth: 0.5,
+    borderColor: "#000000",
   },
   judgeHeaderRow: {
     flexDirection: "row",
-    backgroundColor: "#DBEAFE",
+    backgroundColor: "#DFE6F7",
     fontWeight: "bold",
     textAlign: "center",
   },
   judgeHeaderCell: {
-    borderColor: "#D1D5DB",
-    borderRightWidth: 1,
+    borderColor: "#000000",
+    borderRightWidth: 0.5,
     padding: 8,
     fontSize: 12,
     flex: 1,
   },
   judgeHeaderCellLast: {
-    borderColor: "#D1D5DB",
+    borderColor: "#000000",
     padding: 8,
     fontSize: 12,
     flex: 1,
@@ -352,11 +358,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   judgeCell: {
-    borderColor: "#D1D5DB",
-    borderRightWidth: 1,
+    borderColor: "#000000",
+    borderRightWidth: 0.5,
     padding: 8,
     fontSize: 12,
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   judgeCellLastContainer: {
     position: "relative",
@@ -376,10 +384,12 @@ const styles = StyleSheet.create({
   },
   judgeRight: {
     flex: 1,
-    alignItems: "flex-end",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    flexDirection: "column",
   },
   judgeCellLast: {
-    borderColor: "#D1D5DB",
+    borderColor: "#000000",
     padding: 8,
     fontSize: 12,
     flex: 1,

@@ -342,6 +342,7 @@ export type Database = {
           phone_number: string | null;
           position: string | null;
           role: string;
+          signature_url: string | null;
           updated_at: string | null;
           username: string;
         };
@@ -353,6 +354,7 @@ export type Database = {
           phone_number?: string | null;
           position?: string | null;
           role?: string;
+          signature_url?: string | null;
           updated_at?: string | null;
           username: string;
         };
@@ -364,6 +366,7 @@ export type Database = {
           phone_number?: string | null;
           position?: string | null;
           role?: string;
+          signature_url?: string | null;
           updated_at?: string | null;
           username?: string;
         };

@@ -20,6 +20,7 @@ export type UserProfile = {
   affiliation: string | null;
   position: string | null;
   role?: string;
+  signature_url?: string | null;
 };
 
 export type FinalResult = {

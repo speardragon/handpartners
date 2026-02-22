@@ -4,6 +4,7 @@ import { Database } from "types_db";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { ProfileCreateFormSchema } from "@/app/(admin)/admin/user/_lib/ProfileFormSchema";
 import { z } from "zod";
+import { createS3PresignedUploadUrl, createPresignedDownloadUrl } from "@/lib/storage/s3";
 
 export type UserRow = Database["public"]["Tables"]["user"]["Row"];
 export type UserRowInsert = Database["public"]["Tables"]["user"]["Insert"];
@@ -36,10 +37,9 @@ export async function getUsers(
     );
   }
 
-  const { data, error, count } = await query.range(
-    (page - 1) * size,
-    page * size - 1
-  );
+  const { data, error, count } = await query
+    .order("username", { ascending: true })
+    .range((page - 1) * size, page * size - 1);
 
   if (error) {
     handleError(error);
@@ -111,6 +111,7 @@ export type UserProfile = {
   affiliation: string | null;
   position: string | null;
   phone_number: string | null;
+  signature_url: string | null;
 };
 export async function getUserProfile(): Promise<UserProfile | null> {
   const supabase = await createClient();
@@ -187,4 +188,24 @@ export async function registerUser(
   }
 
   return userInsertData;
+}
+
+export async function createSignatureUploadUrl(args: {
+  fileName: string;
+  contentType?: string;
+}) {
+  return createS3PresignedUploadUrl({
+    fileName: args.fileName || "signature.png",
+    keyPrefix: "images/signature",
+    contentType: args.contentType,
+    defaultContentType: "image/png",
+  });
+}
+
+
+export async function getSignatureDownloadUrl(signatureUrl: string) {
+  const { downloadUrl } = await createPresignedDownloadUrl({
+    objectPathOrUrl: signatureUrl,
+  });
+  return { downloadUrl };
 }

@@ -9,7 +9,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { setUser, setLoading, setAccessToken, clearAuth } = useAuthStore();
 
   useEffect(() => {
-    console.log("[AuthProvider] useEffect called");
     const supabase = createClient();
     let mounted = true;
 

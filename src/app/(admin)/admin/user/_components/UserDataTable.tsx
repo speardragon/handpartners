@@ -61,6 +61,7 @@ export function UserDataTable<TData, TValue>({
     affiliation: "",
     position: "",
     phone_number: "",
+    signature_url: "",
   });
 
   const table = useReactTable({
@@ -76,6 +77,7 @@ export function UserDataTable<TData, TValue>({
     initialState: {
       columnVisibility: {
         id: false,
+        signature_url: false,
       },
     },
     onPaginationChange: setPagination,
@@ -174,6 +176,7 @@ export function UserDataTable<TData, TValue>({
                   data-state={row.getIsSelected() && "selected"}
                   className="cursor-pointer transition-colors hover:bg-neutral-50"
                   onClick={() => {
+                    row.getValue("signature_url");
                     setUserId(row.getValue("id"));
                     setUserProfile({
                       username: row.getValue("username"),
@@ -182,6 +185,7 @@ export function UserDataTable<TData, TValue>({
                       affiliation: row.getValue("affiliation"),
                       position: row.getValue("position"),
                       phone_number: row.getValue("phone_number"),
+                      signature_url: row.getValue("signature_url"),
                     });
                   }}
                 >

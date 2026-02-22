@@ -60,6 +60,11 @@ export const userColumns: ColumnDef<Partial<UserRow>>[] = [
     meta: { className: "hidden sm:table-cell" },
   },
   {
+    accessorKey: "signature_url",
+    header: "서명",
+    meta: { className: "hidden sm:table-cell" },
+  },
+  {
     accessorKey: "created_at",
     header: "생성일",
     meta: { className: "hidden xl:table-cell" },
