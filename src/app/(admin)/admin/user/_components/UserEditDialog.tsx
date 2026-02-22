@@ -17,6 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -29,14 +30,21 @@ import useDialogOpenStore from "@/store/useDialogOpenStore";
 import { useForm } from "react-hook-form";
 import { ProfileUpdateFormSchema } from "../_lib/ProfileFormSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { deleteUser, updateUser, UserRow } from "@/actions/user-actions";
-import { useEffect } from "react";
+import {
+  createSignatureUploadUrl,
+  getSignatureDownloadUrl,
+  deleteUser,
+  updateUser,
+  UserRow,
+} from "@/actions/user-actions";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { Trash2, Upload, X } from "lucide-react";
 import { userQueries } from "@/queries";
 import { USER_ROLES } from "@/constants/auth";
+import Image from "next/image";
 
 type Props = {
   userId?: string;
@@ -45,6 +53,10 @@ type Props = {
 
 export default function UserEditDialog({ userId, userProfile }: Props) {
   const { open, setOpen } = useDialogOpenStore((state) => state);
+  const [signatureFile, setSignatureFile] = useState<File | null>(null);
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const queryClient = useQueryClient();
 
@@ -64,7 +76,67 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
     form.setValue("affiliation", userProfile.affiliation ?? "");
     form.setValue("position", userProfile.position ?? "");
     form.setValue("phone_number", userProfile.phone_number ?? "");
-  }, [userProfile]);
+    form.setValue("signature_url", userProfile.signature_url ?? "");
+    setSignatureFile(null);
+    if (userProfile.signature_url) {
+      getSignatureDownloadUrl(userProfile.signature_url)
+        .then(({ downloadUrl }) => {
+          setSignaturePreview(downloadUrl);
+        })
+        .catch(() => {
+          setSignaturePreview(null);
+        });
+    } else {
+      setSignaturePreview(null);
+    }
+  }, [userProfile, form]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("이미지 파일만 업로드 가능합니다.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("파일 크기는 5MB 이하만 가능합니다.");
+      return;
+    }
+
+    setSignatureFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setSignaturePreview(objectUrl);
+  };
+
+  const handleRemoveSignature = () => {
+    setSignatureFile(null);
+    setSignaturePreview(null);
+    form.setValue("signature_url", "", { shouldDirty: true });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const uploadSignature = async (file: File): Promise<string> => {
+    const { uploadUrl, publicUrl } = await createSignatureUploadUrl({
+      fileName: file.name,
+      contentType: file.type,
+    });
+
+    const uploadResponse = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error("파일 업로드에 실패했습니다.");
+    }
+
+    return publicUrl;
+  };
 
   const onSubmit = async (data: z.infer<typeof ProfileUpdateFormSchema>) => {
     type UserData = z.infer<typeof ProfileUpdateFormSchema>;
@@ -77,13 +149,28 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
       }
     });
 
-    if (Object.keys(updatedData).length > 0) {
-      await updateUser({ ...updatedData, id: userId });
-      queryClient.invalidateQueries({ queryKey: userQueries.all() });
-      setOpen(false);
-      toast.success("유저 정보를 수정하였습니다.");
-    } else {
-      toast.error("수정사항이 존재하지 않습니다.");
+    try {
+      setIsUploading(true);
+
+      if (signatureFile) {
+        const signatureUrl = await uploadSignature(signatureFile);
+        updatedData["signature_url"] = signatureUrl;
+      }
+
+      if (Object.keys(updatedData).length > 0) {
+        await updateUser({ ...updatedData, id: userId });
+        queryClient.invalidateQueries({ queryKey: userQueries.all() });
+        setOpen(false);
+        toast.success("유저 정보를 수정하였습니다.");
+      } else {
+        toast.error("수정사항이 존재하지 않습니다.");
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "수정에 실패했습니다.";
+      toast.error(message);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -229,6 +316,52 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
               )}
             />
 
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-neutral-700">
+                서명 업로드
+              </FormLabel>
+              <div className="space-y-2">
+                {signaturePreview ? (
+                  <div className="relative inline-block">
+                    <Image
+                      src={signaturePreview}
+                      alt="서명 미리보기"
+                      width={80}
+                      height={40}
+                      className="rounded border border-neutral-200 object-contain"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-red-500 p-0.5 text-white hover:bg-red-600"
+                      onClick={handleRemoveSignature}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Label
+                      htmlFor="signature-upload"
+                      className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-neutral-300 px-3 py-2 text-sm text-neutral-500 hover:border-neutral-400 hover:bg-neutral-50"
+                    >
+                      <Upload className="h-4 w-4" />
+                      이미지를 선택해주세요
+                    </Label>
+                    <Input
+                      id="signature-upload"
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                  </>
+                )}
+              </div>
+            </FormItem>
+
             <div className="border-t border-neutral-100 pt-4">
               <DialogFooter className="flex-row justify-between gap-2 sm:justify-between">
                 <Button
@@ -250,8 +383,8 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
                   >
                     취소
                   </Button>
-                  <Button type="submit" size="sm">
-                    수정하기
+                  <Button type="submit" size="sm" disabled={isUploading}>
+                    {isUploading ? "업로드 중..." : "수정하기"}
                   </Button>
                 </div>
               </DialogFooter>

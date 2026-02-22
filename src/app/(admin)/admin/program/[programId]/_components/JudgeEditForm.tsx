@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 
 import {
   Form,
@@ -20,7 +21,7 @@ import {
 import JudgeCompanySelect from "./JudgeCompanySelect";
 import JudgeUserSelect from "./JudgeUserSelect";
 import JudgeCriteriaSelect from "./JudgeCriteriaSelect";
-import { FileText, GripVertical, Pencil } from "lucide-react";
+import { FileText, GripVertical, Pencil, Download } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DndContext,
@@ -76,16 +77,20 @@ function SortableCompanyItem({
   item,
   index,
   pdfEditMap,
+  pdfDownloadMap,
   onClickPdfEdit,
   onClickPdfView,
+  onClickPdfDownload,
   onFileChange,
   onGroupChange,
 }: {
   item: SimpleCompany;
   index: number;
   pdfEditMap: Record<number, boolean>;
+  pdfDownloadMap: Record<number, boolean>;
   onClickPdfEdit: (companyId: number) => void;
   onClickPdfView: (pdfPath: string) => void;
+  onClickPdfDownload: (item: SimpleCompany) => void;
   onFileChange: (index: number, file?: File) => void;
   onGroupChange: (index: number, value: string) => void;
 }) {
@@ -187,6 +192,17 @@ function SortableCompanyItem({
                 <Pencil className="w-3 h-3" />
                 변경
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                className="h-8 gap-1.5 text-xs"
+                disabled={pdfDownloadMap[item.id]}
+                onClick={() => onClickPdfDownload(item)}
+              >
+                <Download className="w-3 h-3" />
+                {pdfDownloadMap[item.id] ? "다운로드 중..." : "저장"}
+              </Button>
             </div>
           ) : (
             <Input
@@ -229,6 +245,8 @@ export default function JudgeEditForm({
     SimpleCriteria[]
   >([]);
   const [pdfEditMap, setPdfEditMap] = useState<Record<number, boolean>>({});
+  const [pdfDownloadMap, setPdfDownloadMap] = useState<Record<number, boolean>>({});
+  const [isBulkDownloading, setIsBulkDownloading] = useState(false);
 
   const { basicMutation, usersMutation, companiesMutation, criteriaMutation } =
     useJudgeEditMutations(judgingRoundId);
@@ -270,6 +288,69 @@ export default function JudgeEditForm({
   const handleClickPdfView = async (pdfPath: string) => {
     const { downloadUrl } = await getCompanyPdfDownloadUrl(pdfPath);
     window.open(downloadUrl, "_blank");
+  };
+
+  const handleClickPdfDownload = async (item: SimpleCompany) => {
+    if (!item.pdf_path) return;
+    setPdfDownloadMap((prev) => ({ ...prev, [item.id]: true }));
+    try {
+      const { downloadUrl } = await getCompanyPdfDownloadUrl(item.pdf_path);
+      const response = await fetch(downloadUrl);
+      if (!response.ok) throw new Error("Network response was not ok");
+      const blob = await response.blob();
+      
+      const fileName = item.original_filename || `${item.name || '기업'}_발표자료.pdf`;
+      const { saveAs } = await import("file-saver");
+      saveAs(blob, fileName);
+    } catch (err) {
+      console.error(err);
+      toast.error("발표자료 다운로드 중 오류가 발생했습니다.");
+    } finally {
+      setPdfDownloadMap((prev) => ({ ...prev, [item.id]: false }));
+    }
+  };
+
+  const handleBulkPresentationDownload = async () => {
+    const companiesWithPdf = targetList.filter((c) => c.pdf_path);
+    if (companiesWithPdf.length === 0) {
+      toast.error("다운로드할 발표자료가 없습니다.");
+      return;
+    }
+
+    setIsBulkDownloading(true);
+    try {
+      const [{ default: JSZip }, { saveAs }] = await Promise.all([
+        import("jszip"),
+        import("file-saver"),
+      ]);
+
+      const zip = new JSZip();
+
+      const fetchPromises = companiesWithPdf.map(async (company) => {
+        try {
+          const { downloadUrl } = await getCompanyPdfDownloadUrl(company.pdf_path!);
+          const response = await fetch(downloadUrl);
+          if (!response.ok) throw new Error("Network response was not ok");
+          const blob = await response.blob();
+          
+          const fileName = company.original_filename || `${company.name || '기업'}_발표자료.pdf`;
+          zip.file(fileName, blob);
+        } catch (err) {
+          console.error(`Failed to download pdf for company ${company.id}:`, err);
+        }
+      });
+
+      await Promise.all(fetchPromises);
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const date = new Date().toISOString().split("T")[0];
+      saveAs(zipBlob, `발표자료_${date}.zip`);
+      toast.success("발표자료 일괄 다운로드가 완료되었습니다.");
+    } catch {
+      toast.error("발표자료 다운로드 중 오류가 발생했습니다.");
+    } finally {
+      setIsBulkDownloading(false);
+    }
   };
 
   const handleFileChange = (index: number, file?: File) => {
@@ -444,8 +525,10 @@ export default function JudgeEditForm({
                             item={item}
                             index={index}
                             pdfEditMap={pdfEditMap}
+                            pdfDownloadMap={pdfDownloadMap}
                             onClickPdfEdit={handleClickPdfEdit}
                             onClickPdfView={handleClickPdfView}
+                            onClickPdfDownload={handleClickPdfDownload}
                             onFileChange={handleFileChange}
                             onGroupChange={handleGroupChange}
                           />
@@ -456,7 +539,17 @@ export default function JudgeEditForm({
                 </div>
               )}
 
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isBulkDownloading}
+                  onClick={handleBulkPresentationDownload}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isBulkDownloading ? "다운로드 중..." : "발표자료 일괄 저장"}
+                </Button>
                 <LoadingButton
                   type="button"
                   size="sm"

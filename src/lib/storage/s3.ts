@@ -93,6 +93,39 @@ function getPublicUrl(
   return `${base}/${encodeS3KeyPath(key)}`;
 }
 
+export function sanitizeFileName(originalName: string) {
+  return originalName.replace(/[^a-zA-Z0-9.\-_]/g, "");
+}
+
+/**
+ * keyPrefix에 해당하는 S3 경로에 파일을 업로드하기 위한 Presigned PUT URL을 생성합니다.
+ * dev 환경에서는 keyPrefix 앞에 'dev/'를 자동으로 붙입니다.
+ */
+export async function createS3PresignedUploadUrl(args: {
+  fileName: string;
+  keyPrefix: string;
+  contentType?: string;
+  defaultContentType?: string;
+}) {
+  const { v4: uuidv4 } = await import("uuid");
+  const {
+    fileName,
+    keyPrefix,
+    contentType,
+    defaultContentType = "application/octet-stream",
+  } = args;
+  const safeName = sanitizeFileName(fileName || "file");
+  const uniqueId = uuidv4();
+  const prefix =
+    process.env.NODE_ENV === "development" ? `dev/${keyPrefix}` : keyPrefix;
+  const objectKey = `${prefix}/${Date.now()}-${uniqueId}-${safeName}`;
+
+  return createPresignedUploadUrl({
+    objectKey,
+    contentType: contentType || defaultContentType,
+  });
+}
+
 export async function uploadPdfToS3(
   file: File,
   objectKey: string

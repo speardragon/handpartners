@@ -1,11 +1,11 @@
 "use server";
 
-import { v4 as uuidv4 } from "uuid";
 import { Database } from "types_db";
+import { v4 as uuidv4 } from "uuid";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
-  createPresignedUploadUrl,
   createPresignedDownloadUrl,
+  createS3PresignedUploadUrl,
   uploadPdfToS3,
 } from "@/lib/storage/s3";
 
@@ -62,25 +62,15 @@ interface CompanyPayload {
   group_name?: string;
 }
 
-function sanitizeFileName(originalName: string) {
-  return originalName.replace(/[^a-zA-Z0-9.\-_]/g, "");
-}
-
 export async function createJudgeCompanyPdfUploadUrl(args: {
   fileName: string;
   contentType?: string;
 }) {
-  const safeName = sanitizeFileName(args.fileName || "company.pdf");
-  const uniqueId = uuidv4();
-  const keyPrefix =
-    process.env.NODE_ENV === "development"
-      ? "dev/judging-round-pdfs"
-      : "judging-round-pdfs";
-  const objectKey = `${keyPrefix}/${Date.now()}-${uniqueId}-${safeName}`;
-
-  return createPresignedUploadUrl({
-    objectKey,
-    contentType: args.contentType || "application/pdf",
+  return createS3PresignedUploadUrl({
+    fileName: args.fileName || "company.pdf",
+    keyPrefix: "judging-round-pdfs",
+    contentType: args.contentType,
+    defaultContentType: "application/pdf",
   });
 }
 
