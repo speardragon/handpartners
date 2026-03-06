@@ -13,8 +13,16 @@ export const screeningColumns: ColumnDef<ScreeningWithStatus>[] = [
     },
   },
   {
-    accessorKey: "name",
-    header: "심사명",
+    accessorKey: "program.description",
+    header: "프로그램 소개",
+    cell: ({ row }) => {
+      const description = row.original.program.description?.trim();
+      return (
+        <div className="max-w-[320px] truncate text-sm text-neutral-600">
+          {description || "설명 없음"}
+        </div>
+      );
+    },
   },
   {
     id: "companyCount",

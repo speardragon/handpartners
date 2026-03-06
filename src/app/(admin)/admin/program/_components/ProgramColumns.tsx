@@ -28,7 +28,13 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { EllipsisVertical, Map, Pencil, Trash } from "lucide-react";
+import {
+  EllipsisVertical,
+  Map,
+  Pencil,
+  SquareArrowOutUpRight,
+  Trash,
+} from "lucide-react";
 import ProgramEditForm from "./ProgramEditForm";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -44,13 +50,13 @@ function ProgramManageCell({
   const router = useRouter();
   return (
     <Button
-      onClick={() => router.push(`/admin/program/${row.original.id}`)}
+      onClick={() => router.push(`/admin/program/${row.original.id}/judging`)}
       variant="outline"
       size="sm"
       className="gap-1.5 whitespace-nowrap"
     >
-      심사 관리
-      <Map className="h-3.5 w-3.5" />
+      프로그램 관리
+      <SquareArrowOutUpRight size={14} />
     </Button>
   );
 }

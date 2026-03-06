@@ -33,7 +33,7 @@ type EvaluationItem = {
   grade: number;
   item_name: string;
   points: number;
-  description: string;
+  description: string | null;
 };
 
 type Props = {

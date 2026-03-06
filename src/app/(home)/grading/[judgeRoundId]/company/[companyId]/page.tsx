@@ -76,7 +76,7 @@ const Page = () => {
         <div className="border-b bg-white px-6 py-4">
           <div className="mb-1 flex items-center gap-2 text-sm text-muted-foreground">
             <ClipboardList size={14} />
-            <span>{judgeRound.program.name}</span>
+            <span>심사 ID {judgeRound.id}</span>
           </div>
           <h1 className="text-lg font-bold text-gray-900">{judgeRound.name}</h1>
           {judgeRound.description && (

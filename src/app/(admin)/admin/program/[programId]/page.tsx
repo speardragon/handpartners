@@ -1,11 +1,4 @@
-"use client";
-
-import { use, useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { PaginationState } from "@tanstack/react-table";
-import { JudgeDataTable } from "./_components/JudgeDataTable";
-import { judgingRoundQueries } from "@/queries";
-import { judgeColumns } from "./_components/JudgeColumns";
+import { redirect } from "next/navigation";
 
 type Props = {
   params: Promise<{
@@ -13,39 +6,8 @@ type Props = {
   }>;
 };
 
-export default function Page({ params }: Props) {
-  const { programId } = use(params);
-  const programIdNumber = Number(programId);
+export default async function Page({ params }: Props) {
+  const { programId } = await params;
 
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
-
-  const { data, isFetching } = useQuery({
-    ...judgingRoundQueries.byProgram(programIdNumber, pagination),
-    placeholderData: keepPreviousData,
-  });
-
-  return (
-    <div className="flex min-h-screen w-full flex-col space-y-4 p-4 sm:p-6 lg:p-8">
-      <div>
-        <h1 className="text-lg font-semibold text-neutral-900 sm:text-xl">
-          심사 관리
-        </h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          {data?.result?.[0]?.program?.name}
-        </p>
-      </div>
-      <JudgeDataTable
-        isFetching={isFetching}
-        programId={programIdNumber}
-        totalPages={data?.totalPages ?? 0}
-        pagination={pagination}
-        setPagination={setPagination}
-        data={data?.result || []}
-        columns={judgeColumns}
-      />
-    </div>
-  );
+  redirect(`/admin/program/${programId}/judging`);
 }

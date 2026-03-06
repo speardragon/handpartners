@@ -22,8 +22,10 @@ import { toast } from "sonner";
 
 import useDialogOpenStore from "@/store/useDialogOpenStore";
 
-import { CompanyCreateFormType } from "../_lib/CompanyFormSchema";
-import { JudgeCreateFormSchema } from "../../program/[programId]/_lib/JudgeFormSchema";
+import {
+  CompanyCreateFormSchema,
+  CompanyCreateFormType,
+} from "../_lib/CompanyFormSchema";
 import { CompanyRowInsert, createCompany } from "@/actions/company-action";
 import { useQueryClient } from "@tanstack/react-query";
 import { companyQueries } from "@/queries";
@@ -33,9 +35,10 @@ export default function CompanyCreateSheet() {
   const { createOpen, setCreateOpen } = useDialogOpenStore((state) => state);
 
   const form = useForm<CompanyCreateFormType>({
-    resolver: zodResolver(JudgeCreateFormSchema),
+    resolver: zodResolver(CompanyCreateFormSchema),
     defaultValues: {
       name: "",
+      representative_name: "",
       description: "",
     },
     mode: "onSubmit",
@@ -97,13 +100,28 @@ export default function CompanyCreateSheet() {
                   />
                   <FormField
                     control={control}
+                    name="representative_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>대표자 성명</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="대표자 성명을 입력해주세요."
+                            {...field}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={control}
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>아이템 설명</FormLabel>
+                        <FormLabel>기업 소개</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="심사에 대한 설명을 입력해주세요."
+                            placeholder="기업 소개를 입력해주세요."
                             {...field}
                           />
                         </FormControl>

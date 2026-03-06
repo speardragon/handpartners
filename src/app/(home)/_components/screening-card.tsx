@@ -22,13 +22,13 @@ export function ScreeningCard({ screening, onClick }: ScreeningCardProps) {
         {getStatusBadge(screening.status)}
       </div>
 
-      <p className="truncate pr-16 text-xs text-muted-foreground">
-        {screening.program.name}
-      </p>
-
       <h3 className="mt-1 line-clamp-1 pr-16 text-base font-semibold">
         {screening.name}
       </h3>
+
+      <p className="mt-1 line-clamp-2 pr-16 text-sm text-muted-foreground">
+        {screening.program.description?.trim() || "프로그램 설명이 없습니다."}
+      </p>
 
       <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
         <span className="flex items-center gap-1">

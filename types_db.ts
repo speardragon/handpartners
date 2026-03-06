@@ -15,18 +15,21 @@ export type Database = {
           description: string | null;
           id: number;
           name: string;
+          representative_name: string;
         };
         Insert: {
           created_at?: string;
           description?: string | null;
           id?: number;
           name: string;
+          representative_name: string;
         };
         Update: {
           created_at?: string;
           description?: string | null;
           id?: number;
           name?: string;
+          representative_name?: string;
         };
         Relationships: [];
       };
@@ -133,32 +136,20 @@ export type Database = {
       judging_round: {
         Row: {
           created_at: string;
-          description: string | null;
-          end_date: string | null;
           id: string;
-          name: string;
           program_id: number;
-          start_date: string | null;
           status: Database["public"]["Enums"]["judging_round_status"];
         };
         Insert: {
           created_at?: string;
-          description?: string | null;
-          end_date?: string | null;
           id?: string;
-          name: string;
           program_id: number;
-          start_date?: string | null;
           status?: Database["public"]["Enums"]["judging_round_status"];
         };
         Update: {
           created_at?: string;
-          description?: string | null;
-          end_date?: string | null;
           id?: string;
-          name?: string;
           program_id?: number;
-          start_date?: string | null;
           status?: Database["public"]["Enums"]["judging_round_status"];
         };
         Relationships: [

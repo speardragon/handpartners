@@ -2,8 +2,6 @@
 
 import { Database } from "types_db";
 import { createClient } from "@/lib/supabase/server";
-import { v4 as uuidv4 } from "uuid";
-import { uploadPdfToS3 } from "@/lib/storage/s3";
 import { generateJudgingRoundId } from "@/lib/utils/judging-round-id";
 
 export type JudgingRoundStatus =
@@ -36,124 +34,156 @@ function handleError(error: unknown): never {
   throw new Error(message);
 }
 
-/**
- * programId로 심사 라운드(judging_round) 조회
- */
-export interface JudgingRoundWithCounts extends JudgingRoundRow {
-  program: { name: string };
+export interface JudgingProgramSummary {
+  id: number;
+  name: string;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+export interface JudgingRoundDisplayFields {
+  name: string;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+export interface JudgingRoundWithCounts
+  extends JudgingRoundRow, JudgingRoundDisplayFields {
+  program: JudgingProgramSummary;
   number_of_companies: number;
   number_of_users: number;
 }
-export interface JudgingRoundPaginationResult {
-  result: JudgingRoundWithCounts[];
-  total: number;
-  currentPage: number;
-  totalPages: number;
-  size: number;
+
+function normalizeProgram(
+  program: Partial<JudgingProgramSummary> | null | undefined
+): JudgingProgramSummary {
+  return {
+    id: program?.id ?? 0,
+    name: program?.name ?? "",
+    description: program?.description ?? null,
+    start_date: program?.start_date ?? null,
+    end_date: program?.end_date ?? null,
+  };
 }
-export async function getJudgingRoundsByProgramId(
-  programId: number,
-  page: number,
-  size: number
-): Promise<JudgingRoundPaginationResult> {
+
+function withProgramDisplayFields<T extends { program: JudgingProgramSummary }>(
+  round: T
+): T & JudgingRoundDisplayFields {
+  return {
+    ...round,
+    name: round.program.name,
+    description: round.program.description,
+    start_date: round.program.start_date,
+    end_date: round.program.end_date,
+  };
+}
+
+export async function ensureJudgingRoundForProgram(
+  programId: number
+): Promise<JudgingRoundRow> {
   const supabase = await createClient();
 
-  const start = (page - 1) * size;
-  const end = start + (size - 1);
-
-  const { data, error, count } = await supabase
+  const { data: existingRound, error: existingRoundError } = await supabase
     .from("judging_round")
-    .select(
-      `
-      *,
-      program:program_id (
-        name
-      )
-      `,
-      { count: "exact" }
-    )
+    .select("*")
     .eq("program_id", programId)
-    .range(start, end)
-    .order("id", { ascending: false });
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingRoundError) {
+    handleError(existingRoundError);
+  }
+
+  if (existingRound) {
+    return existingRound;
+  }
+
+  const { error: programError } = await supabase
+    .from("program")
+    .select("id")
+    .eq("id", programId)
+    .single();
+
+  if (programError) {
+    handleError(programError);
+  }
+
+  const { data: createdRound, error: createError } = await supabase
+    .from("judging_round")
+    .insert({
+      id: generateJudgingRoundId(),
+      program_id: programId,
+      created_at: new Date().toISOString(),
+      status: "PENDING",
+    })
+    .select("*")
+    .single();
+
+  if (createError) {
+    handleError(createError);
+  }
+
+  return createdRound;
+}
+
+export async function getJudgingRoundByProgramId(
+  programId: number
+): Promise<JudgingRoundWithCounts> {
+  const supabase = await createClient();
+
+  const judgingRound = await ensureJudgingRoundForProgram(programId);
+
+  const [{ data, error }, companyCountResult, userCountResult] =
+    await Promise.all([
+      supabase
+        .from("judging_round")
+        .select(
+          `
+          *,
+          program:program_id (
+            id,
+            name,
+            description,
+            start_date,
+            end_date
+          )
+        `
+        )
+        .eq("id", judgingRound.id)
+        .single(),
+      supabase
+        .from("judging_round_company")
+        .select("id", { count: "exact", head: true })
+        .eq("judging_round_id", judgingRound.id),
+      supabase
+        .from("judging_round_user")
+        .select("id", { count: "exact", head: true })
+        .eq("judging_round_id", judgingRound.id),
+    ]);
 
   if (error) {
     handleError(error);
   }
 
-  const total = count ?? 0;
-  const totalPages = Math.ceil(total / size);
-
-  // 만약 데이터가 없으면 바로 반환
-  if (!data || data.length === 0) {
-    return {
-      result: [],
-      total,
-      currentPage: page,
-      totalPages,
-      size,
-    };
+  if (companyCountResult.error) {
+    handleError(companyCountResult.error);
   }
 
-  // 2) judge_round_company에서 라운드별 기업 수 집계
-  const roundIds = data.map((d) => d.id); // 현재 페이지에 있는 round들의 id만 추출
-
-  // 3) judge_round_company: 라운드별 회사 레코드들 가져오기
-  const { data: companyRows, error: companyRowsError } = await supabase
-    .from("judging_round_company")
-    .select("*") // group() 없이 전부 조회
-    .in("judging_round_id", roundIds);
-
-  if (companyRowsError) {
-    handleError(companyRowsError);
+  if (userCountResult.error) {
+    handleError(userCountResult.error);
   }
 
-  // 라운드별 기업 수 집계 (딕셔너리 형태)
-  // { [roundId]: numberOfCompanies }
-  const companyCountsMap: Record<string, number> = {};
-  companyRows?.forEach((row) => {
-    if (!companyCountsMap[row.judging_round_id]) {
-      companyCountsMap[row.judging_round_id] = 0;
-    }
-    companyCountsMap[row.judging_round_id]++;
+  return withProgramDisplayFields({
+    ...data,
+    program: normalizeProgram(
+      data.program as unknown as JudgingProgramSummary | null
+    ),
+    number_of_companies: companyCountResult.count ?? 0,
+    number_of_users: userCountResult.count ?? 0,
   });
-
-  // 4) judge_round_user: 라운드별 유저 레코드들 가져오기
-  const { data: userRows, error: userRowsError } = await supabase
-    .from("judging_round_user")
-    .select("*")
-    .in("judging_round_id", roundIds);
-
-  if (userRowsError) {
-    handleError(userRowsError);
-  }
-
-  // 라운드별 사용자 수 집계
-  // { [roundId]: numberOfUsers }
-  const userCountsMap: Record<string, number> = {};
-  userRows?.forEach((row) => {
-    if (!userCountsMap[row.judging_round_id]) {
-      userCountsMap[row.judging_round_id] = 0;
-    }
-    userCountsMap[row.judging_round_id]++;
-  });
-
-  // 5) data와 매핑
-  const dataWithCounts = data.map((round) => {
-    return {
-      ...round,
-      number_of_companies: companyCountsMap[round.id] ?? 0,
-      number_of_users: userCountsMap[round.id] ?? 0,
-    };
-  });
-
-  // 6) 최종 반환
-  return {
-    result: dataWithCounts,
-    total,
-    currentPage: page,
-    totalPages,
-    size,
-  };
 }
 
 export async function createJudgingRound(judgingRound: JudgingRoundRowInsert) {
@@ -163,6 +193,7 @@ export async function createJudgingRound(judgingRound: JudgingRoundRowInsert) {
     ...judgingRound,
     id: generateJudgingRoundId(),
     created_at: new Date().toISOString(),
+    status: judgingRound.status ?? "PENDING",
   });
 
   if (error) {
@@ -223,16 +254,15 @@ export async function updateJudgingRoundStatus(
 }
 
 /** 심사 틀 가져오기 */
-export interface JudgingRoundWithCriterias extends JudgingRoundRow {
-  program: {
-    name: string;
-  };
+export interface JudgingRoundWithCriterias
+  extends JudgingRoundRow, JudgingRoundDisplayFields {
+  program: JudgingProgramSummary;
   criterias: {
     id: number;
     judging_round_id: string;
     item_name: string;
     points: number;
-    description: string;
+    description: string | null;
   }[];
 }
 export async function getJudgeById(
@@ -245,7 +275,11 @@ export async function getJudgeById(
     .select(
       `*,
       program: program_id (
-        name
+        id,
+        name,
+        description,
+        start_date,
+        end_date
       )
       `
     )
@@ -270,193 +304,13 @@ export async function getJudgeById(
     handleError(criteriasError);
   }
 
-  return {
+  return withProgramDisplayFields({
     ...judgingRoundData,
+    program: normalizeProgram(
+      judgingRoundData.program as unknown as JudgingProgramSummary | null
+    ),
     criterias: criteriasData || [],
-  };
-}
-
-// 폼에서 받게 될 전체 데이터 타입
-// (심사의 기본 정보 + 참여 기업 + 참여 심사위원)
-export interface JudgeCreateData {
-  name?: string;
-  description?: string;
-  start_date?: string;
-  end_date?: string;
-  companies?: {
-    company_id?: number;
-    file?: File; // ★ 파일 객체(프런트에서 넘어옴)
-    group_name?: string;
-  }[];
-  users?: {
-    user_id?: string;
-    group_name?: string;
-  }[];
-}
-
-export async function updateJudge(formData: FormData) {
-  const supabase = await createClient();
-
-  try {
-    // 1) 문자열 필드 꺼내기
-    const judgingRoundIdString = formData.get("judgingRoundId") as string;
-    const name = formData.get("name") as string;
-    const description = formData.get("description") as string;
-    const start_date = formData.get("start_date") as string;
-    const end_date = formData.get("end_date") as string;
-
-    if (!judgingRoundIdString) {
-      throw new Error("judgingRoundId가 없습니다.");
-    }
-    const judgingRoundId = judgingRoundIdString;
-
-    // 2) companies (JSON 문자열) -> 파싱
-    const companiesJson = formData.get("companies") as string;
-    let companies: {
-      company_id: number;
-      group_name?: string;
-    }[] = [];
-
-    if (companiesJson) {
-      companies = JSON.parse(companiesJson);
-    }
-
-    // 3) DB: judging_round 업데이트
-    const { data: updatedRoundData, error: updateRoundError } = await supabase
-      .from("judging_round")
-      .update({
-        name,
-        description,
-        start_date: start_date || null,
-        end_date: end_date || null,
-      })
-      .eq("id", judgingRoundId)
-      .select("id")
-      .single();
-
-    if (updateRoundError) {
-      console.error("judge_round update error", updateRoundError);
-      throw new Error(updateRoundError.message);
-    }
-    if (!updatedRoundData) {
-      throw new Error("심사 라운드 업데이트에 실패했습니다.");
-    }
-
-    // 4) 기존 judge_round_company, judge_round_user 삭제
-    const { error: deleteCompanyError } = await supabase
-      .from("judging_round_company")
-      .delete()
-      .eq("judging_round_id", judgingRoundId);
-    if (deleteCompanyError) {
-      throw new Error(deleteCompanyError.message);
-    }
-
-    const { error: deleteUserError } = await supabase
-      .from("judging_round_user")
-      .delete()
-      .eq("judging_round_id", judgingRoundId);
-    if (deleteUserError) {
-      throw new Error(deleteUserError.message);
-    }
-
-    // 5) 새로 insert할 judge_round_company 데이터 구성
-    const companyInserts: {
-      judging_round_id: string;
-      company_id: number;
-      pdf_path?: string | null;
-      group_name?: string;
-    }[] = [];
-
-    // (파일 업로드용) formData에 files[i] 형태로 올라온 파일 목록
-    // companies와 files의 index가 일치한다는 전제
-    for (let i = 0; i < companies.length; i++) {
-      const c = companies[i];
-      const fileKey = `files[${i}]`;
-      const file = formData.get(fileKey) as File | null; // 없으면 null
-
-      let pdfPath: string | null = null;
-
-      // (1) 파일이 있다면 S3 업로드
-      if (file) {
-        const uniqueId = uuidv4();
-        const fileName = `${Date.now()}-${uniqueId}`;
-        const filePath = `judging-round-pdfs/${fileName}`;
-
-        pdfPath = await uploadPdfToS3(file, filePath);
-      }
-
-      // (2) insert 레코드 생성
-      companyInserts.push({
-        judging_round_id: judgingRoundId,
-        company_id: c.company_id,
-        pdf_path: pdfPath,
-        group_name: c.group_name ?? "A",
-      });
-    }
-
-    // 실제 DB insert
-    if (companyInserts.length > 0) {
-      const { error: companyInsertError } = await supabase
-        .from("judging_round_company")
-        .insert(companyInserts);
-
-      if (companyInsertError) {
-        console.error("judge_round_company insert error", companyInsertError);
-        throw new Error(companyInsertError.message);
-      }
-    }
-
-    // (추가로) judge_round_user 로직 필요 시 여기서 insert
-    // 예시:
-    // const usersPayload = ... ;
-    // await supabase.from("judging_round_user").insert(usersPayload);
-
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("updateJudge error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, message };
-  }
-}
-
-export interface JudgeBasicData {
-  judgingRoundId: string;
-  name?: string;
-  description?: string;
-  start_date?: string;
-  end_date?: string;
-}
-
-/**
- * 심사 라운드의 기본 정보만 업데이트.
- * 기존 updateJudge의 일부(기본 정보)만 따로 분리.
- */
-export async function updateJudgeBasic(data: JudgeBasicData) {
-  const supabase = await createClient();
-  const { judgingRoundId, name, description, start_date, end_date } = data;
-
-  try {
-    const { error: updateRoundError } = await supabase
-      .from("judging_round")
-      .update({
-        name,
-        description,
-        start_date: start_date || null,
-        end_date: end_date || null,
-      })
-      .eq("id", judgingRoundId);
-
-    if (updateRoundError) {
-      console.error("updateJudgeBasic error:", updateRoundError);
-      throw new Error(updateRoundError.message);
-    }
-
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("updateJudgeBasic error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, message };
-  }
+  });
 }
 
 export type JudgingRoundDetail = {
@@ -465,6 +319,7 @@ export type JudgingRoundDetail = {
   start_date: string | null;
   end_date: string | null;
   program_name: string;
+  program_description: string | null;
   criteriaList: {
     id: number;
     item_name: string;
@@ -499,11 +354,11 @@ export async function getJudgingRoundDetails(
     .select(
       `
         id,
-        name,
-        start_date,
-        end_date,
         program:program_id (
-          name
+          name,
+          description,
+          start_date,
+          end_date
         )
       `
     )
@@ -542,10 +397,10 @@ export async function getJudgingRoundDetails(
     throw new Error(companyError.message);
   }
 
-  const companyList = companyData?.map((c) => {
+  const companyList = (companyData ?? []).map((c) => {
     const company = c.company as unknown as {
       name: string;
-      description: string;
+      description: string | null;
     };
     return {
       company_id: c.company_id,
@@ -637,12 +492,17 @@ export async function getJudgingRoundDetails(
     (a, b) => b.totalScore - a.totalScore
   );
 
+  const program = normalizeProgram(
+    roundData.program as unknown as JudgingProgramSummary | null
+  );
+
   return {
     id: roundData.id,
-    name: roundData.name,
-    start_date: roundData.start_date,
-    end_date: roundData.end_date,
-    program_name: (roundData.program as unknown as { name: string }).name,
+    name: program.name,
+    start_date: program.start_date,
+    end_date: program.end_date,
+    program_name: program.name,
+    program_description: program.description,
     criteriaList: criteriaData || [],
     companies: finalCompanies,
   };

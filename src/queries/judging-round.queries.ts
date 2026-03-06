@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import {
-  getJudgingRoundsByProgramId,
+  getJudgingRoundByProgramId,
   getJudgingRoundDetails,
   getJudgeById,
   getCompanyScoresByRoundId,
@@ -16,18 +16,10 @@ import { getJudgingCriteriaByRound } from "@/actions/evaluation_criteria-action"
 export const judgingRoundQueries = {
   all: () => ["judging_rounds"] as const,
 
-  byProgram: (
-    programId: number,
-    pagination: { pageIndex: number; pageSize: number }
-  ) =>
+  byProgram: (programId: number) =>
     queryOptions({
-      queryKey: [...judgingRoundQueries.all(), programId, pagination] as const,
-      queryFn: () =>
-        getJudgingRoundsByProgramId(
-          programId,
-          pagination.pageIndex + 1,
-          pagination.pageSize
-        ),
+      queryKey: [...judgingRoundQueries.all(), programId, "program"] as const,
+      queryFn: () => getJudgingRoundByProgramId(programId),
     }),
   detail: (judgingRoundId: string) =>
     queryOptions({

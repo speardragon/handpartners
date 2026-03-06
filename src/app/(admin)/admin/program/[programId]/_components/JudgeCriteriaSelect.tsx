@@ -140,9 +140,9 @@ export default function JudgeCriteriaSelect({
               key={idx}
               className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white p-3"
             >
-              <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:overflow-hidden">
                 <Input
-                  className="h-9 sm:w-40"
+                  className="h-9 sm:w-44 sm:flex-none"
                   placeholder="기준명"
                   value={item.item_name}
                   onChange={(e) =>
@@ -151,7 +151,7 @@ export default function JudgeCriteriaSelect({
                 />
                 <Input
                   type="number"
-                  className="h-9 sm:w-24"
+                  className="h-9 sm:w-24 sm:flex-none"
                   placeholder="배점"
                   value={
                     editingPoints?.index === idx
@@ -162,14 +162,16 @@ export default function JudgeCriteriaSelect({
                   onChange={(e) => handlePointsChange(idx, e.target.value)}
                   onBlur={handlePointsBlur}
                 />
-                <Input
-                  className="h-9 flex-1"
-                  placeholder="설명 (선택)"
-                  value={item.description ?? ""}
-                  onChange={(e) =>
-                    handleChange(idx, "description", e.target.value)
-                  }
-                />
+                <div className="min-w-0 flex-1">
+                  <Input
+                    className="h-9 w-full"
+                    placeholder="설명 (선택)"
+                    value={item.description ?? ""}
+                    onChange={(e) =>
+                      handleChange(idx, "description", e.target.value)
+                    }
+                  />
+                </div>
               </div>
               <Button
                 type="button"
