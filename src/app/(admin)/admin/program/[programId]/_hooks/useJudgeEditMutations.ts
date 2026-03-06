@@ -2,14 +2,12 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { updateJudgeBasic } from "@/actions/judging_round-action";
 import {
   createJudgeCompanyPdfUploadUrl,
   updateJudgeCompany2,
 } from "@/actions/judging_rounds_company-action";
 import { updateJudgeUser } from "@/actions/judging_round_user-action";
 import { updateJudgeCriteria } from "@/actions/evaluation_criteria-action";
-import { JudgeUpdateFormType } from "../_lib/JudgeFormSchema";
 import type {
   SimpleCompany,
   SimpleCriteria,
@@ -20,27 +18,6 @@ import { judgingRoundQueries, screeningQueries } from "@/queries";
 export function useJudgeEditMutations(judgingRoundId: string | undefined) {
   const queryClient = useQueryClient();
   const roundId = judgingRoundId ?? "";
-
-  const basicMutation = useMutation({
-    mutationFn: async (data: JudgeUpdateFormType) => {
-      const result = await updateJudgeBasic({
-        judgingRoundId: roundId,
-        name: data.name ?? "",
-        description: data.description ?? "",
-        start_date: data.start_date ?? "",
-        end_date: data.end_date ?? "",
-      });
-      if (!result.success)
-        throw new Error("기본 정보 수정 중 오류가 발생했습니다.");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: judgingRoundQueries.all() });
-      toast.success("기본 심사 정보를 수정하였습니다.");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
 
   const usersMutation = useMutation({
     mutationFn: async (users: SimpleUser[]) => {
@@ -150,5 +127,5 @@ export function useJudgeEditMutations(judgingRoundId: string | undefined) {
     },
   });
 
-  return { basicMutation, usersMutation, companiesMutation, criteriaMutation };
+  return { usersMutation, companiesMutation, criteriaMutation };
 }

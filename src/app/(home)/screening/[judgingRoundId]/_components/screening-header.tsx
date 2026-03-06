@@ -20,12 +20,14 @@ export default function ScreeningHeader({
     <div className="space-y-3 rounded-lg border bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-xs text-muted-foreground">
-            {screening.program.name}
-          </p>
           <h1 className="mt-0.5 line-clamp-1 text-xl font-bold">
             {screening.name}
           </h1>
+          {screening.program.description && (
+            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+              {screening.program.description}
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {isAdminView && (

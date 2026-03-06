@@ -400,7 +400,14 @@ export async function getJudgingRoundCompaniesPublic(judgingRoundId: string) {
 
   const { data: round, error: roundError } = await supabase
     .from("judging_round")
-    .select("name, status")
+    .select(
+      `
+      status,
+      program:program_id (
+        name
+      )
+    `
+    )
     .eq("id", judgingRoundId)
     .single();
 
@@ -435,7 +442,8 @@ export async function getJudgingRoundCompaniesPublic(judgingRoundId: string) {
   }
 
   return {
-    roundName: round.name,
+    roundName: ((round.program as { name: string } | null) ?? { name: "" })
+      .name,
     companies: companies ?? [],
   };
 }

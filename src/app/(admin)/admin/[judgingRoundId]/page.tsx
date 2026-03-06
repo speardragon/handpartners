@@ -61,8 +61,14 @@ export default function JudgingRoundDetailPage() {
     );
   }
 
-  const { name, start_date, end_date, program_name, criteriaList, companies } =
-    detail;
+  const {
+    name,
+    start_date,
+    end_date,
+    program_description,
+    criteriaList,
+    companies,
+  } = detail;
 
   const judgeMap = new Map<string, string>();
   companies.forEach((company) => {
@@ -116,10 +122,12 @@ export default function JudgingRoundDetailPage() {
 
       {/* 헤더 */}
       <div className="mb-8">
-        <p className="mb-1 text-xs font-medium uppercase tracking-wider text-neutral-400">
-          {program_name}
-        </p>
         <h1 className="text-2xl font-bold text-neutral-900">{name}</h1>
+        {program_description && (
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-neutral-500">
+            {program_description}
+          </p>
+        )}
         <div className="mt-3 flex items-center gap-4 text-sm text-neutral-500">
           <span>
             {start_date || "-"} ~ {end_date || "-"}

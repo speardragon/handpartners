@@ -36,7 +36,11 @@ import { CompanyRow, deleteCompany } from "@/actions/company-action";
 import CompanyEditForm from "./CompanyEditForm";
 import { companyQueries } from "@/queries";
 
-function CompanyActionsCell({ row }: { row: { original: Partial<CompanyRow> } }) {
+function CompanyActionsCell({
+  row,
+}: {
+  row: { original: Partial<CompanyRow> };
+}) {
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
   const [openMenu, setOpenMenu] = useState(false);
@@ -57,13 +61,16 @@ function CompanyActionsCell({ row }: { row: { original: Partial<CompanyRow> } })
         <SheetContent className="w-[calc(100%-2rem)] overflow-y-auto sm:min-w-[600px]">
           <SheetHeader>
             <SheetTitle>기업 수정</SheetTitle>
-            <SheetDescription>{row.original.name}</SheetDescription>
+            <SheetDescription>
+              {row.original.name} / {row.original.representative_name}
+            </SheetDescription>
             <Separator />
           </SheetHeader>
           <CompanyEditForm
             companyId={companyId}
             companyInfo={{
               name: row.original.name ?? "",
+              representative_name: row.original.representative_name ?? "",
               description: row.original.description ?? "",
             }}
           />
@@ -138,8 +145,15 @@ export const companyColumns: ColumnDef<Partial<CompanyRow>>[] = [
     size: 160,
   },
   {
+    accessorKey: "representative_name",
+    header: "대표자 성명",
+    size: 140,
+    meta: { className: "hidden sm:table-cell" },
+  },
+  {
     accessorKey: "description",
     header: "기업 소개",
+    meta: { className: "hidden md:table-cell" },
     cell: ({ getValue }) => {
       const description = (getValue() ?? "").toString();
       return (

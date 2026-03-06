@@ -214,7 +214,9 @@ export default function AdminPanel({
         <Button
           variant="outline"
           className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-100"
-          onClick={() => window.open(`/admin/program/${programId}`, "_blank")}
+          onClick={() =>
+            window.open(`/admin/program/${programId}/judging`, "_blank")
+          }
         >
           <SquareArrowOutUpRight size={14} />
           심사 관리
