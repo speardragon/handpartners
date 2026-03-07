@@ -19,7 +19,7 @@ import {
   type JudgingRoundStatus,
 } from "@/actions/judging_round-action";
 import { useQueryClient } from "@tanstack/react-query";
-import { judgingRoundQueries, screeningQueries } from "@/queries";
+import { judgingQueries, judgingRoundQueries } from "@/queries";
 
 interface AdminPanelProps {
   judgingRoundId: string;
@@ -76,10 +76,10 @@ export default function AdminPanel({
       await updateJudgingRoundStatus(judgingRoundId, nextStatus);
       setStatus(nextStatus);
       queryClient.invalidateQueries({
-        queryKey: screeningQueries.detailKeyPrefix(),
+        queryKey: judgingQueries.detailKeyPrefix(),
       });
       queryClient.invalidateQueries({
-        queryKey: screeningQueries.all(),
+        queryKey: judgingQueries.all(),
       });
       queryClient.invalidateQueries({
         queryKey: judgingRoundQueries.all(),
@@ -214,9 +214,7 @@ export default function AdminPanel({
         <Button
           variant="outline"
           className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-100"
-          onClick={() =>
-            window.open(`/admin/program/${programId}/judging`, "_blank")
-          }
+          onClick={() => window.open(`/admin/program/${programId}/judging`, "_blank")}
         >
           <SquareArrowOutUpRight size={14} />
           심사 관리
@@ -238,6 +236,14 @@ export default function AdminPanel({
           <Download size={14} />
           보고서 일괄 다운로드
         </LoadingButton>
+        <Button
+          variant="outline"
+          className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-100"
+          onClick={() => window.open(`/judging/${judgingRoundId}`, "_blank")}
+        >
+          <SquareArrowOutUpRight size={14} />
+          심사 진행 페이지
+        </Button>
       </div>
     </div>
   );

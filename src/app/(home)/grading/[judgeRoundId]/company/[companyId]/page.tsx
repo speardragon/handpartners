@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   judgingRoundQueries,
   evaluationQueries,
-  screeningQueries,
+  judgingQueries,
 } from "@/queries";
 import PdfViewer from "./_components/pdf-viewer";
 import EvaluateTable from "./_components/evaluate-table";
@@ -25,7 +25,7 @@ const Page = () => {
     evaluationQueries.byUser(judgeRoundId, companyId)
   );
   const { data: isParticipant } = useQuery(
-    screeningQueries.participation(judgeRoundId)
+    judgingQueries.participation(judgeRoundId)
   );
 
   const [isFull, setIsFull] = useState<boolean>(false);

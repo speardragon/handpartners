@@ -4,7 +4,7 @@ import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { judgingRoundQueries, screeningQueries } from "@/queries";
+import { judgingQueries, judgingRoundQueries } from "@/queries";
 import { getAllJudgeEvaluations } from "@/actions/evaluation-action";
 import {
   type JudgingRoundStatus,
@@ -97,7 +97,7 @@ export default function Page({ params }: Props) {
     try {
       await updateJudgingRoundStatus(judgingRound.id, nextStatus);
       queryClient.invalidateQueries({ queryKey: judgingRoundQueries.all() });
-      queryClient.invalidateQueries({ queryKey: screeningQueries.all() });
+      queryClient.invalidateQueries({ queryKey: judgingQueries.all() });
       toast.success(
         `심사 상태가 "${STATUS_LABEL[nextStatus]}"(으)로 변경되었습니다.`
       );
@@ -261,7 +261,7 @@ export default function Page({ params }: Props) {
                   <Button
                     variant="outline"
                     className="justify-between gap-2 bg-white"
-                    onClick={() => router.push(`/screening/${judgingRound.id}`)}
+                    onClick={() => router.push(`/judging/${judgingRound.id}`)}
                   >
                     <span>심사 페이지로 이동</span>
                     <SquareArrowOutUpRight className="h-4 w-4" />

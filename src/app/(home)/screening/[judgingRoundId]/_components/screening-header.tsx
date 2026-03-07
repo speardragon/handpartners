@@ -1,31 +1,31 @@
 "use client";
 
-import { ScreeningWithStatus } from "@/actions/program-action";
+import { JudgingWorkspaceWithStatus } from "@/actions/program-action";
 import { getStatusBadge } from "@/app/(home)/_lib/lib";
 import { Calendar, Eye, Hash } from "lucide-react";
 
-interface ScreeningHeaderProps {
-  screening: ScreeningWithStatus;
+interface JudgingHeaderProps {
+  judging: JudgingWorkspaceWithStatus;
   isAdminView: boolean;
 }
 
-export default function ScreeningHeader({
-  screening,
+export default function JudgingHeader({
+  judging,
   isAdminView,
-}: ScreeningHeaderProps) {
-  const startDate = screening.start_date?.slice(0, 10) ?? "";
-  const endDate = screening.end_date?.slice(0, 10) ?? "";
+}: JudgingHeaderProps) {
+  const startDate = judging.start_date?.slice(0, 10) ?? "";
+  const endDate = judging.end_date?.slice(0, 10) ?? "";
 
   return (
     <div className="space-y-3 rounded-lg border bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="mt-0.5 line-clamp-1 text-xl font-bold">
-            {screening.name}
+            {judging.name}
           </h1>
-          {screening.program.description && (
+          {judging.program.description && (
             <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-              {screening.program.description}
+              {judging.program.description}
             </p>
           )}
         </div>
@@ -36,13 +36,13 @@ export default function ScreeningHeader({
               전체 현황
             </span>
           )}
-          {getStatusBadge(screening.status)}
+          {getStatusBadge(judging.status)}
         </div>
       </div>
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <span className="flex items-center gap-1">
           <Hash size={14} />
-          {screening.id}
+          {judging.id}
         </span>
         <span className="flex items-center gap-1">
           <Calendar size={14} />

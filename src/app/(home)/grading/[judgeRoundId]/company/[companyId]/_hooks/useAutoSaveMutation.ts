@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createEvaluation } from "@/actions/evaluation-action";
-import { screeningQueries, evaluationQueries } from "@/queries";
+import { judgingQueries, evaluationQueries } from "@/queries";
 
 interface AutoSaveArgs {
   judgeRoundId: string;
@@ -36,7 +36,7 @@ export function useAutoSaveMutation() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
-        queryKey: screeningQueries.detailKeyPrefix(),
+        queryKey: judgingQueries.detailKeyPrefix(),
       });
       // evaluation query cache의 status를 ONGOING으로 동기화
       queryClient.setQueryData<EvaluationQueryData>(
