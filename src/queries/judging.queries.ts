@@ -36,7 +36,14 @@ export const judgingQueries = {
       ] as const,
       queryFn: async () => {
         const result: AllJudgingWorkspacesResult =
-          await getAllJudgingWorkspaces(1, 1, isAdmin, undefined, undefined, judgingRoundId);
+          await getAllJudgingWorkspaces(
+            1,
+            1,
+            isAdmin,
+            undefined,
+            undefined,
+            judgingRoundId
+          );
         const judging = result.result[0] ?? null;
         return judging
           ? { ...judging, isAdminView: result.isAdminView ?? false }

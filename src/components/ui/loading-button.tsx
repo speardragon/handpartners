@@ -17,7 +17,7 @@ const LoadingButton = forwardRef<HTMLButtonElement, LoadingButtonProps>(
       <Button ref={ref} disabled={isLoading || disabled} {...props}>
         <>
           {isLoading ? "" : children}
-          {isLoading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+          {isLoading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
         </>
       </Button>
     );

@@ -24,7 +24,7 @@ export default function JudgingHeader({
             {judging.name}
           </h1>
           {judging.program.description && (
-            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+            <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
               {judging.program.description}
             </p>
           )}
@@ -39,7 +39,7 @@ export default function JudgingHeader({
           {getStatusBadge(judging.status)}
         </div>
       </div>
-      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex items-center gap-4 text-sm">
         <span className="flex items-center gap-1">
           <Hash size={14} />
           {judging.id}

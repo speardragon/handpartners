@@ -78,7 +78,10 @@ function buildBulletLines(content: string | null) {
   return [
     {
       title: "멘토링 내용",
-      items: contentLines.length > 0 ? contentLines : ["기록된 멘토링 내용이 없습니다."],
+      items:
+        contentLines.length > 0
+          ? contentLines
+          : ["기록된 멘토링 내용이 없습니다."],
     },
   ];
 }
@@ -110,7 +113,8 @@ export default function MentoringSessionDocument({
   photos,
 }: Props) {
   const bulletSections = buildBulletLines(content);
-  const mentorOrgTitle = [mentorAffiliation, mentorPosition].filter(Boolean).join(" / ") || "-";
+  const mentorOrgTitle =
+    [mentorAffiliation, mentorPosition].filter(Boolean).join(" / ") || "-";
   const itemName = companyDescription?.trim() || companyName;
   const photoPages = chunkPhotos(photos, 2);
   const photoImageStyle = logoUrl
@@ -131,121 +135,149 @@ export default function MentoringSessionDocument({
         <Text style={styles.title}>{programName} 멘토링 일지</Text>
         <Text style={styles.sessionNoLabel}>멘토링 회차 {sessionNo}</Text>
         <View style={styles.table}>
-            <View style={styles.row}>
-              <View style={[styles.cell, styles.headerCell, styles.col1]}>
-                <Text style={styles.headerText}>멘토링 일시</Text>
-              </View>
-              <View style={[styles.cell, styles.col2]}>
-                <Text style={styles.valueText}>{formatDateTime(mentoredAt)}</Text>
-              </View>
-              <View style={[styles.cell, styles.headerCell, styles.col3]}>
-                <Text style={styles.headerText}>장소</Text>
-              </View>
-              <View style={[styles.cell, styles.col4, styles.lastColumn]}>
-                <Text style={styles.valueText}>{place?.trim() || "-"}</Text>
-              </View>
+          <View style={styles.row}>
+            <View style={[styles.cell, styles.headerCell, styles.col1]}>
+              <Text style={styles.headerText}>멘토링 일시</Text>
             </View>
-
-            <View style={styles.row}>
-              <View style={[styles.cell, styles.headerCell, styles.doubleLeft]}>
-                <Text style={styles.headerText}>멘토(Mentor)</Text>
-              </View>
-              <View style={[styles.cell, styles.headerCell, styles.doubleRight, styles.lastColumn]}>
-                <Text style={styles.headerText}>멘티(Mentee)</Text>
-              </View>
+            <View style={[styles.cell, styles.col2]}>
+              <Text style={styles.valueText}>{formatDateTime(mentoredAt)}</Text>
             </View>
-
-            <View style={styles.row}>
-              <View style={[styles.cell, styles.headerCell, styles.col1]}>
-                <Text style={styles.headerText}>소속/직위</Text>
-              </View>
-              <View style={[styles.cell, styles.headerCell, styles.col2]}>
-                <Text style={styles.headerText}>성명</Text>
-              </View>
-              <View style={[styles.cell, styles.headerCell, styles.col3]}>
-                <Text style={styles.headerText}>소속학과/팀명</Text>
-              </View>
-              <View style={[styles.cell, styles.headerCell, styles.col4, styles.lastColumn]}>
-                <Text style={styles.headerText}>성명</Text>
-              </View>
+            <View style={[styles.cell, styles.headerCell, styles.col3]}>
+              <Text style={styles.headerText}>장소</Text>
             </View>
-
-            <View style={[styles.row, styles.lastRow]}>
-              <View style={[styles.cell, styles.col1, styles.lastRowCell]}>
-                <Text style={styles.valueCenterText}>{mentorOrgTitle}</Text>
-              </View>
-              <View style={[styles.cell, styles.col2, styles.lastRowCell]}>
-                <Text style={styles.valueCenterText}>{mentorName || "-"}</Text>
-              </View>
-              <View style={[styles.cell, styles.col3, styles.lastRowCell]}>
-                <Text style={styles.valueCenterText}>{companyName}</Text>
-              </View>
-              <View
-                style={[
-                  styles.cell,
-                  styles.col4,
-                  styles.lastColumn,
-                  styles.lastRowCell,
-                ]}
-              >
-                <Text style={styles.valueCenterText}>{representativeName || "-"}</Text>
-              </View>
+            <View style={[styles.cell, styles.col4, styles.lastColumn]}>
+              <Text style={styles.valueText}>{place?.trim() || "-"}</Text>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>□ 창업멘토링 내용 및 결과</Text>
-
-          <View style={styles.contentTable}>
-            <View style={styles.row}>
-              <View style={[styles.cell, styles.headerCell, styles.itemLabel]}>
-                <Text style={styles.headerText}>아이템 및 사업계획 명</Text>
-              </View>
-              <View style={[styles.cell, styles.itemValue, styles.lastColumn]}>
-                <Text style={styles.valueText}>{itemName}</Text>
-              </View>
+          <View style={styles.row}>
+            <View style={[styles.cell, styles.headerCell, styles.doubleLeft]}>
+              <Text style={styles.headerText}>멘토(Mentor)</Text>
             </View>
-
-            <View style={styles.row}>
-              <View style={[styles.fullWidthCell, styles.contentCell]}>
-                {bulletSections.map((section) => (
-                  <View key={section.title} style={styles.contentSection}>
-                    <Text style={styles.contentSectionTitle}>{section.title}</Text>
-                    {section.items.map((item, index) => (
-                      <View key={`${section.title}-${index}`} style={styles.bulletRow}>
-                        <Text style={styles.bulletMark}>•</Text>
-                        <Text style={styles.bulletText}>{item}</Text>
-                      </View>
-                    ))}
-                  </View>
-                ))}
-              </View>
+            <View
+              style={[
+                styles.cell,
+                styles.headerCell,
+                styles.doubleRight,
+                styles.lastColumn,
+              ]}
+            >
+              <Text style={styles.headerText}>멘티(Mentee)</Text>
             </View>
+          </View>
 
-            <View style={[styles.row, styles.lastRow]}>
-              <View style={[styles.fullWidthCell, styles.submitCell]}>
-                <Text style={styles.submitText}>
-                  위와 같이 창업멘토링 멘토링일지를 제출합니다.
-                </Text>
-                <Text style={styles.submitDate}>{formatSubmitDate(mentoredAt)}</Text>
-                <View style={styles.signatureRow}>
-                  <Text style={styles.submitAuthorLabel}>
-                    작성자(멘토): {mentorName || "-"}
+          <View style={styles.row}>
+            <View style={[styles.cell, styles.headerCell, styles.col1]}>
+              <Text style={styles.headerText}>소속/직위</Text>
+            </View>
+            <View style={[styles.cell, styles.headerCell, styles.col2]}>
+              <Text style={styles.headerText}>성명</Text>
+            </View>
+            <View style={[styles.cell, styles.headerCell, styles.col3]}>
+              <Text style={styles.headerText}>소속학과/팀명</Text>
+            </View>
+            <View
+              style={[
+                styles.cell,
+                styles.headerCell,
+                styles.col4,
+                styles.lastColumn,
+              ]}
+            >
+              <Text style={styles.headerText}>성명</Text>
+            </View>
+          </View>
+
+          <View style={[styles.row, styles.lastRow]}>
+            <View style={[styles.cell, styles.col1, styles.lastRowCell]}>
+              <Text style={styles.valueCenterText}>{mentorOrgTitle}</Text>
+            </View>
+            <View style={[styles.cell, styles.col2, styles.lastRowCell]}>
+              <Text style={styles.valueCenterText}>{mentorName || "-"}</Text>
+            </View>
+            <View style={[styles.cell, styles.col3, styles.lastRowCell]}>
+              <Text style={styles.valueCenterText}>{companyName}</Text>
+            </View>
+            <View
+              style={[
+                styles.cell,
+                styles.col4,
+                styles.lastColumn,
+                styles.lastRowCell,
+              ]}
+            >
+              <Text style={styles.valueCenterText}>
+                {representativeName || "-"}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>□ 창업멘토링 내용 및 결과</Text>
+
+        <View style={styles.contentTable}>
+          <View style={styles.row}>
+            <View style={[styles.cell, styles.headerCell, styles.itemLabel]}>
+              <Text style={styles.headerText}>아이템 및 사업계획 명</Text>
+            </View>
+            <View style={[styles.cell, styles.itemValue, styles.lastColumn]}>
+              <Text style={styles.valueText}>{itemName}</Text>
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <View style={[styles.fullWidthCell, styles.contentCell]}>
+              {bulletSections.map((section) => (
+                <View key={section.title} style={styles.contentSection}>
+                  <Text style={styles.contentSectionTitle}>
+                    {section.title}
                   </Text>
-                  <View style={styles.signatureSlot}>
-                    {mentorSignatureUrl ? (
-                      <PImage src={mentorSignatureUrl} style={styles.signatureImage} />
-                    ) : (
-                      <Text style={styles.submitAuthorMark}>(인)</Text>
-                    )}
-                  </View>
+                  {section.items.map((item, index) => (
+                    <View
+                      key={`${section.title}-${index}`}
+                      style={styles.bulletRow}
+                    >
+                      <Text style={styles.bulletMark}>•</Text>
+                      <Text style={styles.bulletText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={[styles.row, styles.lastRow]}>
+            <View style={[styles.fullWidthCell, styles.submitCell]}>
+              <Text style={styles.submitText}>
+                위와 같이 창업멘토링 멘토링일지를 제출합니다.
+              </Text>
+              <Text style={styles.submitDate}>
+                {formatSubmitDate(mentoredAt)}
+              </Text>
+              <View style={styles.signatureRow}>
+                <Text style={styles.submitAuthorLabel}>
+                  작성자(멘토): {mentorName || "-"}
+                </Text>
+                <View style={styles.signatureSlot}>
+                  {mentorSignatureUrl ? (
+                    <PImage
+                      src={mentorSignatureUrl}
+                      style={styles.signatureImage}
+                    />
+                  ) : (
+                    <Text style={styles.submitAuthorMark}>(인)</Text>
+                  )}
                 </View>
               </View>
             </View>
           </View>
+        </View>
         <Text
           fixed
           style={styles.pageNumber}
-          render={({ pageNumber, totalPages }) => `[ ${pageNumber}/${totalPages} ]`}
+          render={({ pageNumber, totalPages }) =>
+            `[ ${pageNumber}/${totalPages} ]`
+          }
         />
       </Page>
 
@@ -260,51 +292,56 @@ export default function MentoringSessionDocument({
             </View>
           ) : null}
           <View style={styles.photoTable}>
-              <View style={styles.row}>
-                <View
-                  style={[
-                    styles.cell,
-                    styles.headerCell,
-                    styles.photoImageColumn,
-                    styles.lastColumn,
-                  ]}
-                >
-                  <Text style={styles.headerText}>사진</Text>
-                </View>
+            <View style={styles.row}>
+              <View
+                style={[
+                  styles.cell,
+                  styles.headerCell,
+                  styles.photoImageColumn,
+                  styles.lastColumn,
+                ]}
+              >
+                <Text style={styles.headerText}>사진</Text>
               </View>
-              {photoPage.map((photo, photoIndex) => {
-                const isLastPhotoRow =
-                  pageIndex === photoPages.length - 1 &&
-                  photoIndex === photoPage.length - 1;
+            </View>
+            {photoPage.map((photo, photoIndex) => {
+              const isLastPhotoRow =
+                pageIndex === photoPages.length - 1 &&
+                photoIndex === photoPage.length - 1;
 
-                return (
+              return (
+                <View
+                  key={photo.id}
+                  style={[
+                    styles.row,
+                    ...(isLastPhotoRow ? [styles.lastRow] : []),
+                  ]}
+                  wrap={false}
+                >
                   <View
-                    key={photo.id}
-                    style={[styles.row, ...(isLastPhotoRow ? [styles.lastRow] : [])]}
-                    wrap={false}
+                    style={[
+                      styles.cell,
+                      styles.photoImageColumn,
+                      styles.photoImageCell,
+                      styles.lastColumn,
+                      ...(isLastPhotoRow ? [styles.lastRowCell] : []),
+                    ]}
                   >
-                    <View
-                      style={[
-                        styles.cell,
-                        styles.photoImageColumn,
-                        styles.photoImageCell,
-                        styles.lastColumn,
-                        ...(isLastPhotoRow ? [styles.lastRowCell] : []),
-                      ]}
-                    >
-                      <PImage
-                        src={photo.download_url ?? photo.photo_path}
-                        style={photoImageStyle}
-                      />
-                    </View>
+                    <PImage
+                      src={photo.download_url ?? photo.photo_path}
+                      style={photoImageStyle}
+                    />
                   </View>
-                );
-              })}
+                </View>
+              );
+            })}
           </View>
           <Text
             fixed
             style={styles.pageNumber}
-            render={({ pageNumber, totalPages }) => `[ ${pageNumber}/${totalPages} ]`}
+            render={({ pageNumber, totalPages }) =>
+              `[ ${pageNumber}/${totalPages} ]`
+            }
           />
         </Page>
       ))}

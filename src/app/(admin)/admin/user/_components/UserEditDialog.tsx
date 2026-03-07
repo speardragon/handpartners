@@ -334,7 +334,7 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-red-500 p-0.5 text-white hover:bg-red-600"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 p-0.5 text-white hover:bg-red-600"
                       onClick={handleRemoveSignature}
                     >
                       <X className="h-3 w-3" />

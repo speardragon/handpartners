@@ -19,10 +19,7 @@ import {
   updateJudgingRoundStatus,
   type JudgingRoundStatus,
 } from "@/actions/judging_round-action";
-import {
-  sendJudgingEmails,
-  getJudgeEmailCount,
-} from "@/actions/email-action";
+import { sendJudgingEmails, getJudgeEmailCount } from "@/actions/email-action";
 import { useQueryClient } from "@tanstack/react-query";
 import { judgingQueries, judgingRoundQueries } from "@/queries";
 import {
@@ -131,7 +128,9 @@ export default function AdminPanel({
     try {
       const result = await sendJudgingEmails(judgingRoundId);
       if (result.failedCount === 0) {
-        toast.success(`${result.sentCount}명의 심사자에게 이메일을 발송했습니다.`);
+        toast.success(
+          `${result.sentCount}명의 심사자에게 이메일을 발송했습니다.`
+        );
       } else {
         toast.warning(
           `${result.sentCount}명 발송 성공, ${result.failedCount}명 발송 실패`
@@ -197,13 +196,13 @@ export default function AdminPanel({
   };
 
   return (
-    <div className="p-5 space-y-4 border border-blue-200 rounded-lg shadow-sm bg-blue-50/50">
+    <div className="space-y-4 rounded-lg border border-blue-200 bg-blue-50/50 p-5 shadow-sm">
       <div className="flex items-center gap-2">
         <Shield size={14} className="text-blue-600" />
         <h2 className="text-sm font-semibold text-blue-700">관리자 전용</h2>
       </div>
 
-      <div className="px-4 py-3 bg-white border border-blue-100 rounded-md">
+      <div className="rounded-md border border-blue-100 bg-white px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
             <p className="mb-1 text-xs font-medium text-gray-500">현재 상태</p>
@@ -263,7 +262,7 @@ export default function AdminPanel({
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          className="gap-2 text-blue-700 border-blue-200 hover:bg-blue-100"
+          className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-100"
           onClick={() =>
             window.open(`/admin/program/${programId}/judging`, "_blank")
           }
@@ -273,7 +272,7 @@ export default function AdminPanel({
         </Button>
         <Button
           variant="outline"
-          className="gap-2 text-blue-700 border-blue-200 hover:bg-blue-100"
+          className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-100"
           onClick={() => window.open(`/admin/${judgingRoundId}`, "_blank")}
         >
           <SquareArrowOutUpRight size={14} />
@@ -281,7 +280,7 @@ export default function AdminPanel({
         </Button>
         <LoadingButton
           variant="outline"
-          className="gap-2 text-blue-700 border-blue-200 hover:bg-blue-100"
+          className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-100"
           loading={isDownloading}
           onClick={handleBulkDownload}
         >
@@ -290,7 +289,7 @@ export default function AdminPanel({
         </LoadingButton>
         <LoadingButton
           variant="outline"
-          className="gap-2 text-blue-700 border-blue-200 hover:bg-blue-100"
+          className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-100"
           loading={isEmailSending}
           disabled={status !== "IN_PROGRESS"}
           onClick={handleEmailDialogOpen}

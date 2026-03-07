@@ -26,7 +26,7 @@ export function JudgingCard({ judging, onClick }: JudgingCardProps) {
             </p>
             <h3
               title={judging.name}
-              className="mt-2 text-lg font-semibold line-clamp-1 text-neutral-950"
+              className="mt-2 line-clamp-1 text-lg font-semibold text-neutral-950"
             >
               {judging.name}
             </h3>
@@ -36,17 +36,17 @@ export function JudgingCard({ judging, onClick }: JudgingCardProps) {
       </div>
 
       <div className="p-5">
-        <p className="text-sm leading-6 line-clamp-2 text-neutral-600">
+        <p className="line-clamp-2 text-sm leading-6 text-neutral-600">
           {judging.program.description?.trim() || "프로그램 설명이 없습니다."}
         </p>
 
-        <div className="grid gap-2 p-3 mt-4 text-sm rounded-xl bg-neutral-50 text-neutral-600 sm:grid-cols-2">
+        <div className="mt-4 grid gap-2 rounded-xl bg-neutral-50 p-3 text-sm text-neutral-600 sm:grid-cols-2">
           <span className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-neutral-400" />
+            <Building2 className="h-4 w-4 text-neutral-400" />
             참여 기업 {judging.companies.length}개
           </span>
           <span className="flex items-center gap-2 sm:col-span-2">
-            <Calendar className="w-4 h-4 shrink-0 text-neutral-400" />
+            <Calendar className="h-4 w-4 shrink-0 text-neutral-400" />
             {startDate} ~ {endDate}
           </span>
         </div>

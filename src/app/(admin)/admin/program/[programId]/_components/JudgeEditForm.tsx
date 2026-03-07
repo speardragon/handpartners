@@ -151,7 +151,7 @@ function SummaryCard({
         tone === "default" && "border-neutral-200 bg-white text-neutral-950"
       )}
     >
-      <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-500">
+      <p className="text-xs font-medium tracking-[0.18em] text-neutral-500 uppercase">
         {label}
       </p>
       <p className="mt-2 text-2xl font-semibold">{value}</p>
@@ -312,7 +312,7 @@ function SortableCompanyItem({
 
       <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
         <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-neutral-500">
+          <p className="text-xs font-medium tracking-[0.16em] text-neutral-500 uppercase">
             발표자료
           </p>
           <p className="mt-2 truncate text-sm font-medium text-neutral-900">
@@ -341,7 +341,7 @@ function SortableCompanyItem({
         </div>
 
         <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-neutral-500">
+          <p className="text-xs font-medium tracking-[0.16em] text-neutral-500 uppercase">
             그룹명
           </p>
           <Input
@@ -631,7 +631,7 @@ export default function JudgeEditForm({
         <div className="flex flex-col gap-4 border-b border-neutral-200 pb-5">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-[0.22em] text-neutral-400">
+              <p className="text-xs font-medium tracking-[0.22em] text-neutral-400 uppercase">
                 Judging Workspace
               </p>
               <div>
@@ -1062,7 +1062,7 @@ export default function JudgeEditForm({
                       </Badge>
                     </div>
                     <div className="mt-4">
-                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-neutral-500">
+                      <p className="text-xs font-medium tracking-[0.16em] text-neutral-500 uppercase">
                         그룹명
                       </p>
                       <Input

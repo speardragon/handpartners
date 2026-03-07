@@ -28,13 +28,10 @@ export function JudgingInvitationEmail({
       <Body style={body}>
         <Container style={container}>
           <Text style={eyebrow}>심사 안내</Text>
-          <Text style={heading}>
-            {judgeName} 심사위원님, 안녕하세요.
-          </Text>
+          <Text style={heading}>{judgeName} 심사위원님, 안녕하세요.</Text>
           <Text style={paragraph}>
-            <strong>{programName}</strong>의{" "}
-            <strong>{judgingRoundName}</strong> 심사에 참여해 주셔서
-            감사합니다.
+            <strong>{programName}</strong>의 <strong>{judgingRoundName}</strong>{" "}
+            심사에 참여해 주셔서 감사합니다.
           </Text>
           <Text style={paragraph}>
             아래 버튼을 클릭하시면 심사 페이지로 이동합니다.
@@ -49,8 +46,8 @@ export function JudgingInvitationEmail({
           <Hr style={hr} />
 
           <Text style={footer}>
-            본 메일은 발신 전용입니다. 문의 사항은 프로그램 담당자에게
-            연락해 주시기 바랍니다.
+            본 메일은 발신 전용입니다. 문의 사항은 프로그램 담당자에게 연락해
+            주시기 바랍니다.
           </Text>
         </Container>
       </Body>

@@ -440,15 +440,14 @@ export async function getAllJudgingWorkspaces(
   // Step 4: 심사 상태 판별 및 결과 매핑
   const result: JudgingWorkspaceWithStatus[] = typedJudgings.map((judging) => {
     const status: "PENDING" | "IN_PROGRESS" | "COMPLETED" =
-      (judging.status as "PENDING" | "IN_PROGRESS" | "COMPLETED") ??
-      "PENDING";
+      (judging.status as "PENDING" | "IN_PROGRESS" | "COMPLETED") ?? "PENDING";
 
     const judgingStatusLabel =
       status === "IN_PROGRESS"
         ? "진행 중"
         : status === "COMPLETED"
           ? "종료"
-      : "진행 전";
+          : "진행 전";
 
     return {
       id: judging.id,
@@ -574,18 +573,18 @@ export async function getJudgingWorkspaces(): Promise<JudgingWorkspace[]> {
     companies: JudgingCompany[];
     judging_round_user: { user_id: string; group_name: string | null }[];
   };
-  const typedJudgings = ((judgingRows ?? []) as unknown as JudgingItem[]).filter(
-    (judging) => {
-      const startDate = judging.program?.start_date;
-      const endDate = judging.program?.end_date;
+  const typedJudgings = (
+    (judgingRows ?? []) as unknown as JudgingItem[]
+  ).filter((judging) => {
+    const startDate = judging.program?.start_date;
+    const endDate = judging.program?.end_date;
 
-      if (!startDate || !endDate) {
-        return false;
-      }
-
-      return startDate <= nowKstDateString && endDate >= nowKstDateString;
+    if (!startDate || !endDate) {
+      return false;
     }
-  );
+
+    return startDate <= nowKstDateString && endDate >= nowKstDateString;
+  });
 
   typedJudgings.forEach((judging) => {
     const userGroupName = judging.judging_round_user?.[0]?.group_name;

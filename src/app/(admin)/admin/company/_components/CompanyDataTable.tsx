@@ -78,7 +78,7 @@ export function CompanyDataTable<TData, TValue>({
 
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400" />
           <Input
             type="text"
             placeholder="기업명으로 검색..."
@@ -113,7 +113,7 @@ export function CompanyDataTable<TData, TValue>({
                   return (
                     <TableHead
                       className={cn(
-                        "whitespace-nowrap px-3 py-2.5 text-xs font-semibold text-neutral-600 sm:px-4",
+                        "px-3 py-2.5 text-xs font-semibold whitespace-nowrap text-neutral-600 sm:px-4",
                         meta?.className
                       )}
                       key={header.id}

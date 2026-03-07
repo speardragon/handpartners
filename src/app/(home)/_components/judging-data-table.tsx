@@ -35,7 +35,7 @@ export function JudgingDataTable<TData, TValue>({
   });
 
   return (
-    <div className="rounded-md border overflow-y-auto">
+    <div className="overflow-y-auto rounded-md border">
       <Table>
         <TableHeader className="sticky top-0 bg-gray-100">
           {table.getHeaderGroups().map((headerGroup) => (

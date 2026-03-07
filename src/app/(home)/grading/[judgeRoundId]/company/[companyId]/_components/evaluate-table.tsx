@@ -180,7 +180,7 @@ export default function EvaluateTable({
   return (
     <div className="w-full space-y-4">
       <section className="rounded-lg border bg-white px-4 py-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
           평가 대상 기업
         </p>
         <h2 className="mt-1 text-lg font-semibold text-gray-900">
@@ -225,7 +225,7 @@ export default function EvaluateTable({
                   <div className="text-sm font-medium text-gray-900">
                     {item.item_name}
                   </div>
-                  <div className="mt-0.5 text-xs text-muted-foreground">
+                  <div className="text-muted-foreground mt-0.5 text-xs">
                     최대 {item.points}점
                   </div>
                 </td>
@@ -238,7 +238,7 @@ export default function EvaluateTable({
                     max={item.points}
                     onChange={(e) => handleInputChange(item.id, e.target.value)}
                     disabled={!canEdit}
-                    className="w-16 rounded-md border px-2 py-1.5 text-center text-sm font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                    className="w-16 rounded-md border px-2 py-1.5 text-center text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                   />
                 </td>
               </tr>
@@ -254,7 +254,7 @@ export default function EvaluateTable({
                 <span className="text-lg font-bold text-blue-600">
                   {totalScore}
                 </span>
-                <span className="ml-1 text-sm text-muted-foreground">
+                <span className="text-muted-foreground ml-1 text-sm">
                   / {maxScore}
                 </span>
               </td>
@@ -277,7 +277,7 @@ export default function EvaluateTable({
 
       <div className="flex items-center justify-center gap-3 pt-2">
         {isAutoSaving && (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <span className="text-muted-foreground flex items-center gap-1 text-xs">
             <Loader2 size={14} className="animate-spin" />
             임시 저장 중...
           </span>

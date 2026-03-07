@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import Login from "./_components/Login";
 
 export default function Page() {
-  return <Login />;
+  return (
+    <Suspense>
+      <Login />
+    </Suspense>
+  );
 }

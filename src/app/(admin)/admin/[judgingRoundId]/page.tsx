@@ -107,7 +107,7 @@ export default function JudgingRoundDetailPage() {
       <Button
         variant="ghost"
         size="sm"
-        className="-ml-2 mb-4 text-neutral-500 hover:text-neutral-900"
+        className="mb-4 -ml-2 text-neutral-500 hover:text-neutral-900"
         onClick={() => {
           if (window.history.length > 1) {
             router.back();
@@ -141,7 +141,7 @@ export default function JudgingRoundDetailPage() {
 
       {/* 평가 기준 */}
       <section className="mb-8">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-400">
+        <h2 className="mb-3 text-sm font-semibold tracking-wider text-neutral-400 uppercase">
           평가 기준
         </h2>
         {criteriaList.length === 0 ? (
@@ -171,7 +171,7 @@ export default function JudgingRoundDetailPage() {
 
       {/* 심사 결과 요약 테이블 */}
       <section className="mb-8">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-neutral-400">
+        <h2 className="mb-4 text-sm font-semibold tracking-wider text-neutral-400 uppercase">
           심사 결과 요약
         </h2>
         <div className="overflow-hidden rounded-lg border border-neutral-200">
@@ -252,10 +252,10 @@ export default function JudgingRoundDetailPage() {
                           </TableCell>
                         );
                       })}
-                      <TableCell className="text-center font-semibold tabular-nums text-neutral-900">
+                      <TableCell className="text-center font-semibold text-neutral-900 tabular-nums">
                         {company.totalScore}
                       </TableCell>
-                      <TableCell className="text-center tabular-nums text-neutral-500">
+                      <TableCell className="text-center text-neutral-500 tabular-nums">
                         {avg}
                       </TableCell>
                     </TableRow>
@@ -271,7 +271,7 @@ export default function JudgingRoundDetailPage() {
 
       {/* 참여 기업 상세 평가 */}
       <section>
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-neutral-400">
+        <h2 className="mb-4 text-sm font-semibold tracking-wider text-neutral-400 uppercase">
           기업별 상세 평가
         </h2>
         {companies.length === 0 ? (
@@ -303,7 +303,7 @@ export default function JudgingRoundDetailPage() {
                     </div>
                   </AccordionTrigger>
 
-                  <AccordionContent className="px-0 pb-0 pt-0">
+                  <AccordionContent className="px-0 pt-0 pb-0">
                     {company.description && (
                       <p className="px-5 py-6 text-sm text-neutral-500">
                         {company.description}
@@ -346,7 +346,7 @@ export default function JudgingRoundDetailPage() {
                                   <td className="px-5 py-2.5 text-neutral-700">
                                     {criterion.item_name}
                                   </td>
-                                  <td className="px-3 py-2.5 text-center text-xs tabular-nums text-neutral-400">
+                                  <td className="px-3 py-2.5 text-center text-xs text-neutral-400 tabular-nums">
                                     {criterion.points}
                                   </td>
                                   {company.evaluations.map((evalItem, i) => {
@@ -380,7 +380,7 @@ export default function JudgingRoundDetailPage() {
                                 <td className="px-5 py-2.5 text-xs font-semibold text-neutral-600">
                                   합계
                                 </td>
-                                <td className="px-3 py-2.5 text-center text-xs tabular-nums text-neutral-400">
+                                <td className="px-3 py-2.5 text-center text-xs text-neutral-400 tabular-nums">
                                   {totalMaxScore}
                                 </td>
                                 {company.evaluations.map((evalItem, i) => {
@@ -393,7 +393,7 @@ export default function JudgingRoundDetailPage() {
                                       key={i}
                                       className="px-4 py-2.5 text-center"
                                     >
-                                      <span className="font-bold tabular-nums text-neutral-900">
+                                      <span className="font-bold text-neutral-900 tabular-nums">
                                         {total}
                                       </span>
                                     </td>

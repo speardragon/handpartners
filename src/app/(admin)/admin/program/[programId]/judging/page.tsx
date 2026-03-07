@@ -43,10 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  sendJudgingEmails,
-  getJudgeEmailCount,
-} from "@/actions/email-action";
+import { sendJudgingEmails, getJudgeEmailCount } from "@/actions/email-action";
 
 type Props = {
   params: Promise<{
@@ -254,7 +251,9 @@ export default function Page({ params }: Props) {
     try {
       const result = await sendJudgingEmails(judgingRound.id);
       if (result.failedCount === 0) {
-        toast.success(`${result.sentCount}명의 심사자에게 이메일을 발송했습니다.`);
+        toast.success(
+          `${result.sentCount}명의 심사자에게 이메일을 발송했습니다.`
+        );
       } else {
         toast.warning(
           `${result.sentCount}명 발송 성공, ${result.failedCount}명 발송 실패`
@@ -288,7 +287,7 @@ export default function Page({ params }: Props) {
             <div className="p-6 sm:p-7">
               <div className="space-y-3">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">
+                  <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">
                     Program Judging
                   </p>
                   <h1 className="mt-2 text-2xl font-semibold text-neutral-950">
@@ -320,13 +319,13 @@ export default function Page({ params }: Props) {
               </div>
             </div>
 
-            <div className="border-t border-neutral-200 bg-neutral-50/80 p-6 sm:p-7 xl:border-l xl:border-t-0">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-400">
+            <div className="border-t border-neutral-200 bg-neutral-50/80 p-6 sm:p-7 xl:border-t-0 xl:border-l">
+              <p className="text-xs font-medium tracking-[0.18em] text-neutral-400 uppercase">
                 관리 요약
               </p>
               <div className="mt-4 space-y-3">
                 <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                     심사 상태
                   </p>
                   <div className="mt-2">
@@ -337,7 +336,7 @@ export default function Page({ params }: Props) {
                   </div>
                 </div>
                 <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                     운영 기간
                   </p>
                   <p className="mt-2 flex items-center gap-2 text-sm font-medium text-neutral-900">
@@ -347,7 +346,7 @@ export default function Page({ params }: Props) {
                   </p>
                 </div>
                 <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                     심사 ID
                   </p>
                   <p className="mt-2 text-sm font-medium text-neutral-900">
@@ -360,7 +359,7 @@ export default function Page({ params }: Props) {
 
           <div className="grid gap-3 border-t border-neutral-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6 sm:grid-cols-3 sm:p-7">
             <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+              <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                 운영 기간
               </p>
               <p className="mt-2 text-sm font-medium text-neutral-900">
@@ -369,7 +368,7 @@ export default function Page({ params }: Props) {
               </p>
             </div>
             <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+              <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                 참여 기업
               </p>
               <p className="mt-2 text-sm font-medium text-neutral-900">
@@ -377,7 +376,7 @@ export default function Page({ params }: Props) {
               </p>
             </div>
             <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+              <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                 심사자
               </p>
               <p className="mt-2 text-sm font-medium text-neutral-900">
@@ -390,7 +389,7 @@ export default function Page({ params }: Props) {
         <section className="self-start rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
           <div className="flex flex-col gap-6">
             <div>
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">
+              <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">
                 Actions
               </p>
               <h2 className="mt-2 text-lg font-semibold text-neutral-950">
@@ -404,7 +403,7 @@ export default function Page({ params }: Props) {
 
             <div className="space-y-2">
               <div className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                <p className="text-xs font-medium tracking-wide text-neutral-400 uppercase">
                   상태 변경
                 </p>
                 {judgingRound.status === "PENDING" && (
@@ -454,7 +453,7 @@ export default function Page({ params }: Props) {
               </div>
 
               <div className="space-y-2 border-t border-neutral-100 pt-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                <p className="text-xs font-medium tracking-wide text-neutral-400 uppercase">
                   이메일
                 </p>
                 <LoadingButton
@@ -470,7 +469,7 @@ export default function Page({ params }: Props) {
               </div>
 
               <div className="space-y-2 border-t border-neutral-100 pt-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                <p className="text-xs font-medium tracking-wide text-neutral-400 uppercase">
                   내보내기
                 </p>
                 <LoadingButton
