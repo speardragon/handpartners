@@ -5,7 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ProgramCompanyRow =
   Database["public"]["Tables"]["program_company"]["Row"] & {
-    company: { name: string } | null;
+    company: {
+      name: string;
+      representative_name: string;
+      description: string | null;
+    } | null;
   };
 type ProgramRowUpdate = Database["public"]["Tables"]["program"]["Update"];
 
@@ -28,7 +32,7 @@ export async function getProgramCompanies(
     .select(
       `
       *,
-      company:company_id(name)
+      company:company_id(name, representative_name, description)
       `
     )
     .eq("program_id", programId);

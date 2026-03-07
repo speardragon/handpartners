@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import {
   getPrograms,
   getProgramById,
-  getScreenings,
+  getJudgingWorkspaces,
 } from "@/actions/program-action";
 import { getProgramCompanies } from "@/actions/program-company-action";
 
@@ -23,10 +23,10 @@ export const programQueries = {
       queryKey: [...programQueries.all(), programId, "detail"] as const,
       queryFn: () => getProgramById(programId),
     }),
-  screenings: () =>
+  judgings: () =>
     queryOptions({
-      queryKey: [...programQueries.all(), "screenings"] as const,
-      queryFn: () => getScreenings(),
+      queryKey: [...programQueries.all(), "judgings"] as const,
+      queryFn: () => getJudgingWorkspaces(),
       staleTime: 0,
     }),
   companies: (programId: number) =>

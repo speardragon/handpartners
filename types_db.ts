@@ -43,7 +43,7 @@ export type Database = {
           id: number;
           judging_round_id: string;
           status: string | null;
-          user_id: string;
+          user_id: string | null;
         };
         Insert: {
           company_id: number;
@@ -54,7 +54,7 @@ export type Database = {
           id?: number;
           judging_round_id: string;
           status?: string | null;
-          user_id: string;
+          user_id?: string | null;
         };
         Update: {
           company_id?: number;
@@ -65,7 +65,7 @@ export type Database = {
           id?: number;
           judging_round_id?: string;
           status?: string | null;
-          user_id?: string;
+          user_id?: string | null;
         };
         Relationships: [
           {
@@ -142,7 +142,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
-          id?: string;
+          id: string;
           program_id: number;
           status?: Database["public"]["Enums"]["judging_round_status"];
         };
@@ -156,7 +156,7 @@ export type Database = {
           {
             foreignKeyName: "judging_round_program_id_fkey";
             columns: ["program_id"];
-            isOneToOne: false;
+            isOneToOne: true;
             referencedRelation: "program";
             referencedColumns: ["id"];
           },
@@ -168,39 +168,39 @@ export type Database = {
           company_id: number;
           created_at: string;
           feedback: string | null;
+          group_name: string | null;
           id: number;
           judge_num: number | null;
           judging_round_id: string;
           original_filename: string | null;
           pdf_path: string | null;
           submitted_at: string | null;
-          group_name: string | null;
         };
         Insert: {
           category?: string | null;
           company_id: number;
           created_at?: string;
           feedback?: string | null;
+          group_name?: string | null;
           id?: number;
           judge_num?: number | null;
           judging_round_id: string;
           original_filename?: string | null;
           pdf_path?: string | null;
           submitted_at?: string | null;
-          group_name?: string | null;
         };
         Update: {
           category?: string | null;
           company_id?: number;
           created_at?: string;
           feedback?: string | null;
+          group_name?: string | null;
           id?: number;
           judge_num?: number | null;
           judging_round_id?: string;
           original_filename?: string | null;
           pdf_path?: string | null;
           submitted_at?: string | null;
-          group_name?: string | null;
         };
         Relationships: [
           {
@@ -222,24 +222,24 @@ export type Database = {
       judging_round_user: {
         Row: {
           created_at: string;
+          group_name: string | null;
           id: number;
           judging_round_id: string;
           user_id: string;
-          group_name: string | null;
         };
         Insert: {
           created_at?: string;
+          group_name?: string | null;
           id?: number;
           judging_round_id: string;
           user_id: string;
-          group_name?: string | null;
         };
         Update: {
           created_at?: string;
+          group_name?: string | null;
           id?: number;
           judging_round_id?: string;
           user_id?: string;
-          group_name?: string | null;
         };
         Relationships: [
           {
@@ -251,6 +251,219 @@ export type Database = {
           },
           {
             foreignKeyName: "judging_round_user_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "user";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      mentoring: {
+        Row: {
+          created_at: string;
+          id: string;
+          program_id: number;
+          status: Database["public"]["Enums"]["mentoring_status"];
+        };
+        Insert: {
+          created_at?: string;
+          id: string;
+          program_id: number;
+          status?: Database["public"]["Enums"]["mentoring_status"];
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          program_id?: number;
+          status?: Database["public"]["Enums"]["mentoring_status"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mentoring_program_id_fkey";
+            columns: ["program_id"];
+            isOneToOne: true;
+            referencedRelation: "program";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      mentoring_company: {
+        Row: {
+          claimed_at: string | null;
+          company_id: number;
+          created_at: string;
+          id: number;
+          mentor_id: string | null;
+          mentoring_id: string;
+        };
+        Insert: {
+          claimed_at?: string | null;
+          company_id: number;
+          created_at?: string;
+          id?: number;
+          mentor_id?: string | null;
+          mentoring_id: string;
+        };
+        Update: {
+          claimed_at?: string | null;
+          company_id?: number;
+          created_at?: string;
+          id?: number;
+          mentor_id?: string | null;
+          mentoring_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mentoring_company_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "company";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mentoring_company_mentor_id_fkey";
+            columns: ["mentor_id"];
+            isOneToOne: false;
+            referencedRelation: "user";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mentoring_company_mentoring_id_fkey";
+            columns: ["mentoring_id"];
+            isOneToOne: false;
+            referencedRelation: "mentoring";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      mentoring_session: {
+        Row: {
+          company_id: number;
+          content: string | null;
+          created_at: string;
+          id: number;
+          mentor_id: string | null;
+          mentored_at: string;
+          mentoring_id: string;
+          place: string | null;
+          result: string | null;
+          session_no: number;
+          updated_at: string;
+        };
+        Insert: {
+          company_id: number;
+          content?: string | null;
+          created_at?: string;
+          id?: number;
+          mentor_id?: string | null;
+          mentored_at: string;
+          mentoring_id: string;
+          place?: string | null;
+          result?: string | null;
+          session_no: number;
+          updated_at?: string;
+        };
+        Update: {
+          company_id?: number;
+          content?: string | null;
+          created_at?: string;
+          id?: number;
+          mentor_id?: string | null;
+          mentored_at?: string;
+          mentoring_id?: string;
+          place?: string | null;
+          result?: string | null;
+          session_no?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mentoring_session_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "company";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mentoring_session_mentor_id_fkey";
+            columns: ["mentor_id"];
+            isOneToOne: false;
+            referencedRelation: "user";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mentoring_session_mentoring_id_fkey";
+            columns: ["mentoring_id"];
+            isOneToOne: false;
+            referencedRelation: "mentoring";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      mentoring_session_photo: {
+        Row: {
+          created_at: string;
+          id: number;
+          mentoring_session_id: number;
+          original_filename: string | null;
+          photo_path: string;
+          sort_order: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: number;
+          mentoring_session_id: number;
+          original_filename?: string | null;
+          photo_path: string;
+          sort_order?: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: number;
+          mentoring_session_id?: number;
+          original_filename?: string | null;
+          photo_path?: string;
+          sort_order?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mentoring_session_photo_mentoring_session_id_fkey";
+            columns: ["mentoring_session_id"];
+            isOneToOne: false;
+            referencedRelation: "mentoring_session";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      mentoring_user: {
+        Row: {
+          created_at: string;
+          id: number;
+          mentoring_id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: number;
+          mentoring_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: number;
+          mentoring_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mentoring_user_mentoring_id_fkey";
+            columns: ["mentoring_id"];
+            isOneToOne: false;
+            referencedRelation: "mentoring";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mentoring_user_user_id_fkey";
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "user";
@@ -369,18 +582,17 @@ export type Database = {
     };
     Functions: {
       get_unique_evaluations: {
-        Args: {
-          judging_round: string;
-        };
+        Args: { judging_round: string };
         Returns: {
-          judging_round_id: string;
           company_id: number;
+          judging_round_id: string;
           status: string;
         }[];
       };
     };
     Enums: {
       judging_round_status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+      mentoring_status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -388,27 +600,36 @@ export type Database = {
   };
 };
 
-type PublicSchema = Database[Extract<keyof Database, "public">];
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<
+  keyof Database,
+  "public"
+>];
 
 export type Tables<
-  PublicTableNameOrOptions extends
-    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
-    | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-        Database[PublicTableNameOrOptions["schema"]]["Views"])
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R;
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
-        PublicSchema["Views"])
-    ? (PublicSchema["Tables"] &
-        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R;
       }
       ? R
@@ -416,20 +637,24 @@ export type Tables<
     : never;
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
-    | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I;
     }
     ? I
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I;
       }
       ? I
@@ -437,20 +662,24 @@ export type TablesInsert<
     : never;
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
-    | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U;
     }
     ? U
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U;
       }
       ? U
@@ -458,29 +687,44 @@ export type TablesUpdate<
     : never;
 
 export type Enums<
-  PublicEnumNameOrOptions extends
-    | keyof PublicSchema["Enums"]
-    | { schema: keyof Database },
-  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = PublicEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
-    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never;
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof PublicSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
-    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never;
+
+export const Constants = {
+  public: {
+    Enums: {
+      judging_round_status: ["PENDING", "IN_PROGRESS", "COMPLETED"],
+      mentoring_status: ["PENDING", "IN_PROGRESS", "COMPLETED"],
+    },
+  },
+} as const;

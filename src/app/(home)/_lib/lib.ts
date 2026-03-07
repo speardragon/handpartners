@@ -1,9 +1,10 @@
 import { Company } from "@/actions/program-action";
 import type { JudgingRoundStatus } from "@/actions/judging_round-action";
+import type { MentoringStatus } from "@/actions/mentoring-action";
 import { Badge } from "@/components/ui/badge";
 import { createElement } from "react";
 
-export function getStatusBadge(status: JudgingRoundStatus) {
+export function getStatusBadge(status: JudgingRoundStatus | MentoringStatus) {
   switch (status) {
     case "IN_PROGRESS":
       return createElement(

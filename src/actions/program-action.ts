@@ -3,6 +3,7 @@
 import { Database } from "types_db";
 import { createClient } from "@/lib/supabase/server";
 import { generateJudgingRoundId } from "@/lib/utils/judging-round-id";
+import { generateMentoringId } from "@/lib/utils/mentoring-id";
 
 export type ProgramRow = Database["public"]["Tables"]["program"]["Row"];
 export type ProgramRowInsert =
@@ -10,7 +11,7 @@ export type ProgramRowInsert =
 export type ProgramRowUpdate =
   Database["public"]["Tables"]["program"]["Update"];
 // 인터페이스 정의
-export interface Screening {
+export interface JudgingWorkspace {
   id: string; // 심사 ID(judging_round)
   name: string; // 심사 이름(프로그램 이름을 그대로 사용)
   start_date: string | null;
@@ -126,17 +127,27 @@ export async function createProgram(
 
   const newProgramId = insertedData!.id;
 
-  const { error: judgingRoundError } = await supabase
-    .from("judging_round")
-    .insert({
+  const [judgingRoundResult, mentoringResult] = await Promise.all([
+    supabase.from("judging_round").insert({
       id: generateJudgingRoundId(),
       program_id: newProgramId,
       created_at: new Date().toISOString(),
       status: "PENDING",
-    });
+    }),
+    supabase.from("mentoring").insert({
+      id: generateMentoringId(),
+      program_id: newProgramId,
+      created_at: new Date().toISOString(),
+      status: "PENDING",
+    }),
+  ]);
 
-  if (judgingRoundError) {
-    handleError(judgingRoundError);
+  if (judgingRoundResult.error) {
+    handleError(judgingRoundResult.error);
+  }
+
+  if (mentoringResult.error) {
+    handleError(mentoringResult.error);
   }
 
   // 2) program_company 테이블에 (program_id, company_id) 쌍으로 레코드 생성
@@ -190,13 +201,13 @@ export async function deleteProgram(programId: number) {
   return data;
 }
 
-export interface ScreeningWithStatus extends Screening {
-  screeningStatus: "진행 전" | "진행 중" | "종료";
+export interface JudgingWorkspaceWithStatus extends JudgingWorkspace {
+  judgingStatusLabel: "진행 전" | "진행 중" | "종료";
   status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
 }
 
-export interface AllScreeningsResult {
-  result: ScreeningWithStatus[];
+export interface AllJudgingWorkspacesResult {
+  result: JudgingWorkspaceWithStatus[];
   currentPage: number;
   totalPages: number;
   totalElements: number;
@@ -225,13 +236,13 @@ export async function checkParticipation(
   return !!data;
 }
 
-export async function getAllScreenings(
+export async function getAllJudgingWorkspaces(
   page: number,
   size: number,
   isAdmin: boolean,
   judgingRoundId?: string,
   isParticipating?: boolean
-): Promise<AllScreeningsResult> {
+): Promise<AllJudgingWorkspacesResult> {
   const supabase = await createClient();
 
   const {
@@ -402,12 +413,13 @@ export async function getAllScreenings(
   }
 
   // Step 4: 심사 상태 판별 및 결과 매핑
-  const result: ScreeningWithStatus[] = typedScreenings.map((screening) => {
+  const result: JudgingWorkspaceWithStatus[] = typedScreenings.map(
+    (screening) => {
     const status: "PENDING" | "IN_PROGRESS" | "COMPLETED" =
       (screening.status as "PENDING" | "IN_PROGRESS" | "COMPLETED") ??
       "PENDING";
 
-    const screeningStatus =
+    const judgingStatusLabel =
       status === "IN_PROGRESS"
         ? "진행 중"
         : status === "COMPLETED"
@@ -419,7 +431,7 @@ export async function getAllScreenings(
       name: screening.program?.name ?? "",
       start_date: screening.program?.start_date ?? null,
       end_date: screening.program?.end_date ?? null,
-      screeningStatus,
+      judgingStatusLabel,
       status,
       program: {
         id: screening.program!.id,
@@ -449,7 +461,8 @@ export async function getAllScreenings(
           };
         }),
     };
-  });
+    }
+  );
 
   result.sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""));
 
@@ -468,7 +481,7 @@ export async function getAllScreenings(
   };
 }
 
-export async function getScreenings(): Promise<Screening[]> {
+export async function getJudgingWorkspaces(): Promise<JudgingWorkspace[]> {
   const supabase = await createClient();
 
   const {
@@ -618,7 +631,7 @@ export async function getScreenings(): Promise<Screening[]> {
   });
 
   // Step 5: Map screenings data with evaluation status and scores
-  const result: Screening[] = typedScreenings.map((screening) => ({
+  const result: JudgingWorkspace[] = typedScreenings.map((screening) => ({
     id: screening.id,
     name: screening.program?.name ?? "",
     start_date: screening.program?.start_date ?? null,
@@ -656,3 +669,10 @@ export async function getScreenings(): Promise<Screening[]> {
     (b.start_date ?? "").localeCompare(a.start_date ?? "")
   );
 }
+
+export type Screening = JudgingWorkspace;
+export type ScreeningWithStatus = JudgingWorkspaceWithStatus;
+export type AllScreeningsResult = AllJudgingWorkspacesResult;
+
+export const getAllScreenings = getAllJudgingWorkspaces;
+export const getScreenings = getJudgingWorkspaces;

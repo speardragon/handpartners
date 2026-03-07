@@ -2,12 +2,13 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { screeningQueries } from "@/queries";
+import { judgingQueries } from "@/queries";
 import { useAuthStore } from "@/store/useAuthStore";
 import { USER_ROLES } from "@/constants/auth";
-import { ScreeningWithStatus } from "@/actions/program-action";
+import { JudgingWorkspaceWithStatus } from "@/actions/program-action";
 import ProgramSkeleton from "./_components/ProgramSkeleton";
-import { ScreeningCard } from "./_components/screening-card";
+import { JudgingCard } from "./_components/screening-card";
+import WorkspaceTabs from "./_components/WorkspaceTabs";
 import { useRouter } from "next/navigation";
 import {
   CalendarX2,
@@ -70,13 +71,13 @@ export default function Home() {
   );
 
   const { data, isLoading } = useQuery({
-    ...screeningQueries.list(page, PAGE_SIZE, isAdmin ?? false, judgingRoundId),
+    ...judgingQueries.list(page, PAGE_SIZE, isAdmin ?? false, judgingRoundId),
     enabled: isAdmin !== undefined,
   });
 
   const handleRowClick = useCallback(
-    (screening: ScreeningWithStatus) => {
-      router.push(`/screening/${screening.id}`);
+    (judging: JudgingWorkspaceWithStatus) => {
+      router.push(`/judging/${judging.id}`);
     },
     [router]
   );
@@ -112,22 +113,14 @@ export default function Home() {
     return <ProgramSkeleton />;
   }
 
-  if (data.result.length === 0 && !judgingRoundId) {
-    return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-2">
-        <CalendarX2 size={48} />
-        <div className="text-lg font-semibold text-gray-700">
-          {isAdmin ? "등록된 심사가 없습니다." : "참여 중인 심사가 없습니다."}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <main className="flex w-full flex-col items-center">
       <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4">
-        <div className="w-full text-center text-2xl font-bold">
-          {isAdmin ? "전체 심사 목록" : "나의 심사 목록"}
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-full text-center text-2xl font-bold">
+            {isAdmin ? "전체 심사 목록" : "나의 심사 목록"}
+          </div>
+          <WorkspaceTabs current="judging" />
         </div>
 
         {/* 요약 통계 */}
@@ -199,13 +192,22 @@ export default function Home() {
         {/* 카드 그리드 */}
         {data.result.length > 0 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {data.result.map((screening) => (
-              <ScreeningCard
-                key={screening.id}
-                screening={screening}
+            {data.result.map((judging) => (
+              <JudgingCard
+                key={judging.id}
+                judging={judging}
                 onClick={handleRowClick}
               />
             ))}
+          </div>
+        )}
+
+        {data.result.length === 0 && !judgingRoundId && (
+          <div className="flex w-full flex-col items-center justify-center gap-2 py-16 text-gray-500">
+            <CalendarX2 size={48} />
+            <div className="text-lg font-semibold text-gray-700">
+              {isAdmin ? "등록된 심사가 없습니다." : "참여 중인 심사가 없습니다."}
+            </div>
           </div>
         )}
 
