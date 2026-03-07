@@ -6,10 +6,11 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint .",
+    "lint": "eslint src --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "type-check": "tsc --noEmit",
-    "generate-types": "npx supabase gen types typescript --project-id uuzolxhkftufatffeeec --schema public > types_db.ts"
+    "generate-types": "npx supabase gen types typescript --project-id uuzolxhkftufatffeeec --schema public > types_db.ts",
+    "generate-types:local": "npx supabase gen types typescript --local --schema public > types_db.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",
@@ -34,12 +35,14 @@
     "@supabase-cache-helpers/postgrest-react-query": "^1.11.4",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.12",
+    "@tailwindcss/postcss": "^4.2.1",
     "@tanstack/react-query": "^5.56.2",
     "@tanstack/react-table": "^8.20.5",
     "@wojtekmaj/react-hooks": "^1.21.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "core-js": "^3.39.0",
+    "embla-carousel-react": "^8.6.0",
     "file-saver": "^2.0.5",
     "jszip": "^3.10.1",
     "lodash": "^4.17.21",
@@ -61,6 +64,7 @@
     "zustand": "^5.0.1"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
     "@tailwindcss/typography": "^0.5.15",
     "@tanstack/react-query-devtools": "^5.59.0",
     "@types/file-saver": "^2.0.7",
@@ -73,14 +77,14 @@
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",
     "autoprefixer": "^10.4.20",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.5",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "16.1.6",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "postcss": "^8",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "tailwindcss": "^3.4.1",
+    "tailwindcss": "^4.2.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

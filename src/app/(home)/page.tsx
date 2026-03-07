@@ -114,10 +114,10 @@ export default function Home() {
   }
 
   return (
-    <main className="flex w-full flex-col items-center">
+    <main className="flex flex-col items-center w-full">
       <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-full text-center text-2xl font-bold">
+          <div className="w-full text-2xl font-bold text-center">
             {isAdmin ? "전체 심사 목록" : "나의 심사 목록"}
           </div>
           <WorkspaceTabs current="judging" />
@@ -126,14 +126,14 @@ export default function Home() {
         {/* 요약 통계 */}
         {stats && (
           <div className="grid grid-cols-4 gap-3">
-            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
+            <div className="flex items-center gap-2 p-3 bg-white border rounded-lg">
               <ListChecks size={18} className="text-gray-400" />
               <div>
                 <p className="text-xs text-muted-foreground">전체</p>
                 <p className="text-lg font-bold text-gray-900">{stats.total}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
+            <div className="flex items-center gap-2 p-3 bg-white border rounded-lg">
               <Play size={18} className="text-gray-400" />
               <div>
                 <p className="text-xs text-muted-foreground">진행 중</p>
@@ -142,7 +142,7 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
+            <div className="flex items-center gap-2 p-3 bg-white border rounded-lg">
               <CheckCircle2 size={18} className="text-gray-400" />
               <div>
                 <p className="text-xs text-muted-foreground">종료</p>
@@ -151,7 +151,7 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
+            <div className="flex items-center gap-2 p-3 bg-white border rounded-lg">
               <Clock size={18} className="text-gray-400" />
               <div>
                 <p className="text-xs text-muted-foreground">진행 전</p>
@@ -166,7 +166,7 @@ export default function Home() {
         {/* 심사 번호 검색 */}
         <div className="relative">
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            className="absolute text-gray-400 -translate-y-1/2 top-1/2 left-3"
             size={16}
           />
           <Input
@@ -181,7 +181,7 @@ export default function Home() {
         </div>
 
         {data.result.length === 0 && judgingRoundId && (
-          <div className="flex w-full flex-col items-center justify-center gap-2 py-12 text-gray-500">
+          <div className="flex flex-col items-center justify-center w-full gap-2 py-12 text-gray-500">
             <Search size={36} />
             <div className="text-sm">
               심사 번호 {judgingRoundId}에 해당하는 심사를 찾을 수 없습니다.
@@ -203,10 +203,12 @@ export default function Home() {
         )}
 
         {data.result.length === 0 && !judgingRoundId && (
-          <div className="flex w-full flex-col items-center justify-center gap-2 py-16 text-gray-500">
+          <div className="flex flex-col items-center justify-center w-full gap-2 py-16 text-gray-500">
             <CalendarX2 size={48} />
             <div className="text-lg font-semibold text-gray-700">
-              {isAdmin ? "등록된 심사가 없습니다." : "참여 중인 심사가 없습니다."}
+              {isAdmin
+                ? "등록된 심사가 없습니다."
+                : "참여 중인 심사가 없습니다."}
             </div>
           </div>
         )}
