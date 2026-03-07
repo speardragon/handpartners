@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 type LoginRequest = {
@@ -10,6 +10,7 @@ type LoginRequest = {
 
 export function useLoginMutation() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   return useMutation({
@@ -26,7 +27,8 @@ export function useLoginMutation() {
       }
     },
     onSuccess: () => {
-      window.location.href = "/";
+      const redirect = searchParams.get("redirect");
+      window.location.href = redirect ?? "/";
     },
     onError: (error: Error) => {
       if (error.message === "invalid_credentials") {
