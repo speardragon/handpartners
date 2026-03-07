@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { LoadingButton } from "@/components/ui/loading-button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { judgingRoundQueries } from "@/queries";
 import JudgeCompanySelect from "./JudgeCompanySelect";
 import JudgeUserSelect from "./JudgeUserSelect";
 import JudgeCriteriaSelect from "./JudgeCriteriaSelect";
@@ -373,15 +375,72 @@ export default function JudgeEditForm({
     {}
   );
   const [isBulkDownloading, setIsBulkDownloading] = useState(false);
+  const [isCompanyStateHydrated, setIsCompanyStateHydrated] = useState(false);
+  const [isUserStateHydrated, setIsUserStateHydrated] = useState(false);
+  const [isCriteriaStateHydrated, setIsCriteriaStateHydrated] = useState(false);
 
   const { usersMutation, companiesMutation, criteriaMutation } =
     useJudgeEditMutations(judgingRoundId);
+  const { data: roundCompanies } = useQuery(
+    judgingRoundQueries.companies.byRound(judgingRoundId)
+  );
+  const { data: roundUsers } = useQuery(
+    judgingRoundQueries.users.byRound(judgingRoundId)
+  );
+  const { data: roundCriteria } = useQuery(
+    judgingRoundQueries.criteria.byRound(judgingRoundId)
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
     })
   );
+
+  useEffect(() => {
+    if (isCompanyStateHydrated || !roundCompanies) return;
+
+    setTargetList(
+      roundCompanies.map((item) => ({
+        id: item.company_id,
+        name: item.company?.name || "",
+        pdf_path: item.pdf_path ?? undefined,
+        group_name: item.group_name ?? undefined,
+        judge_num: item.judge_num ?? undefined,
+        original_filename: item.original_filename ?? undefined,
+        submitted_at: item.submitted_at ?? undefined,
+      }))
+    );
+    setIsCompanyStateHydrated(true);
+  }, [isCompanyStateHydrated, roundCompanies]);
+
+  useEffect(() => {
+    if (isUserStateHydrated || !roundUsers) return;
+
+    setTargetUserList(
+      roundUsers.map((item) => ({
+        id: item.user_id,
+        name: item.user?.username || "",
+        affiliation: item.user?.affiliation || "",
+        group_name: item.group_name ?? undefined,
+      }))
+    );
+    setIsUserStateHydrated(true);
+  }, [isUserStateHydrated, roundUsers]);
+
+  useEffect(() => {
+    if (isCriteriaStateHydrated || !roundCriteria) return;
+
+    setTargetCriteriaList(
+      roundCriteria.map((item) => ({
+        id: item.id,
+        item_name: item.item_name,
+        points: item.points,
+        description: item.description ?? null,
+      }))
+    );
+    setIsCriteriaStateHydrated(true);
+  }, [isCriteriaStateHydrated, roundCriteria]);
 
   const companyMissingGroupCount = useMemo(
     () => targetList.filter((company) => !company.group_name?.trim()).length,
@@ -415,14 +474,17 @@ export default function JudgeEditForm({
   );
 
   const handleCompanyListChange = useCallback((newList: SimpleCompany[]) => {
+    setIsCompanyStateHydrated(true);
     setTargetList(newList);
   }, []);
 
   const handleUserListChange = useCallback((newList: SimpleUser[]) => {
+    setIsUserStateHydrated(true);
     setTargetUserList(newList);
   }, []);
 
   const handleCriteriaListChange = useCallback((newList: SimpleCriteria[]) => {
+    setIsCriteriaStateHydrated(true);
     setTargetCriteriaList(newList);
   }, []);
 
