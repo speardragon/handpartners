@@ -622,7 +622,7 @@ export default function JudgeEditForm({
   }, []);
 
   return (
-    <section className="rounded-[28px] border border-neutral-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] shadow-sm">
+    <section className="rounded-7 border border-neutral-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] shadow-sm">
       <Tabs
         value={activeTab}
         onValueChange={(value) => setActiveTab(value as JudgeTab)}

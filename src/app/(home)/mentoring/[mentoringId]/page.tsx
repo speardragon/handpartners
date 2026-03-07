@@ -71,12 +71,12 @@ type EditorPhotoItem =
 function DetailSkeleton() {
   return (
     <main className="flex w-full flex-col items-center">
-      <div className="flex w-full max-w-[1200px] flex-col space-y-4 p-4 pb-10">
+      <div className="flex w-full max-w-300 flex-col space-y-4 p-4 pb-10">
         <Skeleton className="h-8 w-40" />
         <Skeleton className="h-40 rounded-2xl" />
         <div className="grid items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <Skeleton className="h-[720px] rounded-2xl" />
-          <Skeleton className="h-[720px] rounded-2xl" />
+          <Skeleton className="h-180 rounded-2xl" />
+          <Skeleton className="h-180 rounded-2xl" />
         </div>
       </div>
     </main>
@@ -466,7 +466,7 @@ export default function MentoringDetailPage() {
   if (isError) {
     return (
       <main className="flex w-full flex-col items-center">
-        <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4 pb-10">
+        <div className="flex w-full max-w-240 flex-col space-y-4 p-4 pb-10">
           <Button
             variant="ghost"
             className="flex items-center gap-1 self-start px-2 text-gray-600 hover:text-gray-900"
@@ -486,7 +486,7 @@ export default function MentoringDetailPage() {
 
   return (
     <main className="flex w-full flex-col items-center">
-      <div className="flex w-full max-w-[1200px] flex-col space-y-4 p-4 pb-10">
+      <div className="flex w-full max-w-300 flex-col space-y-4 p-4 pb-10">
         <Button
           variant="ghost"
           className="flex items-center gap-1 self-start px-2 text-gray-600 hover:text-gray-900"
@@ -723,7 +723,7 @@ export default function MentoringDetailPage() {
                             <CarouselContent>
                               {companySessions.map((session) => (
                                 <CarouselItem key={session.id}>
-                                  <article className="rounded-[24px] border border-neutral-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-sm">
+                                  <article className="rounded-6 border border-neutral-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-sm">
                                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                                       <div>
                                         <div className="flex flex-wrap items-center gap-2">
@@ -797,9 +797,9 @@ export default function MentoringDetailPage() {
                                       <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                                         현장 사진
                                       </p>
-                                      <div className="mt-3 min-h-[212px]">
+                                      <div className="mt-3 min-h-53">
                                         {session.photos.length === 0 ? (
-                                          <div className="flex h-[212px] items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 text-sm text-neutral-400">
+                                          <div className="flex h-53 items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 text-sm text-neutral-400">
                                             첨부된 사진이 없습니다.
                                           </div>
                                         ) : (
@@ -984,7 +984,7 @@ export default function MentoringDetailPage() {
                               value={content}
                               onChange={(e) => setContent(e.target.value)}
                               placeholder="멘토링에서 다룬 내용과 논의 사항을 입력하세요."
-                              className="mt-2 min-h-[220px] resize-y"
+                              className="mt-2 min-h-55 resize-y"
                             />
                           </div>
 

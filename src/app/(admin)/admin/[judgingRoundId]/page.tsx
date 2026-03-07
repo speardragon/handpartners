@@ -182,13 +182,13 @@ export default function JudgingRoundDetailPage() {
                   <TableHead className="w-14 text-center font-semibold text-neutral-700">
                     순위
                   </TableHead>
-                  <TableHead className="min-w-[120px] font-semibold text-neutral-700">
+                  <TableHead className="min-w-30 font-semibold text-neutral-700">
                     기업명
                   </TableHead>
                   {judges.map((judge) => (
                     <TableHead
                       key={judge.user_id}
-                      className="min-w-[80px] text-center font-semibold text-neutral-700"
+                      className="min-w-20 text-center font-semibold text-neutral-700"
                     >
                       {judge.username}
                     </TableHead>
@@ -286,7 +286,7 @@ export default function JudgingRoundDetailPage() {
                   key={company.company_id}
                   value={String(company.company_id)}
                 >
-                  <AccordionTrigger className="w-full px-5 py-3 text-left transition-colors hover:bg-neutral-50 [&[data-state=open]]:bg-neutral-50">
+                  <AccordionTrigger className="w-full px-5 py-3 text-left transition-colors hover:bg-neutral-50 data-[state=open]:bg-neutral-50">
                     <div className="flex items-center gap-3">
                       <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600">
                         {rank}
@@ -330,7 +330,7 @@ export default function JudgingRoundDetailPage() {
                                 {company.evaluations.map((evalItem, i) => (
                                   <th
                                     key={i}
-                                    className="min-w-[80px] px-4 py-2.5 text-center text-xs font-semibold text-neutral-700"
+                                    className="min-w-20 px-4 py-2.5 text-center text-xs font-semibold text-neutral-700"
                                   >
                                     {evalItem.username}
                                   </th>

@@ -66,7 +66,7 @@ function ManagementSkeleton() {
         <Skeleton className="h-48 rounded-2xl" />
         <Skeleton className="h-48 rounded-2xl" />
       </div>
-      <Skeleton className="h-[640px] rounded-2xl" />
+      <Skeleton className="h-160 rounded-2xl" />
     </div>
   );
 }
@@ -282,7 +282,7 @@ export default function Page({ params }: Props) {
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.75fr)_360px]">
-        <section className="overflow-hidden rounded-[28px] border border-neutral-200 bg-white shadow-sm">
+        <section className="overflow-hidden rounded-7 border border-neutral-200 bg-white shadow-sm">
           <div className="grid gap-0 xl:grid-cols-[minmax(0,1.7fr)_300px]">
             <div className="p-6 sm:p-7">
               <div className="space-y-3">
@@ -386,7 +386,7 @@ export default function Page({ params }: Props) {
           </div>
         </section>
 
-        <section className="self-start rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
+        <section className="self-start rounded-7 border border-neutral-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
           <div className="flex flex-col gap-6">
             <div>
               <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">
