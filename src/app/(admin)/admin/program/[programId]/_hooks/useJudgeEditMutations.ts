@@ -13,7 +13,7 @@ import type {
   SimpleCriteria,
   SimpleUser,
 } from "../_components/JudgeEditForm";
-import { judgingRoundQueries, screeningQueries } from "@/queries";
+import { judgingQueries, judgingRoundQueries } from "@/queries";
 
 export function useJudgeEditMutations(judgingRoundId: string | undefined) {
   const queryClient = useQueryClient();
@@ -93,7 +93,7 @@ export function useJudgeEditMutations(judgingRoundId: string | undefined) {
         queryKey: judgingRoundQueries.companies.all(),
       });
       queryClient.invalidateQueries({
-        queryKey: screeningQueries.detailKeyPrefix(),
+        queryKey: judgingQueries.detailKeyPrefix(),
       });
       toast.success("기업 정보를 수정하였습니다.");
     },
