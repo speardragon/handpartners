@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/incompatible-library */
 
 import {
   ColumnDef,
@@ -18,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import UserEditDialog from "./UserEditDialog";
 import useDialogOpenStore from "@/store/useDialogOpenStore";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { UserRow } from "@/actions/user-actions";
 import { DataTablePagination } from "../../_components/DataTablePagination";
 import UserCreateDialog from "./UserCreateDialog";
@@ -84,12 +85,6 @@ export function UserDataTable<TData, TValue>({
   });
 
   const visibleColumns = table.getVisibleLeafColumns();
-
-  useEffect(() => {
-    if (userProfile.username !== "") {
-      setOpen(true);
-    }
-  }, [userProfile]);
 
   return (
     <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-3 shadow-sm sm:p-4">
@@ -176,7 +171,6 @@ export function UserDataTable<TData, TValue>({
                   data-state={row.getIsSelected() && "selected"}
                   className="cursor-pointer transition-colors hover:bg-neutral-50"
                   onClick={() => {
-                    row.getValue("signature_url");
                     setUserId(row.getValue("id"));
                     setUserProfile({
                       username: row.getValue("username"),
@@ -187,6 +181,7 @@ export function UserDataTable<TData, TValue>({
                       phone_number: row.getValue("phone_number"),
                       signature_url: row.getValue("signature_url"),
                     });
+                    setOpen(true);
                   }}
                 >
                   {row.getVisibleCells().map((cell) => {

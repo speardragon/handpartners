@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
 import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
 import { useQuery } from "@tanstack/react-query";
 import { judgingRoundQueries } from "@/queries";
-import { Button } from "@/components/ui/button";
 import {
   applySheetStylesAndWidths,
   createSheetDataAndMerges,
@@ -21,8 +19,7 @@ export default function FeedbackToExcelButton({
   judgingRoundId,
   className,
 }: Props) {
-  // React Query 훅 사용
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { isLoading, refetch } = useQuery({
     ...judgingRoundQueries.feedbacks(judgingRoundId),
     enabled: false,
   });

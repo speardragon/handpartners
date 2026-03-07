@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { useMutation } from "@tanstack/react-query";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 type LoginRequest = {
@@ -9,7 +9,6 @@ type LoginRequest = {
 };
 
 export function useLoginMutation() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
 

@@ -30,7 +30,6 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   EllipsisVertical,
-  Map,
   Pencil,
   SquareArrowOutUpRight,
   Trash,

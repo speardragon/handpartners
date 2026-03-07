@@ -1,7 +1,6 @@
 // useEvaluationMutation.ts
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import { createEvaluation } from "@/actions/evaluation-action";
 
 interface EvaluationItem {
@@ -17,9 +16,6 @@ interface UseEvaluationMutationArgs {
 }
 
 export function useEvaluationMutation() {
-  const queryClient = useQueryClient();
-  const router = useRouter();
-
   return useMutation({
     // 필요하다면 mutationKey를 좀 더 구체적으로 설정
     // 예: ["evaluation", judgeRoundId, companyId]

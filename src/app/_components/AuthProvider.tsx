@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [clearAuth, setAccessToken, setLoading, setUser]);
 
   return <>{children}</>;
 }
