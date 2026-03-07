@@ -71,6 +71,7 @@ export interface MentoringListItem {
   id: string;
   status: MentoringStatus;
   program: MentoringProgramSummary;
+  report_logo_url: string | null;
   number_of_companies: number;
   assigned_company_count: number;
   my_company_count: number;
@@ -81,6 +82,13 @@ export interface MentoringListItem {
 export interface MentoringListResult {
   items: MentoringListItem[];
   isAdminView: boolean;
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+  totalActive: number;
+  totalCompleted: number;
+  totalPending: number;
+  hasNextPage: boolean;
 }
 
 export interface MentoringWithStatus extends MentoringRow {
@@ -579,6 +587,8 @@ export async function getMentoringByProgramId(
 }
 
 export async function getAllMentorings(
+  page = 1,
+  size = 12,
   search?: string
 ): Promise<MentoringListResult> {
   const context = await getViewerContext();
@@ -590,6 +600,7 @@ export async function getAllMentorings(
       id,
       status,
       created_at,
+      report_logo_path,
       program:program_id (
         id,
         name,
@@ -617,6 +628,7 @@ export async function getAllMentorings(
         id,
         status,
         created_at,
+        report_logo_path,
         program:program_id (
           id,
           name,
@@ -641,8 +653,26 @@ export async function getAllMentorings(
       .order("created_at", { ascending: false });
   }
 
-  if (search?.trim()) {
-    query = query.ilike("id", `%${search.trim()}%`);
+  const normalizedSearch = search?.trim();
+
+  if (normalizedSearch) {
+    const { data: programs, error: programError } = await context.supabase
+      .from("program")
+      .select("id")
+      .ilike("name", `%${normalizedSearch}%`);
+
+    if (programError) {
+      handleError(programError);
+    }
+
+    const matchedProgramIds = (programs ?? []).map((program) => program.id);
+    const orClauses = [`id.ilike.%${normalizedSearch}%`];
+
+    if (matchedProgramIds.length > 0) {
+      orClauses.push(`program_id.in.(${matchedProgramIds.join(",")})`);
+    }
+
+    query = query.or(orClauses.join(","));
   }
 
   const { data, error } = await query;
@@ -656,11 +686,12 @@ export async function getAllMentorings(
       id: string;
       status: MentoringStatus;
       created_at: string;
+      report_logo_path: string | null;
       program: Partial<MentoringProgramSummary> | null;
       companies: Array<{ company_id: number; mentor_id: string | null }>;
       sessions: Array<{ id: number; mentored_at: string }>;
     }>
-  ).map((item) => {
+  ).map(async (item) => {
     const { assignedCompanyCount, myCompanyCount } = buildAssignmentStats(
       item.companies ?? [],
       context.viewer.id
@@ -673,10 +704,25 @@ export async function getAllMentorings(
         return latest;
       }, null) ?? null;
 
+    let reportLogoUrl: string | null = null;
+    if (item.report_logo_path) {
+      try {
+        reportLogoUrl = (
+          await createPresignedDownloadUrl({
+            objectPathOrUrl: item.report_logo_path,
+            expiresInSeconds: 600,
+          })
+        ).downloadUrl;
+      } catch {
+        reportLogoUrl = null;
+      }
+    }
+
     return {
       id: item.id,
       status: item.status,
       program: normalizeProgram(item.program),
+      report_logo_url: reportLogoUrl,
       number_of_companies: item.companies?.length ?? 0,
       assigned_company_count: assignedCompanyCount,
       my_company_count: myCompanyCount,
@@ -686,7 +732,19 @@ export async function getAllMentorings(
     };
   });
 
-  items.sort((a, b) => {
+  const resolvedItems = await Promise.all(items);
+
+  let totalActive = 0;
+  let totalCompleted = 0;
+  let totalPending = 0;
+
+  resolvedItems.forEach((item) => {
+    if (item.status === "IN_PROGRESS") totalActive += 1;
+    else if (item.status === "COMPLETED") totalCompleted += 1;
+    else totalPending += 1;
+  });
+
+  resolvedItems.sort((a, b) => {
     const aSource =
       a.recent_mentored_at ?? a.program.start_date ?? a.created_at;
     const bSource =
@@ -695,13 +753,28 @@ export async function getAllMentorings(
     return bSource.localeCompare(aSource);
   });
 
-  const normalizedItems: MentoringListItem[] = items.map(
+  const normalizedResolvedItems: MentoringListItem[] = resolvedItems.map(
     ({ created_at: _createdAt, ...item }) => item
   );
 
+  const totalElements = normalizedResolvedItems.length;
+  const totalPages = Math.max(1, Math.ceil(totalElements / size));
+  const safePage = Math.min(Math.max(page, 1), totalPages);
+  const pagedItems = normalizedResolvedItems.slice(
+    (safePage - 1) * size,
+    safePage * size
+  );
+
   return {
-    items: normalizedItems,
+    items: pagedItems,
     isAdminView: context.isAdmin,
+    currentPage: safePage,
+    totalPages,
+    totalElements,
+    totalActive,
+    totalCompleted,
+    totalPending,
+    hasNextPage: safePage < totalPages,
   };
 }
 
@@ -1164,7 +1237,7 @@ export async function claimMentoringCompany(args: {
 
   const mentoring = await getMentoringBase(context.supabase, args.mentoringId);
   if (mentoring.status === "COMPLETED") {
-    throw new Error("종료된 멘토링에서는 기업을 선점할 수 없습니다.");
+    throw new Error("종료된 멘토링에서는 기업을 선택할 수 없습니다.");
   }
 
   const { data, error } = await context.supabase
@@ -1184,7 +1257,7 @@ export async function claimMentoringCompany(args: {
   }
 
   if (!data) {
-    throw new Error("이미 다른 멘토가 선점한 기업입니다.");
+    throw new Error("이미 다른 멘토가 선택한 기업입니다.");
   }
 
   return { success: true };

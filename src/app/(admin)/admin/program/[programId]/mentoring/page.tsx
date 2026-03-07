@@ -128,15 +128,20 @@ export default function Page({ params }: Props) {
     }
   };
 
-  const buildSessionFileName = (companyName: string, sessionNo: number, date: string) =>
-    `${companyName}_멘토링일지_${sessionNo}회차_${date.slice(0, 10)}.pdf`;
+  const buildSessionFileName = (
+    companyName: string,
+    sessionNo: number,
+    date: string
+  ) => `${companyName}_멘토링일지_${sessionNo}회차_${date.slice(0, 10)}.pdf`;
 
   const createSessionReportBlob = async (sessionId: number) => {
     if (!mentoringDetail) {
       throw new Error("멘토링 세부 정보를 불러오는 중입니다.");
     }
 
-    const session = mentoringDetail.sessions.find((item) => item.id === sessionId);
+    const session = mentoringDetail.sessions.find(
+      (item) => item.id === sessionId
+    );
     if (!session) {
       throw new Error("멘토링 세션을 찾을 수 없습니다.");
     }
@@ -158,8 +163,12 @@ export default function Page({ params }: Props) {
         companyDescription={companyDescription}
         representativeName={representativeName}
         mentorName={session.mentor_name}
-        mentorAffiliation={session.mentor_affiliation ?? company?.mentor_affiliation ?? null}
-        mentorPosition={session.mentor_position ?? company?.mentor_position ?? null}
+        mentorAffiliation={
+          session.mentor_affiliation ?? company?.mentor_affiliation ?? null
+        }
+        mentorPosition={
+          session.mentor_position ?? company?.mentor_position ?? null
+        }
         mentorSignatureUrl={session.mentor_signature_url}
         logoUrl={mentoring.report_logo_url}
         sessionNo={session.session_no}
@@ -254,7 +263,7 @@ export default function Page({ params }: Props) {
         <section className="overflow-hidden rounded-[28px] border border-neutral-200 bg-white shadow-sm">
           <div className="grid gap-0 xl:grid-cols-[minmax(0,1.7fr)_300px]">
             <div className="p-6 sm:p-7">
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">
+              <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">
                 Program Mentoring
               </p>
               <h1 className="mt-2 text-2xl font-semibold text-neutral-950">
@@ -276,13 +285,13 @@ export default function Page({ params }: Props) {
               </div>
             </div>
 
-            <div className="border-t border-neutral-200 bg-neutral-50/80 p-6 sm:p-7 xl:border-l xl:border-t-0">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-400">
+            <div className="border-t border-neutral-200 bg-neutral-50/80 p-6 sm:p-7 xl:border-t-0 xl:border-l">
+              <p className="text-xs font-medium tracking-[0.18em] text-neutral-400 uppercase">
                 관리 요약
               </p>
               <div className="mt-4 space-y-3">
                 <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                     멘토링 상태
                   </p>
                   <div className="mt-2">
@@ -293,7 +302,7 @@ export default function Page({ params }: Props) {
                   </div>
                 </div>
                 <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                     멘토링 ID
                   </p>
                   <p className="mt-2 text-sm font-medium text-neutral-900">
@@ -301,7 +310,7 @@ export default function Page({ params }: Props) {
                   </p>
                 </div>
                 <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                     최근 기록
                   </p>
                   <p className="mt-2 text-sm font-medium text-neutral-900">
@@ -318,7 +327,7 @@ export default function Page({ params }: Props) {
 
           <div className="grid gap-3 border-t border-neutral-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6 sm:grid-cols-3 sm:p-7">
             <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+              <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                 대상 기업
               </p>
               <p className="mt-2 text-sm font-medium text-neutral-900">
@@ -326,7 +335,7 @@ export default function Page({ params }: Props) {
               </p>
             </div>
             <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+              <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                 참여 멘토
               </p>
               <p className="mt-2 text-sm font-medium text-neutral-900">
@@ -334,7 +343,7 @@ export default function Page({ params }: Props) {
               </p>
             </div>
             <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+              <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                 누적 기록
               </p>
               <p className="mt-2 text-sm font-medium text-neutral-900">
@@ -347,14 +356,14 @@ export default function Page({ params }: Props) {
         <section className="self-start rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
           <div className="space-y-6">
             <div>
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">
+              <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">
                 Actions
               </p>
               <h2 className="mt-2 text-lg font-semibold text-neutral-950">
                 멘토링 운영 관리
               </h2>
               <p className="mt-2 text-sm leading-6 text-neutral-600">
-                대상 기업과 참여 멘토를 구성한 뒤, 멘토가 직접 기업을 선점하고
+                대상 기업과 참여 멘토를 구성한 뒤, 멘토가 직접 기업을 선택하고
                 기록을 쌓도록 운영합니다.
               </p>
             </div>
@@ -407,7 +416,7 @@ export default function Page({ params }: Props) {
             </div>
 
             <div className="border-t border-neutral-200 pt-6">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-400">
+              <p className="text-xs font-medium tracking-[0.18em] text-neutral-400 uppercase">
                 Reports
               </p>
               <h3 className="mt-2 text-base font-semibold text-neutral-950">
@@ -423,7 +432,9 @@ export default function Page({ params }: Props) {
                   className="w-full gap-2"
                   loading={isBulkReportDownloading}
                   onClick={handleBulkReportDownload}
-                  disabled={!mentoringDetail || mentoringDetail.sessions.length === 0}
+                  disabled={
+                    !mentoringDetail || mentoringDetail.sessions.length === 0
+                  }
                 >
                   <Download className="h-4 w-4" />
                   멘토링 보고서 일괄 저장
@@ -437,7 +448,9 @@ export default function Page({ params }: Props) {
                         : selectedReportSessionId
                     }
                     onValueChange={setSelectedReportSessionId}
-                    disabled={!mentoringDetail || mentoringDetail.sessions.length === 0}
+                    disabled={
+                      !mentoringDetail || mentoringDetail.sessions.length === 0
+                    }
                   >
                     <SelectTrigger className="bg-white">
                       <SelectValue placeholder="개별 저장할 세션 선택" />

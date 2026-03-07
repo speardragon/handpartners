@@ -240,8 +240,9 @@ export async function getAllJudgingWorkspaces(
   page: number,
   size: number,
   isAdmin: boolean,
-  judgingRoundId?: string,
-  isParticipating?: boolean
+  searchKeyword?: string,
+  isParticipating?: boolean,
+  exactJudgingRoundId?: string
 ): Promise<AllJudgingWorkspacesResult> {
   const supabase = await createClient();
 
@@ -262,13 +263,29 @@ export async function getAllJudgingWorkspaces(
       .from("judging_round_user")
       .select("id")
       .eq("user_id", userId)
-      .eq("judging_round_id", judgingRoundId ?? "")
+      .eq("judging_round_id", exactJudgingRoundId ?? searchKeyword ?? "")
       .maybeSingle();
     resolvedIsParticipating = !!participationData;
   }
 
   // 관리자+참여 시 심사자와 동일한 데이터 로직 사용
   const useJudgeLogic = !isAdmin || (isAdmin && resolvedIsParticipating);
+
+  const normalizedSearch = searchKeyword?.trim();
+  let searchProgramIds: number[] = [];
+
+  if (normalizedSearch && !exactJudgingRoundId) {
+    const { data: programs, error: programError } = await supabase
+      .from("program")
+      .select("id")
+      .ilike("name", `%${normalizedSearch}%`);
+
+    if (programError) {
+      throw new Error(programError.message);
+    }
+
+    searchProgramIds = (programs ?? []).map((program) => program.id);
+  }
 
   // Step 1: 페이지 데이터 쿼리와 전체 status 집계 쿼리를 병렬 실행
   const buildBaseQuery = (selectFields: string, opts?: { count?: "exact" }) => {
@@ -280,8 +297,16 @@ export async function getAllJudgingWorkspaces(
     if (useJudgeLogic) {
       q = q.eq("judging_round_user.user_id", userId);
     }
-    if (judgingRoundId) {
-      q = q.eq("id", judgingRoundId);
+    if (exactJudgingRoundId) {
+      q = q.eq("id", exactJudgingRoundId);
+    } else if (normalizedSearch) {
+      const orClauses = [`id.ilike.%${normalizedSearch}%`];
+
+      if (searchProgramIds.length > 0) {
+        orClauses.push(`program_id.in.(${searchProgramIds.join(",")})`);
+      }
+
+      q = q.or(orClauses.join(","));
     }
     return q;
   };

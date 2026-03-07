@@ -12,7 +12,7 @@ export const judgingQueries = {
     page: number,
     size: number,
     isAdmin: boolean,
-    judgingRoundId?: string
+    searchKeyword?: string
   ) =>
     queryOptions({
       queryKey: [
@@ -21,10 +21,10 @@ export const judgingQueries = {
         page,
         size,
         isAdmin,
-        judgingRoundId,
+        searchKeyword,
       ] as const,
       queryFn: () =>
-        getAllJudgingWorkspaces(page, size, isAdmin, judgingRoundId),
+        getAllJudgingWorkspaces(page, size, isAdmin, searchKeyword),
     }),
   detailKeyPrefix: () => [...judgingQueries.all(), "detail"] as const,
   detail: (judgingRoundId: string, isAdmin: boolean) =>
@@ -36,7 +36,7 @@ export const judgingQueries = {
       ] as const,
       queryFn: async () => {
         const result: AllJudgingWorkspacesResult =
-          await getAllJudgingWorkspaces(1, 1, isAdmin, judgingRoundId);
+          await getAllJudgingWorkspaces(1, 1, isAdmin, undefined, undefined, judgingRoundId);
         const judging = result.result[0] ?? null;
         return judging
           ? { ...judging, isAdminView: result.isAdminView ?? false }

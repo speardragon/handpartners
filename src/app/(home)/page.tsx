@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { judgingQueries } from "@/queries";
 import { useAuthStore } from "@/store/useAuthStore";
 import { USER_ROLES } from "@/constants/auth";
@@ -9,6 +9,7 @@ import { JudgingWorkspaceWithStatus } from "@/actions/program-action";
 import ProgramSkeleton from "./_components/ProgramSkeleton";
 import { JudgingCard } from "./_components/judging-card";
 import WorkspaceTabs from "./_components/WorkspaceTabs";
+import WorkspaceEmptyState from "./_components/workspace-empty-state";
 import { useRouter } from "next/navigation";
 import {
   CalendarX2,
@@ -39,7 +40,7 @@ export default function Home() {
 
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
-  const [judgingRoundId, setJudgingRoundId] = useState<string | undefined>(
+  const [searchKeyword, setSearchKeyword] = useState<string | undefined>(
     undefined
   );
 
@@ -57,10 +58,10 @@ export default function Home() {
 
       const timer = setTimeout(() => {
         if (value === "") {
-          setJudgingRoundId(undefined);
+          setSearchKeyword(undefined);
           setPage(1);
         } else {
-          setJudgingRoundId(value);
+          setSearchKeyword(value.trim());
           setPage(1);
         }
       }, 500);
@@ -71,8 +72,9 @@ export default function Home() {
   );
 
   const { data, isLoading } = useQuery({
-    ...judgingQueries.list(page, PAGE_SIZE, isAdmin ?? false, judgingRoundId),
+    ...judgingQueries.list(page, PAGE_SIZE, isAdmin ?? false, searchKeyword),
     enabled: isAdmin !== undefined,
+    placeholderData: keepPreviousData,
   });
 
   const handleRowClick = useCallback(
@@ -134,7 +136,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-2 p-3 bg-white border rounded-lg">
-              <Play size={18} className="text-gray-400" />
+              <Play size={18} className="text-blue-500" />
               <div>
                 <p className="text-xs text-muted-foreground">진행 중</p>
                 <p className="text-lg font-bold text-gray-900">
@@ -143,7 +145,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-2 p-3 bg-white border rounded-lg">
-              <CheckCircle2 size={18} className="text-gray-400" />
+              <CheckCircle2 size={18} className="text-green-500" />
               <div>
                 <p className="text-xs text-muted-foreground">종료</p>
                 <p className="text-lg font-bold text-gray-900">
@@ -152,7 +154,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-2 p-3 bg-white border rounded-lg">
-              <Clock size={18} className="text-gray-400" />
+              <Clock size={18} className="text-gray-500" />
               <div>
                 <p className="text-xs text-muted-foreground">진행 전</p>
                 <p className="text-lg font-bold text-gray-900">
@@ -163,7 +165,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* 심사 번호 검색 */}
+        {/* 심사 검색 */}
         <div className="relative">
           <Search
             className="absolute text-gray-400 -translate-y-1/2 top-1/2 left-3"
@@ -171,7 +173,7 @@ export default function Home() {
           />
           <Input
             type="text"
-            placeholder="심사 번호로 검색"
+            placeholder="심사 번호 또는 프로그램명으로 검색"
             value={searchInput}
             onChange={(e) => {
               handleSearchChange(e.target.value);
@@ -180,13 +182,19 @@ export default function Home() {
           />
         </div>
 
-        {data.result.length === 0 && judgingRoundId && (
-          <div className="flex flex-col items-center justify-center w-full gap-2 py-12 text-gray-500">
-            <Search size={36} />
-            <div className="text-sm">
-              심사 번호 {judgingRoundId}에 해당하는 심사를 찾을 수 없습니다.
-            </div>
-          </div>
+        {data.result.length === 0 && searchKeyword && (
+          <WorkspaceEmptyState
+            icon={Search}
+            eyebrow="No Matches"
+            title="검색 결과가 없습니다"
+            description={`"${searchKeyword}"와 일치하는 심사나 프로그램을 찾지 못했습니다. 번호를 다시 확인하거나 프로그램명으로 검색해 보세요.`}
+            actionLabel="검색 초기화"
+            onAction={() => {
+              setSearchInput("");
+              setSearchKeyword(undefined);
+              setPage(1);
+            }}
+          />
         )}
 
         {/* 카드 그리드 */}
@@ -202,15 +210,19 @@ export default function Home() {
           </div>
         )}
 
-        {data.result.length === 0 && !judgingRoundId && (
-          <div className="flex flex-col items-center justify-center w-full gap-2 py-16 text-gray-500">
-            <CalendarX2 size={48} />
-            <div className="text-lg font-semibold text-gray-700">
-              {isAdmin
-                ? "등록된 심사가 없습니다."
-                : "참여 중인 심사가 없습니다."}
-            </div>
-          </div>
+        {data.result.length === 0 && !searchKeyword && (
+          <WorkspaceEmptyState
+            icon={CalendarX2}
+            eyebrow={isAdmin ? "Judging Workspace" : "My Judging"}
+            title={
+              isAdmin ? "아직 등록된 심사가 없습니다" : "참여 중인 심사가 없습니다"
+            }
+            description={
+              isAdmin
+                ? "프로그램에 심사가 연결되면 이 화면에서 전체 진행 현황을 바로 확인할 수 있습니다."
+                : "배정된 심사가 생기면 이 화면에서 바로 확인하고 진행할 수 있습니다."
+            }
+          />
         )}
 
         {/* 페이지네이션 */}

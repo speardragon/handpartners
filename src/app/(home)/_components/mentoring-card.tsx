@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { MentoringListItem } from "@/actions/mentoring-action";
 import { getStatusBadge } from "../_lib/lib";
 import { Building2, Calendar, History, Users } from "lucide-react";
@@ -17,47 +18,76 @@ export function MentoringCard({ mentoring, isAdminView, onClick }: Props) {
   return (
     <div
       onClick={() => onClick(mentoring)}
-      className="relative cursor-pointer rounded-xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+      className="group relative cursor-pointer overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div className="absolute right-5 top-5">
-        {getStatusBadge(mentoring.status)}
+      <div className="relative border-b border-neutral-200 bg-[linear-gradient(180deg,#fafafa_0%,#f3f4f6_100%)] px-5 py-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium tracking-[0.2em] text-neutral-400 uppercase">
+              멘토링 세션
+            </p>
+            <h3
+              title={mentoring.program.name}
+              className="mt-2 text-lg font-semibold line-clamp-1 text-neutral-950"
+            >
+              {mentoring.program.name}
+            </h3>
+          </div>
+          {mentoring.report_logo_url ? (
+            <div className="relative w-40 h-20 p-3 border shadow-sm shrink-0 rounded-xl border-white/80 bg-white/90">
+              <Image
+                src={mentoring.report_logo_url}
+                alt={`${mentoring.program.name} 로고`}
+                fill
+                sizes="160px"
+                unoptimized
+                className="object-contain p-3"
+              />
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      <h3 className="mt-1 line-clamp-1 pr-20 text-lg font-semibold text-neutral-950">
-        {mentoring.program.name}
-      </h3>
-      <p className="mt-2 line-clamp-2 pr-20 text-sm leading-6 text-neutral-600">
-        {mentoring.program.description?.trim() || "프로그램 설명이 없습니다."}
-      </p>
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="mt-2 text-sm leading-6 line-clamp-2 text-neutral-600">
+              {mentoring.program.description?.trim() ||
+                "프로그램 설명이 없습니다."}
+            </p>
+          </div>
+          <div className="shrink-0">{getStatusBadge(mentoring.status)}</div>
+        </div>
 
-      <div className="mt-4 grid gap-2 text-sm text-neutral-500 sm:grid-cols-2">
-        <span className="flex items-center gap-2">
-          <Building2 className="h-4 w-4" />
-          전체 기업 {mentoring.number_of_companies}개
-        </span>
-        <span className="flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          {isAdminView
-            ? `배정 완료 ${mentoring.assigned_company_count}개`
-            : `내 담당 ${mentoring.my_company_count}개`}
-        </span>
-        <span className="flex items-center gap-2">
-          <History className="h-4 w-4" />
-          기록 {mentoring.number_of_sessions}건
-        </span>
-        <span className="flex items-center gap-2 truncate">
-          <Calendar className="h-4 w-4 shrink-0" />
-          {startDate} ~ {endDate}
-        </span>
+        <div className="grid gap-2 p-3 mt-4 text-sm rounded-xl bg-neutral-50 text-neutral-600 sm:grid-cols-2">
+          <span className="flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-neutral-400" />
+            전체 기업 {mentoring.number_of_companies}개
+          </span>
+          <span className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-neutral-400" />
+            {isAdminView
+              ? `배정 완료 ${mentoring.assigned_company_count}개`
+              : `내 담당 ${mentoring.my_company_count}개`}
+          </span>
+          <span className="flex items-center gap-2">
+            <History className="w-4 h-4 text-neutral-400" />
+            기록 {mentoring.number_of_sessions}건
+          </span>
+          <span className="flex items-center gap-2 sm:col-span-2">
+            <Calendar className="w-4 h-4 shrink-0 text-neutral-400" />
+            {startDate} ~ {endDate}
+          </span>
+        </div>
+
+        <p className="mt-4 text-xs text-neutral-400">
+          {mentoring.recent_mentored_at
+            ? `최근 멘토링 ${mentoring.recent_mentored_at
+                .slice(0, 16)
+                .replace("T", " ")}`
+            : "아직 멘토링 기록이 없습니다."}
+        </p>
       </div>
-
-      <p className="mt-4 text-xs text-neutral-400">
-        {mentoring.recent_mentored_at
-          ? `최근 멘토링 ${mentoring.recent_mentored_at
-              .slice(0, 16)
-              .replace("T", " ")}`
-          : "아직 멘토링 기록이 없습니다."}
-      </p>
     </div>
   );
 }
