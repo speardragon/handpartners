@@ -72,7 +72,7 @@ export default function Login() {
               control={form.control}
               name="isAgree"
               render={({ field }) => (
-                <FormItem className="flex w-full flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormItem className="flex w-full flex-row items-start space-y-0 space-x-3 rounded-md border p-4">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -129,7 +129,7 @@ export default function Login() {
             </LoadingButton>
             <Link
               href="/upload"
-              className="text-sm text-muted-foreground hover:underline"
+              className="text-muted-foreground text-sm hover:underline"
             >
               발표 자료 업로드하기
             </Link>

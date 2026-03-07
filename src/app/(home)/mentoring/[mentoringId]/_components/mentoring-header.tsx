@@ -17,7 +17,7 @@ export default function MentoringHeader({ mentoring }: Props) {
     <div className="space-y-4 rounded-2xl border bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-400">
+          <p className="text-xs font-medium tracking-[0.18em] text-neutral-400 uppercase">
             Program Mentoring
           </p>
           <h1 className="mt-2 line-clamp-1 text-2xl font-bold text-neutral-950">
@@ -41,7 +41,7 @@ export default function MentoringHeader({ mentoring }: Props) {
 
       <div className="grid gap-3 md:grid-cols-4">
         <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+          <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
             멘토링 ID
           </p>
           <p className="mt-2 flex items-center gap-2 text-sm font-medium text-neutral-900">
@@ -50,7 +50,7 @@ export default function MentoringHeader({ mentoring }: Props) {
           </p>
         </div>
         <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+          <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
             운영 기간
           </p>
           <p className="mt-2 flex items-center gap-2 text-sm font-medium text-neutral-900">
@@ -59,7 +59,7 @@ export default function MentoringHeader({ mentoring }: Props) {
           </p>
         </div>
         <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+          <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
             담당 기업
           </p>
           <p className="mt-2 text-sm font-medium text-neutral-900">
@@ -67,7 +67,7 @@ export default function MentoringHeader({ mentoring }: Props) {
           </p>
         </div>
         <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+          <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
             누적 기록
           </p>
           <p className="mt-2 flex items-center gap-2 text-sm font-medium text-neutral-900">

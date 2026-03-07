@@ -87,7 +87,9 @@ export default function MentoringCompanySelect({
           ) : (
             sourceList.map((company) => {
               const isSelected = selectedSourceIds.includes(company.id);
-              const isAdded = targetList.some((target) => target.id === company.id);
+              const isAdded = targetList.some(
+                (target) => target.id === company.id
+              );
               return (
                 <label
                   key={company.id}

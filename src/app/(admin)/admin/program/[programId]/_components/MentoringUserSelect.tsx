@@ -82,14 +82,16 @@ function MentoringUserSelect({ targetList, onTargetListChange }: Props) {
     <div className="flex w-full items-stretch gap-2">
       <div className="flex flex-1 flex-col rounded-xl border border-neutral-200 bg-white">
         <div className="flex items-center justify-between border-b border-neutral-100 px-3 py-2.5">
-          <span className="text-sm font-medium text-neutral-700">전체 사용자</span>
+          <span className="text-sm font-medium text-neutral-700">
+            전체 사용자
+          </span>
           <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
             {selectedSourceIds.length}명 선택
           </span>
         </div>
         <div className="border-b border-neutral-100 px-3 py-2">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <Search className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-neutral-400" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -107,7 +109,9 @@ function MentoringUserSelect({ targetList, onTargetListChange }: Props) {
             <>
               {sourceList.map((user) => {
                 const isSelected = selectedSourceIds.includes(user.id);
-                const isAdded = targetList.some((target) => target.id === user.id);
+                const isAdded = targetList.some(
+                  (target) => target.id === user.id
+                );
                 return (
                   <label
                     key={user.id}

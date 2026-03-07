@@ -166,7 +166,7 @@ const PDFViewer = ({ isFull, handleFullButton, pdfPath }: Props) => {
             onKeyDown={onKeyDown}
             onChange={onPageInputChange}
             onBlur={onPageInputSubmit}
-            className="w-10 rounded-md border px-1 py-0.5 text-center text-sm font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-10 rounded-md border px-1 py-0.5 text-center text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
           <span className="text-muted-foreground">/ {numPages}</span>
         </div>

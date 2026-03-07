@@ -110,7 +110,7 @@ export default function CompanySelectForModify({
         </div>
         <div className="shrink-0 border-b border-neutral-100 px-3 py-2">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <Search className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-neutral-400" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}

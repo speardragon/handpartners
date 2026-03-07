@@ -10,7 +10,13 @@ export const mentoringQueries = {
   all: () => ["mentorings"] as const,
   list: (page: number, size: number, search?: string) =>
     queryOptions({
-      queryKey: [...mentoringQueries.all(), "list", page, size, search] as const,
+      queryKey: [
+        ...mentoringQueries.all(),
+        "list",
+        page,
+        size,
+        search,
+      ] as const,
       queryFn: () => getAllMentorings(page, size, search),
       staleTime: 0,
     }),

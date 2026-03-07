@@ -78,10 +78,10 @@ export default function MentoringPage() {
   }
 
   return (
-    <main className="flex flex-col items-center w-full">
+    <main className="flex w-full flex-col items-center">
       <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-full text-2xl font-bold text-center">
+          <div className="w-full text-center text-2xl font-bold">
             {isAdminView ? "전체 멘토링 목록" : "나의 멘토링 목록"}
           </div>
           <WorkspaceTabs current="mentoring" />
@@ -89,35 +89,35 @@ export default function MentoringPage() {
 
         {stats && (
           <div className="grid grid-cols-4 gap-3">
-            <div className="flex items-center gap-2 p-3 bg-white border rounded-lg">
+            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
               <ListChecks size={18} className="text-gray-400" />
               <div>
-                <p className="text-xs text-muted-foreground">전체</p>
+                <p className="text-muted-foreground text-xs">전체</p>
                 <p className="text-lg font-bold text-gray-900">{stats.total}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-3 bg-white border rounded-lg">
+            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
               <Play size={18} className="text-blue-500" />
               <div>
-                <p className="text-xs text-muted-foreground">진행 중</p>
+                <p className="text-muted-foreground text-xs">진행 중</p>
                 <p className="text-lg font-bold text-gray-900">
                   {stats.active}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-3 bg-white border rounded-lg">
+            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
               <CheckCircle2 size={18} className="text-green-500" />
               <div>
-                <p className="text-xs text-muted-foreground">종료</p>
+                <p className="text-muted-foreground text-xs">종료</p>
                 <p className="text-lg font-bold text-gray-900">
                   {stats.completed}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-3 bg-white border rounded-lg">
+            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
               <Clock size={18} className="text-gray-500" />
               <div>
-                <p className="text-xs text-muted-foreground">진행 전</p>
+                <p className="text-muted-foreground text-xs">진행 전</p>
                 <p className="text-lg font-bold text-gray-900">
                   {stats.pending}
                 </p>
@@ -128,7 +128,7 @@ export default function MentoringPage() {
 
         <div className="relative">
           <Search
-            className="absolute text-gray-400 -translate-y-1/2 top-1/2 left-3"
+            className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400"
             size={16}
           />
           <Input
@@ -189,7 +189,7 @@ export default function MentoringPage() {
               </div>
             )}
             {hasNextPage ? (
-              <div ref={sentinelRef} className="w-full h-4" />
+              <div ref={sentinelRef} className="h-4 w-full" />
             ) : (
               <div className="text-sm text-neutral-400">
                 모든 멘토링을 확인했습니다.

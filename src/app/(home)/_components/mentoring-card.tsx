@@ -28,13 +28,13 @@ export function MentoringCard({ mentoring, isAdminView, onClick }: Props) {
             </p>
             <h3
               title={mentoring.program.name}
-              className="mt-2 text-lg font-semibold line-clamp-1 text-neutral-950"
+              className="mt-2 line-clamp-1 text-lg font-semibold text-neutral-950"
             >
               {mentoring.program.name}
             </h3>
           </div>
           {mentoring.report_logo_url ? (
-            <div className="relative w-40 h-20 p-3 border shadow-sm shrink-0 rounded-xl border-white/80 bg-white/90">
+            <div className="relative h-20 w-40 shrink-0 rounded-xl border border-white/80 bg-white/90 p-3 shadow-sm">
               <Image
                 src={mentoring.report_logo_url}
                 alt={`${mentoring.program.name} 로고`}
@@ -51,7 +51,7 @@ export function MentoringCard({ mentoring, isAdminView, onClick }: Props) {
       <div className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="mt-2 text-sm leading-6 line-clamp-2 text-neutral-600">
+            <p className="mt-2 line-clamp-2 text-sm leading-6 text-neutral-600">
               {mentoring.program.description?.trim() ||
                 "프로그램 설명이 없습니다."}
             </p>
@@ -59,23 +59,23 @@ export function MentoringCard({ mentoring, isAdminView, onClick }: Props) {
           <div className="shrink-0">{getStatusBadge(mentoring.status)}</div>
         </div>
 
-        <div className="grid gap-2 p-3 mt-4 text-sm rounded-xl bg-neutral-50 text-neutral-600 sm:grid-cols-2">
+        <div className="mt-4 grid gap-2 rounded-xl bg-neutral-50 p-3 text-sm text-neutral-600 sm:grid-cols-2">
           <span className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-neutral-400" />
+            <Building2 className="h-4 w-4 text-neutral-400" />
             전체 기업 {mentoring.number_of_companies}개
           </span>
           <span className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-neutral-400" />
+            <Users className="h-4 w-4 text-neutral-400" />
             {isAdminView
               ? `배정 완료 ${mentoring.assigned_company_count}개`
               : `내 담당 ${mentoring.my_company_count}개`}
           </span>
           <span className="flex items-center gap-2">
-            <History className="w-4 h-4 text-neutral-400" />
+            <History className="h-4 w-4 text-neutral-400" />
             기록 {mentoring.number_of_sessions}건
           </span>
           <span className="flex items-center gap-2 sm:col-span-2">
-            <Calendar className="w-4 h-4 shrink-0 text-neutral-400" />
+            <Calendar className="h-4 w-4 shrink-0 text-neutral-400" />
             {startDate} ~ {endDate}
           </span>
         </div>

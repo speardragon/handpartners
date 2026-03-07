@@ -27,7 +27,7 @@ export default function StatusDistributionTable({
         <h2 className="text-sm font-semibold text-gray-700">
           {isAdminView ? "전체 심사 진행 현황" : "내 심사 진행 현황"}
         </h2>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-muted-foreground text-xs">
           {completedPct}% 완료
         </span>
       </div>
@@ -43,7 +43,7 @@ export default function StatusDistributionTable({
         <div className="flex items-center gap-3 rounded-md bg-gray-50 p-3">
           <Clock size={16} className="text-gray-400" />
           <div>
-            <p className="text-xs text-muted-foreground">심사 예정</p>
+            <p className="text-muted-foreground text-xs">심사 예정</p>
             <p className="text-lg font-bold text-gray-900">
               {statusDistribution["심사 예정"]}
             </p>
@@ -52,7 +52,7 @@ export default function StatusDistributionTable({
         <div className="flex items-center gap-3 rounded-md bg-gray-50 p-3">
           <CircleDot size={16} className="text-amber-500" />
           <div>
-            <p className="text-xs text-muted-foreground">심사 중</p>
+            <p className="text-muted-foreground text-xs">심사 중</p>
             <p className="text-lg font-bold text-gray-900">
               {statusDistribution["심사 중"]}
             </p>
@@ -61,7 +61,7 @@ export default function StatusDistributionTable({
         <div className="flex items-center gap-3 rounded-md bg-gray-50 p-3">
           <CircleCheck size={16} className="text-green-500" />
           <div>
-            <p className="text-xs text-muted-foreground">심사 완료</p>
+            <p className="text-muted-foreground text-xs">심사 완료</p>
             <p className="text-lg font-bold text-gray-900">
               {statusDistribution["심사 완료"]}
             </p>

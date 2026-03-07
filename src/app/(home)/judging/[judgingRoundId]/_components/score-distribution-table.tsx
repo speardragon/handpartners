@@ -24,14 +24,14 @@ export default function ScoreDistributionTable({
 
   return (
     <div className="rounded-lg border bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-semibold text-gray-700 mb-3">
+      <h2 className="mb-3 text-sm font-semibold text-gray-700">
         {isAdminView ? "전체 점수 분포 현황" : "내 점수 분포 현황"}
       </h2>
       <div className="grid grid-cols-5 gap-2">
         {SCORE_RANGES.map((key) => (
           <div key={key} className="rounded-md bg-gray-50 p-3 text-center">
-            <p className="text-xs text-muted-foreground">{key}</p>
-            <p className="text-lg font-bold mt-1 text-gray-900">
+            <p className="text-muted-foreground text-xs">{key}</p>
+            <p className="mt-1 text-lg font-bold text-gray-900">
               {scoreDistribution[key]}
             </p>
           </div>

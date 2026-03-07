@@ -38,7 +38,7 @@ export const judgingColumns: ColumnDef<JudgingWorkspaceWithStatus>[] = [
       const startDate = row.original.start_date?.slice(0, 10) ?? "";
       const endDate = row.original.end_date?.slice(0, 10) ?? "";
       return (
-        <div className="whitespace-nowrap text-sm">
+        <div className="text-sm whitespace-nowrap">
           {startDate} ~ {endDate}
         </div>
       );

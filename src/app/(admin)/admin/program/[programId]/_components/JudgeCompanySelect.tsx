@@ -29,9 +29,7 @@ export default function JudgeCompanySelect({
     programQueries.companies(programId)
   );
   const { data: judgingRoundCompanies, isLoading: isLoadingRoundCompanies } =
-    useQuery(
-      judgingRoundQueries.companies.byRound(judgingRoundId)
-    );
+    useQuery(judgingRoundQueries.companies.byRound(judgingRoundId));
 
   useEffect(() => {
     if (judgingRoundCompanies && judgingRoundCompanies.length > 0) {
