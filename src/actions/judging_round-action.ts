@@ -270,10 +270,14 @@ export async function getJudgeById(
 ): Promise<JudgingRoundWithCriterias | null> {
   const supabase = await createClient();
 
-  const { data: judgingRoundData, error: judgingRoundError } = await supabase
-    .from("judging_round")
-    .select(
-      `*,
+  const [
+    { data: judgingRoundData, error: judgingRoundError },
+    { data: criteriasData, error: criteriasError },
+  ] = await Promise.all([
+    supabase
+      .from("judging_round")
+      .select(
+        `*,
       program: program_id (
         id,
         name,
@@ -282,9 +286,14 @@ export async function getJudgeById(
         end_date
       )
       `
-    )
-    .eq("id", judgeRoundId)
-    .single();
+      )
+      .eq("id", judgeRoundId)
+      .single(),
+    supabase
+      .from("evaluation_criteria")
+      .select("id, judging_round_id, item_name, points, description")
+      .eq("judging_round_id", judgeRoundId),
+  ]);
 
   if (judgingRoundError) {
     handleError(judgingRoundError);
@@ -293,12 +302,6 @@ export async function getJudgeById(
   if (!judgingRoundData) {
     return null;
   }
-
-  // `evaluation_criteria` 정보를 가져옵니다.
-  const { data: criteriasData, error: criteriasError } = await supabase
-    .from("evaluation_criteria")
-    .select("id, judging_round_id, item_name, points, description")
-    .eq("judging_round_id", judgeRoundId);
 
   if (criteriasError) {
     handleError(criteriasError);
@@ -348,11 +351,17 @@ export async function getJudgingRoundDetails(
 ): Promise<JudgingRoundDetail> {
   const supabase = await createClient();
 
-  // 1) 심사 라운드 기본 정보
-  const { data: roundData, error: roundError } = await supabase
-    .from("judging_round")
-    .select(
-      `
+  // 1~4) 병렬로 데이터 가져오기
+  const [
+    { data: roundData, error: roundError },
+    { data: criteriaData, error: criteriaError },
+    { data: companyData, error: companyError },
+    { data: evaluations, error: evaluationError },
+  ] = await Promise.all([
+    supabase
+      .from("judging_round")
+      .select(
+        `
         id,
         program:program_id (
           name,
@@ -361,41 +370,48 @@ export async function getJudgingRoundDetails(
           end_date
         )
       `
-    )
-    .eq("id", judgingRoundId)
-    .single();
-
-  if (roundError || !roundData) {
-    throw new Error(roundError?.message ?? "라운드 정보를 가져올 수 없습니다.");
-  }
-
-  // 2) 평가 기준 가져오기
-  const { data: criteriaData, error: criteriaError } = await supabase
-    .from("evaluation_criteria")
-    .select("id, item_name, points")
-    .eq("judging_round_id", judgingRoundId);
-
-  if (criteriaError) {
-    throw new Error(criteriaError.message);
-  }
-
-  // 3) 참여 기업 목록(judging_round_company)
-  const { data: companyData, error: companyError } = await supabase
-    .from("judging_round_company")
-    .select(
-      `
+      )
+      .eq("id", judgingRoundId)
+      .single(),
+    supabase
+      .from("evaluation_criteria")
+      .select("id, item_name, points")
+      .eq("judging_round_id", judgingRoundId),
+    supabase
+      .from("judging_round_company")
+      .select(
+        `
         company_id,
         company:company_id (
           name,
           description
         )
       `
-    )
-    .eq("judging_round_id", judgingRoundId);
+      )
+      .eq("judging_round_id", judgingRoundId),
+    supabase
+      .from("evaluation")
+      .select(
+        `
+        company_id,
+        user_id,
+        evaluation_criterion_id,
+        grade,
+        feedback,
+        user:user_id (
+          username
+        )
+      `
+      )
+      .eq("judging_round_id", judgingRoundId),
+  ]);
 
-  if (companyError) {
-    throw new Error(companyError.message);
+  if (roundError || !roundData) {
+    throw new Error(roundError?.message ?? "라운드 정보를 가져올 수 없습니다.");
   }
+  if (criteriaError) throw new Error(criteriaError.message);
+  if (companyError) throw new Error(companyError.message);
+  if (evaluationError) throw new Error(evaluationError.message);
 
   const companyList = (companyData ?? []).map((c) => {
     const company = c.company as unknown as {
@@ -408,28 +424,6 @@ export async function getJudgingRoundDetails(
       description: company.description,
     };
   });
-
-  // 4) evaluation(평가) JOIN user
-  //    -> user:user_id (username)를 함께 가져온다.
-  const { data: evaluations, error: evaluationError } = await supabase
-    .from("evaluation")
-    .select(
-      `
-        company_id,
-        user_id,
-        evaluation_criterion_id,
-        grade,
-        feedback,
-        user:user_id (
-          username
-        )
-      `
-    )
-    .eq("judging_round_id", judgingRoundId);
-
-  if (evaluationError) {
-    throw new Error(evaluationError.message);
-  }
 
   // 5) 회사별로 evaluation 그룹핑 -> 유저 단위로 재그룹
   type UserEval = {
@@ -456,34 +450,38 @@ export async function getJudgingRoundDetails(
     });
   }
 
+  // 회사별 유저맵: O(1) 조회를 위해 Map<company_id, Map<user_id, UserEval>> 사용
+  const userMapByCompany = new Map<number, Map<string, UserEval>>();
+
   evaluations.forEach((evalItem) => {
     const companyEntry = companyMap.get(evalItem.company_id);
     if (!companyEntry) return;
 
-    // 유저별로 그룹핑이 이미 되어 있는지 확인
-    let userEval = companyEntry.evaluations.find(
-      (u) => u.user_id === evalItem.user_id
-    );
+    let userMap = userMapByCompany.get(evalItem.company_id);
+    if (!userMap) {
+      userMap = new Map();
+      userMapByCompany.set(evalItem.company_id, userMap);
+    }
+
+    let userEval = userMap.get(evalItem.user_id);
     if (!userEval) {
-      // 없다면 새로 삽입
       userEval = {
         user_id: evalItem.user_id,
         username:
           (evalItem.user as unknown as { username: string })?.username ??
           "(이름 없음)",
-        feedback: evalItem.feedback, // 동일한 피드백이 들어오므로 일단 첫 레코드 feedback만 저장
+        feedback: evalItem.feedback,
         criteriaScores: [],
       };
+      userMap.set(evalItem.user_id, userEval);
       companyEntry.evaluations.push(userEval);
     }
 
-    // criteriaScores 추가
     userEval.criteriaScores.push({
       evaluation_criterion_id: evalItem.evaluation_criterion_id,
       grade: evalItem.grade,
     });
 
-    // 총점 추가
     companyEntry.totalScore += evalItem.grade;
   });
 

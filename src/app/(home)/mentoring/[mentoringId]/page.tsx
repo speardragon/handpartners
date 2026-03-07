@@ -267,45 +267,44 @@ export default function MentoringDetailPage() {
         throw new Error("기업을 선택해주세요.");
       }
 
-      const uploadedPhotos = [];
+      const uploadedPhotos = await Promise.all(
+        editorPhotos.map(async (photoItem, index) => {
+          if (photoItem.kind === "existing") {
+            return {
+              photo_path: photoItem.photoPath,
+              original_filename: photoItem.name,
+              sort_order: index + 1,
+            };
+          }
 
-      for (const [index, photoItem] of editorPhotos.entries()) {
-        if (photoItem.kind === "existing") {
-          uploadedPhotos.push({
-            photo_path: photoItem.photoPath,
-            original_filename: photoItem.name,
+          const fileEntry = newPhotoFilesRef.current[photoItem.fileKey];
+          if (!fileEntry) return null;
+
+          const { uploadUrl, publicUrl } =
+            await createMentoringSessionPhotoUploadUrl({
+              fileName: fileEntry.file.name,
+              contentType: fileEntry.file.type,
+            });
+
+          const uploadResponse = await fetch(uploadUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": fileEntry.file.type || "image/jpeg",
+            },
+            body: fileEntry.file,
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error("사진 업로드에 실패했습니다.");
+          }
+
+          return {
+            photo_path: publicUrl,
+            original_filename: fileEntry.file.name,
             sort_order: index + 1,
-          });
-          continue;
-        }
-
-        const fileEntry = newPhotoFilesRef.current[photoItem.fileKey];
-        if (!fileEntry) continue;
-
-        const { uploadUrl, publicUrl } =
-          await createMentoringSessionPhotoUploadUrl({
-            fileName: fileEntry.file.name,
-            contentType: fileEntry.file.type,
-          });
-
-        const uploadResponse = await fetch(uploadUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": fileEntry.file.type || "image/jpeg",
-          },
-          body: fileEntry.file,
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error("사진 업로드에 실패했습니다.");
-        }
-
-        uploadedPhotos.push({
-          photo_path: publicUrl,
-          original_filename: fileEntry.file.name,
-          sort_order: index + 1,
-        });
-      }
+          };
+        })
+      ).then((results) => results.filter((r) => r !== null));
 
       return upsertMentoringSession({
         id: editingSessionId ?? undefined,

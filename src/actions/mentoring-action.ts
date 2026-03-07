@@ -143,7 +143,6 @@ type ViewerContext = {
 };
 
 function handleError(error: unknown): never {
-  console.log("Error occurred:", error);
   const message = error instanceof Error ? error.message : String(error);
   console.error(message);
   throw new Error(message);
@@ -159,6 +158,22 @@ function normalizeProgram(
     start_date: program?.start_date ?? null,
     end_date: program?.end_date ?? null,
   };
+}
+
+async function safePresignedUrl(
+  path: string | null | undefined,
+  expiresInSeconds?: number
+): Promise<string | null> {
+  if (!path) return null;
+  try {
+    const result = await createPresignedDownloadUrl({
+      objectPathOrUrl: path,
+      ...(expiresInSeconds ? { expiresInSeconds } : {}),
+    });
+    return result.downloadUrl;
+  } catch {
+    return null;
+  }
 }
 
 function takeFirstRelation<T>(value: unknown): T | null {
@@ -254,19 +269,7 @@ async function getMentoringBase(
     handleError(error || new Error("멘토링 정보를 불러오지 못했습니다."));
   }
 
-  let reportLogoUrl: string | null = null;
-  if (data.report_logo_path) {
-    try {
-      reportLogoUrl = (
-        await createPresignedDownloadUrl({
-          objectPathOrUrl: data.report_logo_path,
-          expiresInSeconds: 600,
-        })
-      ).downloadUrl;
-    } catch {
-      reportLogoUrl = null;
-    }
-  }
+  const reportLogoUrl = await safePresignedUrl(data.report_logo_path, 600);
 
   return {
     ...data,
@@ -704,19 +707,7 @@ export async function getAllMentorings(
         return latest;
       }, null) ?? null;
 
-    let reportLogoUrl: string | null = null;
-    if (item.report_logo_path) {
-      try {
-        reportLogoUrl = (
-          await createPresignedDownloadUrl({
-            objectPathOrUrl: item.report_logo_path,
-            expiresInSeconds: 600,
-          })
-        ).downloadUrl;
-      } catch {
-        reportLogoUrl = null;
-      }
-    }
+    const reportLogoUrl = await safePresignedUrl(item.report_logo_path, 600);
 
     return {
       id: item.id,
@@ -948,23 +939,12 @@ export async function getMentoringDetail(
       const photos = Array.isArray(session.photos)
         ? await Promise.all(
             session.photos.map(async (photo) => {
-              let downloadUrl: string | null = null;
-              try {
-                downloadUrl = (
-                  await createPresignedDownloadUrl({
-                    objectPathOrUrl: photo.photo_path,
-                  })
-                ).downloadUrl;
-              } catch {
-                downloadUrl = null;
-              }
-
               return {
                 id: photo.id,
                 photo_path: photo.photo_path,
                 original_filename: photo.original_filename,
                 sort_order: photo.sort_order,
-                download_url: downloadUrl,
+                download_url: await safePresignedUrl(photo.photo_path),
               };
             })
           )
@@ -977,20 +957,10 @@ export async function getMentoringDetail(
         position: string | null;
         signature_url: string | null;
       }>(session.mentor as unknown);
-      let mentorSignatureUrl: string | null = null;
-
-      if (mentor?.signature_url) {
-        try {
-          mentorSignatureUrl = (
-            await createPresignedDownloadUrl({
-              objectPathOrUrl: mentor.signature_url,
-              expiresInSeconds: 600,
-            })
-          ).downloadUrl;
-        } catch {
-          mentorSignatureUrl = null;
-        }
-      }
+      const mentorSignatureUrl = await safePresignedUrl(
+        mentor?.signature_url,
+        600
+      );
 
       return {
         id: session.id,
@@ -1235,8 +1205,14 @@ export async function claimMentoringCompany(args: {
 
   await ensureMentoringParticipant(context, args.mentoringId);
 
-  const mentoring = await getMentoringBase(context.supabase, args.mentoringId);
-  if (mentoring.status === "COMPLETED") {
+  const { data: mentoringStatus, error: mentoringStatusError } =
+    await context.supabase
+      .from("mentoring")
+      .select("status")
+      .eq("id", args.mentoringId)
+      .single();
+  if (mentoringStatusError) handleError(mentoringStatusError);
+  if (mentoringStatus?.status === "COMPLETED") {
     throw new Error("종료된 멘토링에서는 기업을 선택할 수 없습니다.");
   }
 
@@ -1331,8 +1307,14 @@ export async function upsertMentoringSession(args: {
 
   await ensureMentoringParticipant(context, args.mentoringId);
 
-  const mentoring = await getMentoringBase(context.supabase, args.mentoringId);
-  if (mentoring.status === "COMPLETED") {
+  const { data: mentoringStatus, error: mentoringStatusError } =
+    await context.supabase
+      .from("mentoring")
+      .select("status")
+      .eq("id", args.mentoringId)
+      .single();
+  if (mentoringStatusError) handleError(mentoringStatusError);
+  if (mentoringStatus?.status === "COMPLETED") {
     throw new Error("종료된 멘토링에서는 기록을 수정할 수 없습니다.");
   }
 

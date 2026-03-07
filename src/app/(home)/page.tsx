@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { judgingQueries } from "@/queries";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -44,32 +44,31 @@ export default function Home() {
     undefined
   );
 
-  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(
-    null
-  );
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSearchChange = useCallback(
-    (value: string) => {
-      setSearchInput(value);
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, []);
 
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      if (value === "") {
+        setSearchKeyword(undefined);
+        setPage(1);
+      } else {
+        setSearchKeyword(value.trim());
+        setPage(1);
       }
-
-      const timer = setTimeout(() => {
-        if (value === "") {
-          setSearchKeyword(undefined);
-          setPage(1);
-        } else {
-          setSearchKeyword(value.trim());
-          setPage(1);
-        }
-      }, 500);
-
-      setDebounceTimer(timer);
-    },
-    [debounceTimer]
-  );
+    }, 500);
+  }, []);
 
   const { data, isLoading } = useQuery({
     ...judgingQueries.list(page, PAGE_SIZE, isAdmin ?? false, searchKeyword),
