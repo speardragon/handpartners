@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import ReactQueryClientProvider from "@/config/ReactQueryClientProvider";
 import { AuthProvider } from "@/app/_components/AuthProvider";
 import "core-js/full/promise/with-resolvers";
+import Script from "next/dist/client/script";
 
 const pretendard = localFont({
   src: "./fonts/PretendardVariable.woff2",
@@ -33,6 +34,13 @@ export default async function RootLayout({
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
         />
+        {process.env.NODE_ENV === "development" && (
+          <Script
+            src="//unpkg.com/react-grab/dist/index.global.js"
+            crossOrigin="anonymous"
+            strategy="beforeInteractive"
+          />
+        )}
       </head>
       <body className={`${pretendard.className} antialiased`}>
         <ReactQueryClientProvider>
