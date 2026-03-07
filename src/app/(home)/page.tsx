@@ -7,7 +7,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { USER_ROLES } from "@/constants/auth";
 import { JudgingWorkspaceWithStatus } from "@/actions/program-action";
 import ProgramSkeleton from "./_components/ProgramSkeleton";
-import { JudgingCard } from "./_components/screening-card";
+import { JudgingCard } from "./_components/judging-card";
 import WorkspaceTabs from "./_components/WorkspaceTabs";
 import { useRouter } from "next/navigation";
 import {
