@@ -75,7 +75,7 @@ export default function SideNav() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col border-r border-neutral-200 bg-white lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-65 flex-col border-r border-neutral-200 bg-white lg:flex">
         <NavContent />
       </aside>
 
@@ -105,7 +105,7 @@ export default function SideNav() {
 
       {/* Mobile sheet */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-[260px] p-0">
+        <SheetContent side="left" className="w-65 p-0">
           <SheetTitle className="sr-only">네비게이션</SheetTitle>
           <NavContent onNavigate={() => setOpen(false)} />
         </SheetContent>

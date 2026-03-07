@@ -287,7 +287,7 @@ export default function MentoringEditForm({
   };
 
   return (
-    <section className="space-y-6 rounded-[28px] border border-neutral-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-4 shadow-sm sm:p-6">
+    <section className="space-y-6 rounded-7 border border-neutral-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-4 shadow-sm sm:p-6">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
           label="상태"
@@ -410,7 +410,7 @@ export default function MentoringEditForm({
         <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
           <button
             type="button"
-            className="flex min-h-[180px] w-full items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-4 transition-colors hover:border-neutral-400 hover:bg-white"
+            className="flex min-h-45 w-full items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-4 transition-colors hover:border-neutral-400 hover:bg-white"
             onClick={() => logoInputRef.current?.click()}
           >
             {currentLogoUrl ? (

@@ -50,10 +50,10 @@ function ManagementSkeleton() {
     <div className="flex min-h-screen w-full flex-col gap-4 p-4 sm:p-6 lg:p-8">
       <Skeleton className="h-10 w-28" />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.75fr)_360px]">
-        <Skeleton className="h-72 rounded-[28px]" />
-        <Skeleton className="h-80 rounded-[28px]" />
+        <Skeleton className="h-72 rounded-7" />
+        <Skeleton className="h-80 rounded-7" />
       </div>
-      <Skeleton className="h-[960px] rounded-[28px]" />
+      <Skeleton className="h-240 rounded-7" />
     </div>
   );
 }
@@ -260,7 +260,7 @@ export default function Page({ params }: Props) {
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.75fr)_360px]">
-        <section className="overflow-hidden rounded-[28px] border border-neutral-200 bg-white shadow-sm">
+        <section className="overflow-hidden rounded-7 border border-neutral-200 bg-white shadow-sm">
           <div className="grid gap-0 xl:grid-cols-[minmax(0,1.7fr)_300px]">
             <div className="p-6 sm:p-7">
               <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">
@@ -353,7 +353,7 @@ export default function Page({ params }: Props) {
           </div>
         </section>
 
-        <section className="self-start rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
+        <section className="self-start rounded-7 border border-neutral-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
           <div className="space-y-6">
             <div>
               <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">

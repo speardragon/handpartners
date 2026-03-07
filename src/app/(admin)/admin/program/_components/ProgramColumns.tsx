@@ -176,7 +176,7 @@ export const programColumns: ColumnDef<Partial<ProgramRow>>[] = [
       return (
         <div
           title={description}
-          className="max-w-[300px] overflow-hidden text-ellipsis whitespace-nowrap"
+          className="max-w-75 overflow-hidden text-ellipsis whitespace-nowrap"
         >
           {description}
         </div>

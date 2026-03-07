@@ -26,7 +26,7 @@ export function DataTablePagination<TData>({
     <div className="flex items-center justify-between p-2">
       <div className="text-muted-foreground flex-1 text-sm"></div>
       <div className="flex items-center space-x-6 lg:space-x-8">
-        <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+        <div className="flex w-25 items-center justify-center text-sm font-medium">
           {table.getState().pagination.pageIndex + 1}/{table.getPageCount()}{" "}
           페이지
         </div>

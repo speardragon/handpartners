@@ -53,7 +53,7 @@ export default function Login() {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex w-[600px] flex-col items-center border bg-white shadow-lg"
+          className="flex w-150 flex-col items-center border bg-white shadow-lg"
         >
           <div className="flex flex-col items-center justify-center space-y-2 p-4 px-8">
             <Image className="w-64" src={HandPartnersLogo} alt="logo" />

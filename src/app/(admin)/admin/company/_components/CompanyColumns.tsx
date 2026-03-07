@@ -58,7 +58,7 @@ function CompanyActionsCell({
   return (
     <div className="flex w-full justify-end">
       <Sheet open={openEdit} onOpenChange={setOpenEdit}>
-        <SheetContent className="w-[calc(100%-2rem)] overflow-y-auto sm:min-w-[600px]">
+        <SheetContent className="w-[calc(100%-2rem)] overflow-y-auto sm:min-w-150">
           <SheetHeader>
             <SheetTitle>기업 수정</SheetTitle>
             <SheetDescription>
@@ -157,7 +157,7 @@ export const companyColumns: ColumnDef<Partial<CompanyRow>>[] = [
     cell: ({ getValue }) => {
       const description = (getValue() ?? "").toString();
       return (
-        <div className="max-w-[400px] truncate" title={description}>
+        <div className="max-w-100 truncate" title={description}>
           {description || <span className="text-neutral-400">소개 없음</span>}
         </div>
       );

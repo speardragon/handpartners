@@ -19,7 +19,7 @@ import { ArrowLeft } from "lucide-react";
 function JudgingDetailSkeleton() {
   return (
     <main className="flex w-full flex-col items-center">
-      <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4 pb-10">
+      <div className="flex w-full max-w-240 flex-col space-y-4 p-4 pb-10">
         <Skeleton className="h-8 w-40" />
         <Skeleton className="h-24 w-full rounded-lg" />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -54,7 +54,7 @@ export default function JudgingDetailPage() {
 
   return (
     <main className="flex w-full flex-col items-center">
-      <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4 pb-10">
+      <div className="flex w-full max-w-240 flex-col space-y-4 p-4 pb-10">
         <Button
           variant="ghost"
           className="flex items-center gap-1 self-start px-2 text-gray-600 hover:text-gray-900"

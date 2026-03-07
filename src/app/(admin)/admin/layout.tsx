@@ -11,7 +11,7 @@ export default function Layout({
   return (
     <div className="flex min-h-screen">
       <SideNav />
-      <main className="mt-14 flex-1 overflow-y-auto lg:mt-0 lg:ml-[260px]">
+      <main className="mt-14 flex-1 overflow-y-auto lg:mt-0 lg:ml-65">
         {children}
       </main>
     </div>

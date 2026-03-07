@@ -117,7 +117,7 @@ export default function Home() {
 
   return (
     <main className="flex w-full flex-col items-center">
-      <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4">
+      <div className="flex w-full max-w-240 flex-col space-y-4 p-4">
         <div className="flex flex-col items-center gap-3">
           <div className="w-full text-center text-2xl font-bold">
             {isAdmin ? "전체 심사 목록" : "나의 심사 목록"}

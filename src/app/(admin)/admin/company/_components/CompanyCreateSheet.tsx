@@ -67,7 +67,7 @@ export default function CompanyCreateSheet() {
 
   return (
     <Sheet open={createOpen} onOpenChange={setCreateOpen}>
-      <SheetContent className="min-w-[600px] overflow-y-auto p-0">
+      <SheetContent className="min-w-150 overflow-y-auto p-0">
         <SheetHeader className="border-b p-4">
           <SheetTitle>기업 추가</SheetTitle>
           <SheetDescription>새로운 기업을 생성합니다.</SheetDescription>

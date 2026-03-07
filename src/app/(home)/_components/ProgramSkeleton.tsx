@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function ProgramSkeleton() {
   return (
     <main className="flex w-full flex-col items-center">
-      <div className="flex w-full max-w-[960px] flex-col space-y-4 p-4">
+      <div className="flex w-full max-w-240 flex-col space-y-4 p-4">
         <Skeleton className="mx-auto h-8 w-40" />
 
         {/* 통계 스켈레톤 */}
