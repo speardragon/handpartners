@@ -1,8 +1,8 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -17,17 +17,28 @@ import { Input } from "@/components/ui/input";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import MentoringHeader from "./_components/mentoring-header";
+import MentoringSessionDocument from "./_components/MentoringSessionDocument";
 import {
   ArrowLeft,
   Building2,
   Camera,
   CheckCircle2,
+  FileText,
   FileImage,
   MapPin,
   Pencil,
   Plus,
+  Sparkles,
   UserRound,
 } from "lucide-react";
 
@@ -40,6 +51,22 @@ function toLocalInputValue(dateString?: string | null) {
 function formatDateTime(dateString: string) {
   return dateString.slice(0, 16).replace("T", " ");
 }
+
+type EditorPhotoItem =
+  | {
+      key: string;
+      kind: "existing";
+      name: string;
+      previewUrl: string;
+      photoPath: string;
+    }
+  | {
+      key: string;
+      kind: "new";
+      name: string;
+      previewUrl: string;
+      fileKey: string;
+    };
 
 function DetailSkeleton() {
   return (
@@ -59,8 +86,10 @@ function DetailSkeleton() {
 export default function MentoringDetailPage() {
   const params = useParams<{ mentoringId: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const mentoringId = params.mentoringId;
+  const requestedCompanyId = Number(searchParams.get("companyId"));
 
   const { data: mentoring, isLoading, isError, error } = useQuery(
     mentoringQueries.detail(mentoringId)
@@ -72,8 +101,18 @@ export default function MentoringDetailPage() {
   const [mentoredAt, setMentoredAt] = useState(toLocalInputValue());
   const [place, setPlace] = useState("");
   const [content, setContent] = useState("");
-  const [result, setResult] = useState("");
-  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [editorPhotos, setEditorPhotos] = useState<EditorPhotoItem[]>([]);
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [selectedSessionIndex, setSelectedSessionIndex] = useState(0);
+  const [downloadingSessionId, setDownloadingSessionId] = useState<number | null>(
+    null
+  );
+  const [sessionCarouselApi, setSessionCarouselApi] = useState<CarouselApi>();
+  const composerRef = useRef<HTMLDivElement | null>(null);
+  const newPhotoFilesRef = useRef<
+    Record<string, { file: File; previewUrl: string }>
+  >({});
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const myAssignments = useMemo(
     () => mentoring?.assignments.filter((item) => item.is_mine) ?? [],
@@ -84,18 +123,52 @@ export default function MentoringDetailPage() {
     [mentoring]
   );
 
+  const activeCompanyId = useMemo(() => {
+    if (!mentoring || mentoring.assignments.length === 0) {
+      return null;
+    }
+
+    if (
+      Number.isFinite(requestedCompanyId) &&
+      requestedCompanyId > 0 &&
+      mentoring.assignments.some((item) => item.company_id === requestedCompanyId)
+    ) {
+      return requestedCompanyId;
+    }
+
+    if (
+      selectedCompanyId &&
+      mentoring.assignments.some((item) => item.company_id === selectedCompanyId)
+    ) {
+      return selectedCompanyId;
+    }
+
+    return (
+      myAssignments[0]?.company_id ??
+      availableAssignments[0]?.company_id ??
+      mentoring.assignments[0]?.company_id ??
+      null
+    );
+  }, [
+    availableAssignments,
+    mentoring,
+    myAssignments,
+    requestedCompanyId,
+    selectedCompanyId,
+  ]);
+
   const selectedCompany = useMemo(
     () =>
-      mentoring?.assignments.find((item) => item.company_id === selectedCompanyId) ??
+      mentoring?.assignments.find((item) => item.company_id === activeCompanyId) ??
       null,
-    [mentoring, selectedCompanyId]
+    [activeCompanyId, mentoring]
   );
 
   const companySessions = useMemo(
     () =>
-      mentoring?.sessions.filter((session) => session.company_id === selectedCompanyId) ??
+      mentoring?.sessions.filter((session) => session.company_id === activeCompanyId) ??
       [],
-    [mentoring, selectedCompanyId]
+    [activeCompanyId, mentoring]
   );
 
   const nextSessionNo = useMemo(() => {
@@ -105,29 +178,61 @@ export default function MentoringDetailPage() {
     );
   }, [companySessions]);
 
-  useEffect(() => {
-    if (!mentoring || mentoring.assignments.length === 0) return;
-    const candidate =
-      myAssignments[0]?.company_id ??
-      availableAssignments[0]?.company_id ??
-      mentoring.assignments[0]?.company_id ??
-      null;
+  const canComposeSession =
+    !mentoring?.isAdminView &&
+    selectedCompany?.is_mine &&
+    mentoring?.status !== "COMPLETED";
 
-    if (!selectedCompanyId || !mentoring.assignments.some((item) => item.company_id === selectedCompanyId)) {
-      setSelectedCompanyId(candidate);
+  const clearEditorPhotos = () => {
+    Object.values(newPhotoFilesRef.current).forEach((item) => {
+      URL.revokeObjectURL(item.previewUrl);
+    });
+    newPhotoFilesRef.current = {};
+    setEditorPhotos([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
-  }, [availableAssignments, mentoring, myAssignments, selectedCompanyId]);
+  };
 
   useEffect(() => {
     if (!selectedCompany) return;
     if (editingSessionId) return;
-    setSessionNo(String(nextSessionNo));
-    setMentoredAt(toLocalInputValue());
-    setPlace("");
-    setContent("");
-    setResult("");
-    setPhotoFiles([]);
+    startTransition(() => {
+      setSessionNo(String(nextSessionNo));
+      setMentoredAt(toLocalInputValue());
+      setPlace("");
+      setContent("");
+    });
+    clearEditorPhotos();
   }, [editingSessionId, nextSessionNo, selectedCompany]);
+
+  useEffect(() => {
+    if (!sessionCarouselApi) return;
+
+    const syncSelectedIndex = () => {
+      setSelectedSessionIndex(sessionCarouselApi.selectedScrollSnap());
+    };
+
+    syncSelectedIndex();
+    sessionCarouselApi.on("select", syncSelectedIndex);
+    sessionCarouselApi.on("reInit", syncSelectedIndex);
+
+    return () => {
+      sessionCarouselApi.off("select", syncSelectedIndex);
+      sessionCarouselApi.off("reInit", syncSelectedIndex);
+    };
+  }, [sessionCarouselApi]);
+
+  useEffect(() => {
+    if (!selectedCompany) return;
+    startTransition(() => {
+      setSelectedSessionIndex(0);
+      setIsComposerOpen(Boolean(selectedCompany.is_mine && companySessions.length === 0));
+    });
+    sessionCarouselApi?.scrollTo(0);
+  }, [companySessions.length, selectedCompany, sessionCarouselApi]);
+
+  useEffect(() => () => clearEditorPhotos(), []);
 
   const claimMutation = useMutation({
     mutationFn: async (companyId: number) =>
@@ -147,32 +252,44 @@ export default function MentoringDetailPage() {
         throw new Error("기업을 선택해주세요.");
       }
 
-      const uploadedPhotos = await Promise.all(
-        photoFiles.map(async (file, index) => {
-          const { uploadUrl, publicUrl } = await createMentoringSessionPhotoUploadUrl({
-            fileName: file.name,
-            contentType: file.type,
-          });
+      const uploadedPhotos = [];
 
-          const uploadResponse = await fetch(uploadUrl, {
-            method: "PUT",
-            headers: {
-              "Content-Type": file.type || "image/jpeg",
-            },
-            body: file,
-          });
-
-          if (!uploadResponse.ok) {
-            throw new Error("사진 업로드에 실패했습니다.");
-          }
-
-          return {
-            photo_path: publicUrl,
-            original_filename: file.name,
+      for (const [index, photoItem] of editorPhotos.entries()) {
+        if (photoItem.kind === "existing") {
+          uploadedPhotos.push({
+            photo_path: photoItem.photoPath,
+            original_filename: photoItem.name,
             sort_order: index + 1,
-          };
-        })
-      );
+          });
+          continue;
+        }
+
+        const fileEntry = newPhotoFilesRef.current[photoItem.fileKey];
+        if (!fileEntry) continue;
+
+        const { uploadUrl, publicUrl } = await createMentoringSessionPhotoUploadUrl({
+          fileName: fileEntry.file.name,
+          contentType: fileEntry.file.type,
+        });
+
+        const uploadResponse = await fetch(uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": fileEntry.file.type || "image/jpeg",
+          },
+          body: fileEntry.file,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("사진 업로드에 실패했습니다.");
+        }
+
+        uploadedPhotos.push({
+          photo_path: publicUrl,
+          original_filename: fileEntry.file.name,
+          sort_order: index + 1,
+        });
+      }
 
       return upsertMentoringSession({
         id: editingSessionId ?? undefined,
@@ -182,7 +299,6 @@ export default function MentoringDetailPage() {
         mentoredAt: new Date(mentoredAt).toISOString(),
         place,
         content,
-        result,
         photos: uploadedPhotos,
       });
     },
@@ -191,7 +307,8 @@ export default function MentoringDetailPage() {
         editingSessionId ? "멘토링 기록을 수정했습니다." : "멘토링 기록을 저장했습니다."
       );
       setEditingSessionId(null);
-      setPhotoFiles([]);
+      setIsComposerOpen(false);
+      clearEditorPhotos();
       queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
     },
     onError: (mutationError: Error) => {
@@ -199,14 +316,39 @@ export default function MentoringDetailPage() {
     },
   });
 
+  const scrollComposerIntoView = () => {
+    requestAnimationFrame(() => {
+      composerRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
+
+  const openComposerForNewSession = () => {
+    resetEditor();
+    setIsComposerOpen(true);
+    scrollComposerIntoView();
+  };
+
   const handleEditSession = (session: MentoringSession) => {
+    clearEditorPhotos();
     setEditingSessionId(session.id);
     setSessionNo(String(session.session_no));
     setMentoredAt(toLocalInputValue(session.mentored_at));
     setPlace(session.place ?? "");
     setContent(session.content ?? "");
-    setResult(session.result ?? "");
-    setPhotoFiles([]);
+    setEditorPhotos(
+      session.photos.map((photo) => ({
+        key: `existing-${photo.id}`,
+        kind: "existing" as const,
+        name: photo.original_filename || "사진",
+        previewUrl: photo.download_url ?? photo.photo_path,
+        photoPath: photo.photo_path,
+      }))
+    );
+    setIsComposerOpen(true);
+    scrollComposerIntoView();
   };
 
   const resetEditor = () => {
@@ -215,8 +357,86 @@ export default function MentoringDetailPage() {
     setMentoredAt(toLocalInputValue());
     setPlace("");
     setContent("");
-    setResult("");
-    setPhotoFiles([]);
+    clearEditorPhotos();
+  };
+
+  const handlePhotoFileChange = (files: FileList | null) => {
+    const added = Array.from(files ?? []).map((file, index) => {
+      const fileKey =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `photo-${Date.now()}-${index}`;
+      const previewUrl = URL.createObjectURL(file);
+      newPhotoFilesRef.current[fileKey] = { file, previewUrl };
+
+      return {
+        key: `new-${fileKey}`,
+        kind: "new" as const,
+        name: file.name,
+        previewUrl,
+        fileKey,
+      };
+    });
+    setEditorPhotos((current) => [...current, ...added]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleRemovePhoto = (key: string) => {
+    setEditorPhotos((current) => {
+      const target = current.find((item) => item.key === key);
+      if (target?.kind === "new") {
+        const fileEntry = newPhotoFilesRef.current[target.fileKey];
+        if (fileEntry) {
+          URL.revokeObjectURL(fileEntry.previewUrl);
+          delete newPhotoFilesRef.current[target.fileKey];
+        }
+      }
+      return current.filter((item) => item.key !== key);
+    });
+  };
+
+  const handleDownloadSessionPdf = async (session: MentoringSession) => {
+    if (!selectedCompany || !mentoring) return;
+
+    setDownloadingSessionId(session.id);
+    try {
+      const [{ pdf }, { saveAs }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("file-saver"),
+      ]);
+
+      const blob = await pdf(
+        <MentoringSessionDocument
+          programName={mentoring.program.name}
+          companyName={selectedCompany.company_name}
+          companyDescription={selectedCompany.company_description}
+          representativeName={selectedCompany.representative_name}
+          mentorName={session.mentor_name}
+          mentorAffiliation={
+            session.mentor_affiliation ?? selectedCompany.mentor_affiliation
+          }
+          mentorPosition={session.mentor_position ?? selectedCompany.mentor_position}
+          mentorSignatureUrl={session.mentor_signature_url}
+          logoUrl={mentoring.report_logo_url}
+          sessionNo={session.session_no}
+          mentoredAt={session.mentored_at}
+          place={session.place}
+          content={session.content}
+          photos={session.photos}
+        />
+      ).toBlob();
+
+      const sessionDate = session.mentored_at.slice(0, 10);
+      saveAs(
+        blob,
+        `${selectedCompany.company_name}_멘토링일지_${session.session_no}회차_${sessionDate}.pdf`
+      );
+    } catch (downloadError) {
+      console.error(downloadError);
+      toast.error("멘토링 보고서 저장 중 오류가 발생했습니다.");
+    } finally {
+      setDownloadingSessionId(null);
+    }
   };
 
   if (isLoading || !mentoring) {
@@ -409,144 +629,249 @@ export default function MentoringDetailPage() {
 
                 <div className="space-y-4">
                   <div className="rounded-2xl border bg-white p-5 shadow-sm">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
                         <h3 className="text-lg font-semibold text-neutral-950">
-                          멘토링 기록 타임라인
+                          멘토링 세션 스택
                         </h3>
                         <p className="mt-1 text-sm text-neutral-600">
-                          선택한 기업에 대한 멘토링 이력을 최신순으로 확인합니다.
+                          최근 세션부터 한 장씩 넘겨 보면서 기록을 검토할 수 있습니다.
                         </p>
                       </div>
-                      <Badge variant="secondary">{companySessions.length}건</Badge>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary">{companySessions.length}건</Badge>
+                        {companySessions.length > 0 && (
+                          <Badge variant="outline" className="text-xs text-neutral-600">
+                            {selectedSessionIndex + 1} / {companySessions.length}
+                          </Badge>
+                        )}
+                        {canComposeSession && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="gap-1.5"
+                            onClick={openComposerForNewSession}
+                          >
+                            <Plus className="h-4 w-4" />
+                            새 세션 시작
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="mt-4 space-y-3">
+                    <div className="mt-4 space-y-4">
                       {companySessions.length === 0 ? (
-                        <div className="rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-sm text-neutral-400">
-                          아직 기록이 없습니다.
+                        <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-10 text-center">
+                          <p className="text-sm font-medium text-neutral-700">
+                            아직 저장된 멘토링 세션이 없습니다.
+                          </p>
+                          <p className="mt-2 text-sm text-neutral-500">
+                            첫 세션을 작성하면 이 영역에서 회차별 기록을 넘겨보며 관리할 수 있습니다.
+                          </p>
+                          {canComposeSession && (
+                            <Button
+                              type="button"
+                              className="mt-5 gap-2"
+                              onClick={openComposerForNewSession}
+                            >
+                              <Sparkles className="h-4 w-4" />
+                              첫 멘토링 세션 작성
+                            </Button>
+                          )}
                         </div>
                       ) : (
-                        companySessions.map((session) => (
-                          <div
-                            key={session.id}
-                            className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4"
+                        <>
+                          <Carousel
+                            setApi={setSessionCarouselApi}
+                            opts={{ align: "start", containScroll: "trimSnaps" }}
+                            className="w-full"
                           >
-                            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                              <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <Badge variant="secondary">
-                                    {session.session_no}회차
-                                  </Badge>
-                                  <span className="text-sm font-medium text-neutral-900">
-                                    {formatDateTime(session.mentored_at)}
-                                  </span>
-                                </div>
-                                <div className="mt-2 flex flex-wrap gap-3 text-sm text-neutral-500">
-                                  <span className="flex items-center gap-1">
-                                    <MapPin className="h-4 w-4" />
-                                    {session.place || "장소 미입력"}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <UserRound className="h-4 w-4" />
-                                    {session.mentor_name || "작성자 없음"}
-                                  </span>
-                                </div>
-                              </div>
-                              {session.can_edit && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  className="gap-1.5"
-                                  onClick={() => handleEditSession(session)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                  수정
-                                </Button>
-                              )}
-                            </div>
-
-                            <div className="mt-4 grid gap-3 md:grid-cols-2">
-                              <div>
-                                <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                                  멘토링 내용
-                                </p>
-                                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
-                                  {session.content?.trim() || "기록 없음"}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                                  결과
-                                </p>
-                                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
-                                  {session.result?.trim() || "기록 없음"}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="mt-4">
-                              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                                사진
-                              </p>
-                              {session.photos.length === 0 ? (
-                                <p className="mt-2 text-sm text-neutral-400">
-                                  첨부된 사진이 없습니다.
-                                </p>
-                              ) : (
-                                <div className="mt-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                                  {session.photos.map((photo) => (
-                                    <a
-                                      key={photo.id}
-                                      href={photo.download_url ?? photo.photo_path}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="overflow-hidden rounded-xl border border-neutral-200 bg-white"
-                                    >
-                                      <img
-                                        src={photo.download_url ?? photo.photo_path}
-                                        alt={photo.original_filename || "멘토링 사진"}
-                                        className="h-32 w-full object-cover"
-                                      />
-                                      <div className="border-t border-neutral-100 px-3 py-2 text-xs text-neutral-500">
-                                        {photo.original_filename || "사진"}
+                            <CarouselContent>
+                              {companySessions.map((session) => (
+                                <CarouselItem key={session.id}>
+                                  <article className="rounded-[24px] border border-neutral-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-sm">
+                                    <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                                      <div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <Badge variant="secondary">
+                                            {session.session_no}회차
+                                          </Badge>
+                                          <span className="text-sm font-medium text-neutral-900">
+                                            {formatDateTime(session.mentored_at)}
+                                          </span>
+                                        </div>
+                                        <div className="mt-3 flex flex-wrap gap-3 text-sm text-neutral-500">
+                                          <span className="flex items-center gap-1">
+                                            <MapPin className="h-4 w-4" />
+                                            {session.place || "장소 미입력"}
+                                          </span>
+                                          <span className="flex items-center gap-1">
+                                            <UserRound className="h-4 w-4" />
+                                            {session.mentor_name || "작성자 없음"}
+                                          </span>
+                                        </div>
                                       </div>
-                                    </a>
-                                  ))}
-                                </div>
-                              )}
+                                      <div className="flex flex-wrap gap-2">
+                                        <LoadingButton
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="gap-1.5"
+                                          loading={downloadingSessionId === session.id}
+                                          onClick={() => handleDownloadSessionPdf(session)}
+                                        >
+                                          <FileText className="h-4 w-4" />
+                                          보고서 저장(.pdf)
+                                        </LoadingButton>
+                                        {session.can_edit && (
+                                          <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-1.5"
+                                            onClick={() => handleEditSession(session)}
+                                          >
+                                            <Pencil className="h-4 w-4" />
+                                            이 세션 수정
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div className="mt-5 rounded-2xl border border-neutral-200 bg-white p-4">
+                                      <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                                        멘토링 내용
+                                      </p>
+                                      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
+                                        {session.content?.trim() || "기록 없음"}
+                                      </p>
+                                    </div>
+
+                                    <div className="mt-5">
+                                      <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                                        현장 사진
+                                      </p>
+                                      {session.photos.length === 0 ? (
+                                        <p className="mt-2 text-sm text-neutral-400">
+                                          첨부된 사진이 없습니다.
+                                        </p>
+                                      ) : (
+                                        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                          {session.photos.map((photo) => (
+                                            <a
+                                              key={photo.id}
+                                              href={photo.download_url ?? photo.photo_path}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="overflow-hidden rounded-2xl border border-neutral-200 bg-white"
+                                            >
+                                              <img
+                                                src={photo.download_url ?? photo.photo_path}
+                                                alt={photo.original_filename || "멘토링 사진"}
+                                                className="h-36 w-full object-cover"
+                                              />
+                                              <div className="border-t border-neutral-100 px-3 py-2 text-xs text-neutral-500">
+                                                {photo.original_filename || "사진"}
+                                              </div>
+                                            </a>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </article>
+                                </CarouselItem>
+                              ))}
+                            </CarouselContent>
+                            <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                              <div className="flex flex-wrap gap-2">
+                                {companySessions.map((session, index) => (
+                                  <Button
+                                    key={session.id}
+                                    type="button"
+                                    variant={
+                                      index === selectedSessionIndex
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    size="sm"
+                                    className="gap-1.5 rounded-full"
+                                    onClick={() => sessionCarouselApi?.scrollTo(index)}
+                                  >
+                                    <span>{session.session_no}회차</span>
+                                    <span className="text-[11px] opacity-70">
+                                      {session.mentored_at.slice(5, 10)}
+                                    </span>
+                                  </Button>
+                                ))}
+                              </div>
+                              <div className="flex items-center gap-2 self-end lg:self-auto">
+                                <CarouselPrevious className="static translate-y-0" />
+                                <CarouselNext className="static translate-y-0" />
+                              </div>
                             </div>
-                          </div>
-                        ))
+                          </Carousel>
+                        </>
                       )}
                     </div>
                   </div>
 
                   {!mentoring.isAdminView && selectedCompany.is_mine && (
-                    <div className="rounded-2xl border bg-white p-5 shadow-sm">
-                      <div className="flex items-center justify-between gap-3">
+                    <div
+                      ref={composerRef}
+                      className="rounded-2xl border bg-white p-5 shadow-sm"
+                    >
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div>
-                          <h3 className="text-lg font-semibold text-neutral-950">
-                            {editingSessionId ? "멘토링 기록 수정" : "새 멘토링 기록"}
-                          </h3>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-lg font-semibold text-neutral-950">
+                              {editingSessionId
+                                ? `${sessionNo}회차 기록 수정`
+                                : "새 멘토링 세션 작성"}
+                            </h3>
+                            <Badge variant="outline">다음 권장 회차 {nextSessionNo}</Badge>
+                          </div>
                           <p className="mt-1 text-sm text-neutral-600">
-                            회차별 상담 내용을 누적해서 저장합니다.
+                            새 세션을 추가하거나 기존 세션을 열어 업데이트할 수 있습니다.
                           </p>
                         </div>
-                        {editingSessionId && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={resetEditor}
-                          >
-                            새로 작성
-                          </Button>
-                        )}
+                        <div className="flex flex-wrap gap-2">
+                          {!isComposerOpen && (
+                            <Button
+                              type="button"
+                              className="gap-1.5"
+                              onClick={openComposerForNewSession}
+                            >
+                              <Plus className="h-4 w-4" />
+                              세션 작성 열기
+                            </Button>
+                          )}
+                          {isComposerOpen && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                resetEditor();
+                                setIsComposerOpen(false);
+                              }}
+                            >
+                              닫기
+                            </Button>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="mt-4 space-y-4">
+                      {!isComposerOpen ? (
+                        <div className="mt-4 rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-6">
+                          <p className="text-sm font-medium text-neutral-700">
+                            새 멘토링 세션을 추가할 준비가 되면 작성 패널을 열어주세요.
+                          </p>
+                          <p className="mt-2 text-sm text-neutral-500">
+                            회차, 일시, 장소, 멘토링 내용, 현장 사진을 한 번에 정리할 수 있습니다.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="mt-4 space-y-4">
                         <div className="grid gap-4 sm:grid-cols-2">
                           <div>
                             <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
@@ -600,45 +925,68 @@ export default function MentoringDetailPage() {
 
                         <div>
                           <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                            결과
-                          </label>
-                          <Textarea
-                            rows={5}
-                            value={result}
-                            onChange={(e) => setResult(e.target.value)}
-                            placeholder="후속 조치, 결정 사항, 결과 요약을 입력하세요."
-                            className="mt-2 min-h-[180px] resize-y"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
                             사진 첨부
                           </label>
-                          <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-4 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-400 hover:bg-white">
-                            <Camera className="h-4 w-4" />
-                            사진 여러 장 선택
-                            <input
-                              type="file"
-                              accept="image/*"
-                              multiple
-                              className="sr-only"
-                              onChange={(e) =>
-                                setPhotoFiles(Array.from(e.target.files ?? []))
-                              }
-                            />
-                          </label>
-                          {photoFiles.length > 0 && (
-                            <div className="mt-3 space-y-2">
-                              {photoFiles.map((file) => (
-                                <div
-                                  key={file.name}
-                                  className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-600"
-                                >
-                                  <FileImage className="h-4 w-4 text-neutral-400" />
-                                  {file.name}
-                                </div>
-                              ))}
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            tabIndex={-1}
+                            className="sr-only"
+                            onChange={(e) => handlePhotoFileChange(e.target.files)}
+                          />
+                          {editorPhotos.length === 0 ? (
+                            <button
+                              type="button"
+                              className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-4 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-400 hover:bg-white"
+                              onClick={() => fileInputRef.current?.click()}
+                            >
+                              <Camera className="h-4 w-4" />
+                              사진 선택
+                            </button>
+                          ) : (
+                            <div className="mt-2 space-y-3">
+                              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                {editorPhotos.map((photo) => (
+                                  <div
+                                    key={photo.key}
+                                    className="overflow-hidden rounded-2xl border border-neutral-200 bg-white"
+                                  >
+                                    <div className="relative aspect-[4/3] bg-neutral-100">
+                                      <img
+                                        src={photo.previewUrl}
+                                        alt={photo.name}
+                                        className="h-full w-full object-cover"
+                                      />
+                                      <div className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[11px] font-medium text-white">
+                                        {photo.kind === "existing" ? "기존 사진" : "새 사진"}
+                                      </div>
+                                      <button
+                                        type="button"
+                                        className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-white hover:text-red-500"
+                                        onClick={() => handleRemovePhoto(photo.key)}
+                                      >
+                                        삭제
+                                      </button>
+                                    </div>
+                                    <div className="flex items-center gap-2 border-t border-neutral-100 px-3 py-2 text-sm text-neutral-600">
+                                      <FileImage className="h-4 w-4 shrink-0 text-neutral-400" />
+                                      <span className="min-w-0 flex-1 truncate">
+                                        {photo.name}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <button
+                                type="button"
+                                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 text-sm font-medium text-neutral-600 transition-colors hover:border-neutral-400 hover:bg-white"
+                                onClick={() => fileInputRef.current?.click()}
+                              >
+                                <Plus className="h-4 w-4" />
+                                사진 추가
+                              </button>
                             </div>
                           )}
                         </div>
@@ -653,7 +1001,8 @@ export default function MentoringDetailPage() {
                           <CheckCircle2 className="h-4 w-4" />
                           {editingSessionId ? "기록 수정" : "기록 저장"}
                         </LoadingButton>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   )}
 

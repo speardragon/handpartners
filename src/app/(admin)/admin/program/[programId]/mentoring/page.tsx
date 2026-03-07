@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -14,14 +14,24 @@ import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowLeft,
   Clock3,
+  Download,
+  FileText,
   PlayCircle,
   SquareArrowOutUpRight,
   StopCircle,
 } from "lucide-react";
 import ProgramFeatureTabs from "../_components/ProgramFeatureTabs";
 import MentoringEditForm from "../_components/MentoringEditForm";
+import MentoringSessionDocument from "@/app/(home)/mentoring/[mentoringId]/_components/MentoringSessionDocument";
 
 type Props = {
   params: Promise<{
@@ -54,6 +64,10 @@ export default function Page({ params }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
+  const [isBulkReportDownloading, setIsBulkReportDownloading] = useState(false);
+  const [isSingleReportDownloading, setIsSingleReportDownloading] =
+    useState(false);
+  const [selectedReportSessionId, setSelectedReportSessionId] = useState("");
 
   const {
     data: mentoring,
@@ -61,6 +75,27 @@ export default function Page({ params }: Props) {
     isError,
     error,
   } = useQuery(mentoringQueries.byProgram(programIdNumber));
+
+  const { data: mentoringDetail } = useQuery({
+    ...mentoringQueries.detail(mentoring?.id ?? ""),
+    enabled: Boolean(mentoring?.id),
+  });
+
+  const selectedReportSession = useMemo(() => {
+    if (!mentoringDetail || mentoringDetail.sessions.length === 0) {
+      return null;
+    }
+
+    if (!selectedReportSessionId) {
+      return mentoringDetail.sessions[0] ?? null;
+    }
+
+    return (
+      mentoringDetail.sessions.find(
+        (session) => String(session.id) === selectedReportSessionId
+      ) ?? null
+    );
+  }, [mentoringDetail, selectedReportSessionId]);
 
   if (isLoading) {
     return <ManagementSkeleton />;
@@ -90,6 +125,113 @@ export default function Page({ params }: Props) {
       toast.error("멘토링 상태 변경 중 오류가 발생했습니다.");
     } finally {
       setIsStatusUpdating(false);
+    }
+  };
+
+  const buildSessionFileName = (companyName: string, sessionNo: number, date: string) =>
+    `${companyName}_멘토링일지_${sessionNo}회차_${date.slice(0, 10)}.pdf`;
+
+  const createSessionReportBlob = async (sessionId: number) => {
+    if (!mentoringDetail) {
+      throw new Error("멘토링 세부 정보를 불러오는 중입니다.");
+    }
+
+    const session = mentoringDetail.sessions.find((item) => item.id === sessionId);
+    if (!session) {
+      throw new Error("멘토링 세션을 찾을 수 없습니다.");
+    }
+
+    const company = mentoringDetail.assignments.find(
+      (item) => item.company_id === session.company_id
+    );
+
+    const companyName = company?.company_name ?? session.company_name;
+    const companyDescription = company?.company_description ?? null;
+    const representativeName = company?.representative_name ?? null;
+
+    const { pdf } = await import("@react-pdf/renderer");
+
+    const blob = await pdf(
+      <MentoringSessionDocument
+        programName={mentoring.program.name}
+        companyName={companyName}
+        companyDescription={companyDescription}
+        representativeName={representativeName}
+        mentorName={session.mentor_name}
+        mentorAffiliation={session.mentor_affiliation ?? company?.mentor_affiliation ?? null}
+        mentorPosition={session.mentor_position ?? company?.mentor_position ?? null}
+        mentorSignatureUrl={session.mentor_signature_url}
+        logoUrl={mentoring.report_logo_url}
+        sessionNo={session.session_no}
+        mentoredAt={session.mentored_at}
+        place={session.place}
+        content={session.content}
+        photos={session.photos}
+      />
+    ).toBlob();
+
+    return {
+      blob,
+      fileName: buildSessionFileName(
+        companyName,
+        session.session_no,
+        session.mentored_at
+      ),
+    };
+  };
+
+  const handleSingleReportDownload = async () => {
+    if (!selectedReportSession) {
+      toast.error("저장할 멘토링 세션이 없습니다.");
+      return;
+    }
+
+    setIsSingleReportDownloading(true);
+    try {
+      const [{ saveAs }, reportFile] = await Promise.all([
+        import("file-saver"),
+        createSessionReportBlob(selectedReportSession.id),
+      ]);
+
+      saveAs(reportFile.blob, reportFile.fileName);
+      toast.success("멘토링 보고서를 저장했습니다.");
+    } catch (downloadError) {
+      console.error(downloadError);
+      toast.error("멘토링 보고서 저장 중 오류가 발생했습니다.");
+    } finally {
+      setIsSingleReportDownloading(false);
+    }
+  };
+
+  const handleBulkReportDownload = async () => {
+    if (!mentoringDetail || mentoringDetail.sessions.length === 0) {
+      toast.error("저장할 멘토링 보고서가 없습니다.");
+      return;
+    }
+
+    setIsBulkReportDownloading(true);
+    try {
+      const [{ default: JSZip }, { saveAs }] = await Promise.all([
+        import("jszip"),
+        import("file-saver"),
+      ]);
+
+      const zip = new JSZip();
+
+      for (const session of mentoringDetail.sessions) {
+        const reportFile = await createSessionReportBlob(session.id);
+        zip.file(reportFile.fileName, reportFile.blob);
+      }
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const date = new Date().toISOString().slice(0, 10);
+      saveAs(zipBlob, `멘토링보고서_${mentoring.program.name}_${date}.zip`);
+      toast.success("멘토링 보고서 일괄 저장이 완료되었습니다.");
+    } catch (downloadError) {
+      console.error(downloadError);
+      toast.error("멘토링 보고서 일괄 저장 중 오류가 발생했습니다.");
+    } finally {
+      setIsBulkReportDownloading(false);
     }
   };
 
@@ -209,7 +351,7 @@ export default function Page({ params }: Props) {
                 Actions
               </p>
               <h2 className="mt-2 text-lg font-semibold text-neutral-950">
-                멘토링 상태 관리
+                멘토링 운영 관리
               </h2>
               <p className="mt-2 text-sm leading-6 text-neutral-600">
                 대상 기업과 참여 멘토를 구성한 뒤, 멘토가 직접 기업을 선점하고
@@ -262,6 +404,66 @@ export default function Page({ params }: Props) {
                   멘토링 재개
                 </LoadingButton>
               )}
+            </div>
+
+            <div className="border-t border-neutral-200 pt-6">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-400">
+                Reports
+              </p>
+              <h3 className="mt-2 text-base font-semibold text-neutral-950">
+                멘토링 보고서 저장
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-neutral-600">
+                업로드된 로고와 멘토 서명을 포함한 멘토링 일지를 개별 PDF 또는
+                전체 ZIP으로 저장합니다.
+              </p>
+
+              <div className="mt-4 space-y-3">
+                <LoadingButton
+                  className="w-full gap-2"
+                  loading={isBulkReportDownloading}
+                  onClick={handleBulkReportDownload}
+                  disabled={!mentoringDetail || mentoringDetail.sessions.length === 0}
+                >
+                  <Download className="h-4 w-4" />
+                  멘토링 보고서 일괄 저장
+                </LoadingButton>
+
+                <div className="space-y-2">
+                  <Select
+                    value={
+                      selectedReportSession
+                        ? String(selectedReportSession.id)
+                        : selectedReportSessionId
+                    }
+                    onValueChange={setSelectedReportSessionId}
+                    disabled={!mentoringDetail || mentoringDetail.sessions.length === 0}
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="개별 저장할 세션 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(mentoringDetail?.sessions ?? []).map((session) => (
+                        <SelectItem key={session.id} value={String(session.id)}>
+                          {session.company_name} · {session.session_no}회차 ·{" "}
+                          {session.mentored_at.slice(0, 10)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <LoadingButton
+                    variant="outline"
+                    className="w-full gap-2"
+                    loading={isSingleReportDownloading}
+                    onClick={handleSingleReportDownload}
+                    disabled={!selectedReportSession}
+                  >
+                    <FileText className="h-4 w-4" />
+                    멘토링 보고서 개별 저장
+                  </LoadingButton>
+                </div>
+              </div>
             </div>
           </div>
         </section>

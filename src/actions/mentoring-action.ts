@@ -3,11 +3,13 @@
 import { Database } from "types_db";
 import { USER_ROLES } from "@/constants/auth";
 import { createClient } from "@/lib/supabase/server";
-import { createPresignedDownloadUrl, createS3PresignedUploadUrl } from "@/lib/storage/s3";
+import {
+  createPresignedDownloadUrl,
+  createS3PresignedUploadUrl,
+} from "@/lib/storage/s3";
 import { generateMentoringId } from "@/lib/utils/mentoring-id";
 
-export type MentoringStatus =
-  Database["public"]["Enums"]["mentoring_status"];
+export type MentoringStatus = Database["public"]["Enums"]["mentoring_status"];
 export type MentoringRow = Database["public"]["Tables"]["mentoring"]["Row"];
 export type MentoringRowInsert =
   Database["public"]["Tables"]["mentoring"]["Insert"];
@@ -30,6 +32,7 @@ export interface MentoringAssignment {
   mentor_id: string | null;
   mentor_name: string | null;
   mentor_affiliation: string | null;
+  mentor_position: string | null;
   claimed_at: string | null;
   is_mine: boolean;
   can_claim: boolean;
@@ -51,11 +54,13 @@ export interface MentoringSession {
   company_name: string;
   mentor_id: string;
   mentor_name: string | null;
+  mentor_affiliation: string | null;
+  mentor_position: string | null;
+  mentor_signature_url: string | null;
   session_no: number;
   mentored_at: string;
   place: string | null;
   content: string | null;
-  result: string | null;
   created_at: string;
   updated_at: string;
   photos: MentoringSessionPhoto[];
@@ -80,6 +85,7 @@ export interface MentoringListResult {
 
 export interface MentoringWithStatus extends MentoringRow {
   program: MentoringProgramSummary;
+  report_logo_url: string | null;
   number_of_companies: number;
   number_of_users: number;
   number_of_sessions: number;
@@ -93,6 +99,7 @@ export interface MentoringWithStatus extends MentoringRow {
 
 export interface MentoringManagementSummary extends MentoringRow {
   program: MentoringProgramSummary;
+  report_logo_url: string | null;
   number_of_companies: number;
   number_of_users: number;
   number_of_sessions: number;
@@ -106,12 +113,13 @@ export interface MentoringManagementSummary extends MentoringRow {
   }[];
   recent_sessions: Array<{
     id: number;
+    company_id: number;
     company_name: string;
     mentor_name: string | null;
     session_no: number;
     mentored_at: string;
     place: string | null;
-    result: string | null;
+    content: string | null;
   }>;
 }
 
@@ -127,6 +135,7 @@ type ViewerContext = {
 };
 
 function handleError(error: unknown): never {
+  console.log("Error occurred:", error);
   const message = error instanceof Error ? error.message : String(error);
   console.error(message);
   throw new Error(message);
@@ -237,8 +246,23 @@ async function getMentoringBase(
     handleError(error || new Error("멘토링 정보를 불러오지 못했습니다."));
   }
 
+  let reportLogoUrl: string | null = null;
+  if (data.report_logo_path) {
+    try {
+      reportLogoUrl = (
+        await createPresignedDownloadUrl({
+          objectPathOrUrl: data.report_logo_path,
+          expiresInSeconds: 600,
+        })
+      ).downloadUrl;
+    } catch {
+      reportLogoUrl = null;
+    }
+  }
+
   return {
     ...data,
+    report_logo_url: reportLogoUrl,
     program: normalizeProgram(
       data.program as unknown as MentoringProgramSummary | null
     ),
@@ -376,12 +400,15 @@ export async function getMentoringByProgramId(
   const mentoring = await ensureMentoringForProgram(programId);
   const base = await getMentoringBase(context.supabase, mentoring.id);
 
-  const [{ data: companies, error: companiesError }, { data: mentors, error: mentorsError }, { data: sessions, error: sessionsError }] =
-    await Promise.all([
-      context.supabase
-        .from("mentoring_company")
-        .select(
-          `
+  const [
+    { data: companies, error: companiesError },
+    { data: mentors, error: mentorsError },
+    { data: sessions, error: sessionsError },
+  ] = await Promise.all([
+    context.supabase
+      .from("mentoring_company")
+      .select(
+        `
           company_id,
           mentor_id,
           claimed_at,
@@ -394,16 +421,17 @@ export async function getMentoringByProgramId(
           mentor:mentor_id (
             id,
             username,
-            affiliation
+            affiliation,
+            position
           )
         `
-        )
-        .eq("mentoring_id", mentoring.id)
-        .order("created_at", { ascending: true }),
-      context.supabase
-        .from("mentoring_user")
-        .select(
-          `
+      )
+      .eq("mentoring_id", mentoring.id)
+      .order("created_at", { ascending: true }),
+    context.supabase
+      .from("mentoring_user")
+      .select(
+        `
           user_id,
           user:user_id (
             id,
@@ -411,33 +439,35 @@ export async function getMentoringByProgramId(
             affiliation
           )
         `
-        )
-        .eq("mentoring_id", mentoring.id)
-        .order("created_at", { ascending: true }),
-      context.supabase
-        .from("mentoring_session")
-        .select(
-          `
+      )
+      .eq("mentoring_id", mentoring.id)
+      .order("created_at", { ascending: true }),
+    context.supabase
+      .from("mentoring_session")
+      .select(
+        `
           id,
           company_id,
           mentor_id,
           session_no,
           mentored_at,
           place,
-          result,
+          content,
           company:company_id (
             id,
             name
           ),
           mentor:mentor_id (
             id,
-            username
+            username,
+            affiliation,
+            position
           )
         `
-        )
-        .eq("mentoring_id", mentoring.id)
-        .order("mentored_at", { ascending: false }),
-    ]);
+      )
+      .eq("mentoring_id", mentoring.id)
+      .order("mentored_at", { ascending: false }),
+  ]);
 
   if (companiesError) handleError(companiesError);
   if (mentorsError) handleError(mentorsError);
@@ -454,7 +484,10 @@ export async function getMentoringByProgramId(
       lastMentoredAt: null,
     };
     current.count += 1;
-    if (!current.lastMentoredAt || session.mentored_at > current.lastMentoredAt) {
+    if (
+      !current.lastMentoredAt ||
+      session.mentored_at > current.lastMentoredAt
+    ) {
       current.lastMentoredAt = session.mentored_at;
     }
     sessionStats.set(session.company_id, current);
@@ -467,6 +500,7 @@ export async function getMentoringByProgramId(
         id: string;
         username: string;
         affiliation: string | null;
+        position: string | null;
       }>(item.mentor as unknown);
       const company = takeFirstRelation<{
         id: number;
@@ -483,6 +517,7 @@ export async function getMentoringByProgramId(
         mentor_id: item.mentor_id,
         mentor_name: mentor?.username ?? null,
         mentor_affiliation: mentor?.affiliation ?? null,
+        mentor_position: mentor?.position ?? null,
         claimed_at: item.claimed_at,
         is_mine: false,
         can_claim: false,
@@ -526,19 +561,19 @@ export async function getMentoringByProgramId(
     mentors: mentoringMentors,
     recent_sessions: (sessions ?? []).slice(0, 8).map((session) => ({
       id: session.id,
+      company_id: session.company_id,
       company_name:
-        (takeFirstRelation<{ id: number; name: string }>(
+        takeFirstRelation<{ id: number; name: string }>(
           session.company as unknown
-        )?.name ?? ""),
+        )?.name ?? "",
       mentor_name:
-        (takeFirstRelation<{ id: string; username: string }>(
+        takeFirstRelation<{ id: string; username: string }>(
           session.mentor as unknown
-        )?.username ??
-          null),
+        )?.username ?? null,
       session_no: session.session_no,
       mentored_at: session.mentored_at,
       place: session.place,
-      result: session.result,
+      content: session.content,
     })),
   };
 }
@@ -616,14 +651,16 @@ export async function getAllMentorings(
     handleError(error);
   }
 
-  const items = ((data ?? []) as Array<{
-    id: string;
-    status: MentoringStatus;
-    created_at: string;
-    program: Partial<MentoringProgramSummary> | null;
-    companies: Array<{ company_id: number; mentor_id: string | null }>;
-    sessions: Array<{ id: number; mentored_at: string }>;
-  }>).map((item) => {
+  const items = (
+    (data ?? []) as Array<{
+      id: string;
+      status: MentoringStatus;
+      created_at: string;
+      program: Partial<MentoringProgramSummary> | null;
+      companies: Array<{ company_id: number; mentor_id: string | null }>;
+      sessions: Array<{ id: number; mentored_at: string }>;
+    }>
+  ).map((item) => {
     const { assignedCompanyCount, myCompanyCount } = buildAssignmentStats(
       item.companies ?? [],
       context.viewer.id
@@ -650,8 +687,10 @@ export async function getAllMentorings(
   });
 
   items.sort((a, b) => {
-    const aSource = a.recent_mentored_at ?? a.program.start_date ?? a.created_at;
-    const bSource = b.recent_mentored_at ?? b.program.start_date ?? b.created_at;
+    const aSource =
+      a.recent_mentored_at ?? a.program.start_date ?? a.created_at;
+    const bSource =
+      b.recent_mentored_at ?? b.program.start_date ?? b.created_at;
 
     return bSource.localeCompare(aSource);
   });
@@ -676,12 +715,15 @@ export async function getMentoringDetail(
     await ensureMentoringParticipant(context, mentoringId);
   }
 
-  const [{ data: assignments, error: assignmentsError }, { data: sessions, error: sessionsError }, { data: mentors, error: mentorsError }] =
-    await Promise.all([
-      context.supabase
-        .from("mentoring_company")
-        .select(
-          `
+  const [
+    { data: assignments, error: assignmentsError },
+    { data: sessions, error: sessionsError },
+    { data: mentors, error: mentorsError },
+  ] = await Promise.all([
+    context.supabase
+      .from("mentoring_company")
+      .select(
+        `
           company_id,
           mentor_id,
           claimed_at,
@@ -697,13 +739,13 @@ export async function getMentoringDetail(
             affiliation
           )
         `
-        )
-        .eq("mentoring_id", mentoringId)
-        .order("created_at", { ascending: true }),
-      context.supabase
-        .from("mentoring_session")
-        .select(
-          `
+      )
+      .eq("mentoring_id", mentoringId)
+      .order("created_at", { ascending: true }),
+    context.supabase
+      .from("mentoring_session")
+      .select(
+        `
           id,
           company_id,
           mentor_id,
@@ -711,7 +753,6 @@ export async function getMentoringDetail(
           mentored_at,
           place,
           content,
-          result,
           created_at,
           updated_at,
           company:company_id (
@@ -720,7 +761,10 @@ export async function getMentoringDetail(
           ),
           mentor:mentor_id (
             id,
-            username
+            username,
+            affiliation,
+            position,
+            signature_url
           ),
           photos:mentoring_session_photo (
             id,
@@ -729,20 +773,22 @@ export async function getMentoringDetail(
             sort_order
           )
         `
-        )
-        .eq("mentoring_id", mentoringId)
-        .order("mentored_at", { ascending: false }),
-      context.supabase
-        .from("mentoring_user")
-        .select("user_id")
-        .eq("mentoring_id", mentoringId),
-    ]);
+      )
+      .eq("mentoring_id", mentoringId)
+      .order("mentored_at", { ascending: false }),
+    context.supabase
+      .from("mentoring_user")
+      .select("user_id")
+      .eq("mentoring_id", mentoringId),
+  ]);
 
   if (assignmentsError) handleError(assignmentsError);
   if (sessionsError) handleError(sessionsError);
   if (mentorsError) handleError(mentorsError);
 
-  const availableMentorIds = new Set((mentors ?? []).map((item) => item.user_id));
+  const availableMentorIds = new Set(
+    (mentors ?? []).map((item) => item.user_id)
+  );
   const isParticipant = availableMentorIds.has(context.viewer.id);
   const isAdminView = context.isAdmin && !isParticipant;
 
@@ -751,6 +797,7 @@ export async function getMentoringDetail(
       id: string;
       username: string;
       affiliation: string | null;
+      position: string | null;
     }>(item.mentor as unknown);
     const company = takeFirstRelation<{
       id: number;
@@ -767,6 +814,7 @@ export async function getMentoringDetail(
       mentor_id: item.mentor_id,
       mentor_name: mentor?.username ?? null,
       mentor_affiliation: mentor?.affiliation ?? null,
+      mentor_position: mentor?.position ?? null,
       claimed_at: item.claimed_at,
     };
   });
@@ -774,9 +822,12 @@ export async function getMentoringDetail(
   const visibleAssignments = isAdminView
     ? allAssignments
     : allAssignments.filter(
-        (item) => item.mentor_id === context.viewer.id || item.mentor_id === null
+        (item) =>
+          item.mentor_id === context.viewer.id || item.mentor_id === null
       );
-  const visibleCompanyIds = new Set(visibleAssignments.map((item) => item.company_id));
+  const visibleCompanyIds = new Set(
+    visibleAssignments.map((item) => item.company_id)
+  );
 
   const sessionStats = new Map<
     number,
@@ -793,7 +844,10 @@ export async function getMentoringDetail(
       lastMentoredAt: null,
     };
     current.count += 1;
-    if (!current.lastMentoredAt || session.mentored_at > current.lastMentoredAt) {
+    if (
+      !current.lastMentoredAt ||
+      session.mentored_at > current.lastMentoredAt
+    ) {
       current.lastMentoredAt = session.mentored_at;
     }
     sessionStats.set(session.company_id, current);
@@ -843,24 +897,44 @@ export async function getMentoringDetail(
           )
         : [];
 
+      const mentor = takeFirstRelation<{
+        id: string;
+        username: string;
+        affiliation: string | null;
+        position: string | null;
+        signature_url: string | null;
+      }>(session.mentor as unknown);
+      let mentorSignatureUrl: string | null = null;
+
+      if (mentor?.signature_url) {
+        try {
+          mentorSignatureUrl = (
+            await createPresignedDownloadUrl({
+              objectPathOrUrl: mentor.signature_url,
+              expiresInSeconds: 600,
+            })
+          ).downloadUrl;
+        } catch {
+          mentorSignatureUrl = null;
+        }
+      }
+
       return {
         id: session.id,
         company_id: session.company_id,
         company_name:
-          (takeFirstRelation<{ id: number; name: string }>(
+          takeFirstRelation<{ id: number; name: string }>(
             session.company as unknown
-          )?.name ?? ""),
+          )?.name ?? "",
         mentor_id: session.mentor_id,
-        mentor_name:
-          (takeFirstRelation<{ id: string; username: string }>(
-            session.mentor as unknown
-          )?.username ??
-            null),
+        mentor_name: mentor?.username ?? null,
+        mentor_affiliation: mentor?.affiliation ?? null,
+        mentor_position: mentor?.position ?? null,
+        mentor_signature_url: mentorSignatureUrl,
         session_no: session.session_no,
         mentored_at: session.mentored_at,
         place: session.place,
         content: session.content,
-        result: session.result,
         created_at: session.created_at,
         updated_at: session.updated_at,
         photos: photos.sort((a, b) => a.sort_order - b.sort_order),
@@ -979,25 +1053,29 @@ export async function updateMentoringUsers(args: {
   const toRemove = Array.from(existingIds).filter((id) => !nextIds.has(id));
 
   if (toRemove.length > 0) {
-    const [{ count: assignmentCount, error: assignmentError }, { count: sessionCount, error: sessionError }] =
-      await Promise.all([
-        context.supabase
-          .from("mentoring_company")
-          .select("id", { count: "exact", head: true })
-          .eq("mentoring_id", args.mentoringId)
-          .in("mentor_id", toRemove),
-        context.supabase
-          .from("mentoring_session")
-          .select("id", { count: "exact", head: true })
-          .eq("mentoring_id", args.mentoringId)
-          .in("mentor_id", toRemove),
-      ]);
+    const [
+      { count: assignmentCount, error: assignmentError },
+      { count: sessionCount, error: sessionError },
+    ] = await Promise.all([
+      context.supabase
+        .from("mentoring_company")
+        .select("id", { count: "exact", head: true })
+        .eq("mentoring_id", args.mentoringId)
+        .in("mentor_id", toRemove),
+      context.supabase
+        .from("mentoring_session")
+        .select("id", { count: "exact", head: true })
+        .eq("mentoring_id", args.mentoringId)
+        .in("mentor_id", toRemove),
+    ]);
 
     if (assignmentError) handleError(assignmentError);
     if (sessionError) handleError(sessionError);
 
     if ((assignmentCount ?? 0) > 0 || (sessionCount ?? 0) > 0) {
-      throw new Error("배정 또는 기록이 있는 멘토는 대상에서 제거할 수 없습니다.");
+      throw new Error(
+        "배정 또는 기록이 있는 멘토는 대상에서 제거할 수 없습니다."
+      );
     }
 
     const { error: deleteError } = await context.supabase
@@ -1124,6 +1202,44 @@ export async function createMentoringSessionPhotoUploadUrl(args: {
   });
 }
 
+export async function createMentoringReportLogoUploadUrl(args: {
+  fileName: string;
+  contentType?: string;
+}) {
+  return createS3PresignedUploadUrl({
+    fileName: args.fileName,
+    keyPrefix: "mentoring-report-logos",
+    contentType: args.contentType,
+    defaultContentType: "image/png",
+  });
+}
+
+export async function updateMentoringReportLogo(args: {
+  mentoringId: string;
+  reportLogoPath: string | null;
+}) {
+  const context = await assertAdmin();
+
+  const { data, error } = await context.supabase
+    .from("mentoring")
+    .update({
+      report_logo_path: args.reportLogoPath,
+    })
+    .eq("id", args.mentoringId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    handleError(error);
+  }
+
+  if (!data) {
+    throw new Error("멘토링 정보를 찾을 수 없습니다.");
+  }
+
+  return { success: true };
+}
+
 export async function upsertMentoringSession(args: {
   id?: number;
   mentoringId: string;
@@ -1132,8 +1248,7 @@ export async function upsertMentoringSession(args: {
   mentoredAt: string;
   place?: string | null;
   content?: string | null;
-  result?: string | null;
-  photos?: Array<{
+  photos: Array<{
     photo_path: string;
     original_filename?: string | null;
     sort_order?: number;
@@ -1160,7 +1275,9 @@ export async function upsertMentoringSession(args: {
   }
 
   if (!assignment || assignment.mentor_id !== context.viewer.id) {
-    throw new Error("현재 담당 기업에 대해서만 멘토링 기록을 작성할 수 있습니다.");
+    throw new Error(
+      "현재 담당 기업에 대해서만 멘토링 기록을 작성할 수 있습니다."
+    );
   }
 
   const payload = {
@@ -1171,7 +1288,6 @@ export async function upsertMentoringSession(args: {
     mentored_at: args.mentoredAt,
     place: args.place?.trim() || null,
     content: args.content?.trim() || null,
-    result: args.result?.trim() || null,
     updated_at: new Date().toISOString(),
   };
 
@@ -1215,7 +1331,11 @@ export async function upsertMentoringSession(args: {
       .single();
 
     if (createError || !created) {
-      if (createError && "code" in createError && createError.code === "23505") {
+      if (
+        createError &&
+        "code" in createError &&
+        createError.code === "23505"
+      ) {
         throw new Error("같은 기업에 동일한 회차가 이미 존재합니다.");
       }
       handleError(createError || new Error("멘토링 기록 저장에 실패했습니다."));
@@ -1224,28 +1344,30 @@ export async function upsertMentoringSession(args: {
     sessionId = created.id;
   }
 
-  if (sessionId && args.photos && args.photos.length > 0) {
-    const { data: currentPhotos, error: photoError } = await context.supabase
+  if (!sessionId) {
+    return { success: true, sessionId };
+  }
+
+  if (args.id) {
+    const { error: deletePhotoError } = await context.supabase
       .from("mentoring_session_photo")
-      .select("sort_order")
-      .eq("mentoring_session_id", sessionId)
-      .order("sort_order", { ascending: false })
-      .limit(1);
+      .delete()
+      .eq("mentoring_session_id", sessionId);
 
-    if (photoError) {
-      handleError(photoError);
+    if (deletePhotoError) {
+      handleError(deletePhotoError);
     }
+  }
 
-    const baseOrder = currentPhotos?.[0]?.sort_order ?? 0;
-
+  if (args.photos.length > 0) {
     const { error: insertPhotoError } = await context.supabase
       .from("mentoring_session_photo")
       .insert(
         args.photos.map((photo, index) => ({
-          mentoring_session_id: sessionId!,
+          mentoring_session_id: sessionId,
           photo_path: photo.photo_path,
           original_filename: photo.original_filename ?? null,
-          sort_order: photo.sort_order ?? baseOrder + index + 1,
+          sort_order: photo.sort_order ?? index + 1,
           created_at: new Date().toISOString(),
         }))
       );

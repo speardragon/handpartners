@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +22,9 @@ import type {
 } from "@/actions/mentoring-action";
 import {
   assignMentoringCompanyByAdmin,
+  createMentoringReportLogoUploadUrl,
   updateMentoringCompanies,
+  updateMentoringReportLogo,
   updateMentoringUsers,
 } from "@/actions/mentoring-action";
 import MentoringCompanySelect, {
@@ -36,6 +40,8 @@ import {
   Users,
   ArrowRightLeft,
   History,
+  ImagePlus,
+  Trash2,
 } from "lucide-react";
 
 type Props = {
@@ -105,30 +111,38 @@ export default function MentoringEditForm({
   data,
 }: Props) {
   const queryClient = useQueryClient();
-  const [targetCompanies, setTargetCompanies] = useState<
-    MentoringSelectableCompany[]
-  >([]);
-  const [targetUsers, setTargetUsers] = useState<MentoringSelectableUser[]>([]);
-
-  useEffect(() => {
-    setTargetCompanies(
+  const companyOptions = useMemo(
+    () =>
       data.companies.map((company) => ({
         id: company.company_id,
         name: company.company_name,
         representative_name: company.representative_name,
-      }))
-    );
-  }, [data.companies]);
-
-  useEffect(() => {
-    setTargetUsers(
+      })),
+    [data.companies]
+  );
+  const mentorOptions = useMemo(
+    () =>
       data.mentors.map((mentor) => ({
         id: mentor.id,
         name: mentor.name,
         affiliation: mentor.affiliation,
-      }))
-    );
-  }, [data.mentors]);
+      })),
+    [data.mentors]
+  );
+  const [companyDraft, setCompanyDraft] = useState<
+    MentoringSelectableCompany[] | null
+  >(null);
+  const [userDraft, setUserDraft] = useState<MentoringSelectableUser[] | null>(
+    null
+  );
+  const [logoDraftUrl, setLogoDraftUrl] = useState<string | null>(null);
+  const [logoDraftName, setLogoDraftName] = useState<string | null>(null);
+  const logoFileRef = useRef<File | null>(null);
+  const logoObjectUrlRef = useRef<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const targetCompanies = companyDraft ?? companyOptions;
+  const targetUsers = userDraft ?? mentorOptions;
+  const currentLogoUrl = logoDraftUrl ?? data.report_logo_url ?? null;
 
   const companyMutation = useMutation({
     mutationFn: async () =>
@@ -138,6 +152,7 @@ export default function MentoringEditForm({
       }),
     onSuccess: () => {
       toast.success("멘토링 대상 기업을 저장했습니다.");
+      setCompanyDraft(null);
       queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
     },
     onError: (error: Error) => {
@@ -153,6 +168,7 @@ export default function MentoringEditForm({
       }),
     onSuccess: () => {
       toast.success("멘토링 참여 멘토를 저장했습니다.");
+      setUserDraft(null);
       queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
     },
     onError: (error: Error) => {
@@ -176,10 +192,94 @@ export default function MentoringEditForm({
     },
   });
 
+  const clearLogoDraft = () => {
+    if (logoObjectUrlRef.current) {
+      URL.revokeObjectURL(logoObjectUrlRef.current);
+      logoObjectUrlRef.current = null;
+    }
+    logoFileRef.current = null;
+    setLogoDraftUrl(null);
+    setLogoDraftName(null);
+    if (logoInputRef.current) {
+      logoInputRef.current.value = "";
+    }
+  };
+
+  const logoMutation = useMutation({
+    mutationFn: async () => {
+      if (!logoFileRef.current) {
+        throw new Error("업로드할 로고 파일을 선택해주세요.");
+      }
+
+      const { uploadUrl, publicUrl } = await createMentoringReportLogoUploadUrl({
+        fileName: logoFileRef.current.name,
+        contentType: logoFileRef.current.type,
+      });
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": logoFileRef.current.type || "image/png",
+        },
+        body: logoFileRef.current,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("로고 업로드에 실패했습니다.");
+      }
+
+      return updateMentoringReportLogo({
+        mentoringId,
+        reportLogoPath: publicUrl,
+      });
+    },
+    onSuccess: () => {
+      toast.success("보고서 로고를 저장했습니다.");
+      clearLogoDraft();
+      queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const logoRemoveMutation = useMutation({
+    mutationFn: async () =>
+      updateMentoringReportLogo({
+        mentoringId,
+        reportLogoPath: null,
+      }),
+    onSuccess: () => {
+      toast.success("보고서 로고를 제거했습니다.");
+      clearLogoDraft();
+      queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
   const assignedCompanyCount = useMemo(
     () => data.companies.filter((company) => company.mentor_id).length,
     [data.companies]
   );
+
+  const handleLogoFileChange = (file: File | null) => {
+    if (!file) return;
+
+    if (logoObjectUrlRef.current) {
+      URL.revokeObjectURL(logoObjectUrlRef.current);
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    logoObjectUrlRef.current = objectUrl;
+    logoFileRef.current = file;
+    setLogoDraftUrl(objectUrl);
+    setLogoDraftName(file.name);
+    if (logoInputRef.current) {
+      logoInputRef.current.value = "";
+    }
+  };
 
   return (
     <section className="space-y-6 rounded-[28px] border border-neutral-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-4 shadow-sm sm:p-6">
@@ -228,7 +328,7 @@ export default function MentoringEditForm({
         <MentoringCompanySelect
           programId={programId}
           targetList={targetCompanies}
-          onTargetListChange={setTargetCompanies}
+          onTargetListChange={setCompanyDraft}
         />
       </div>
 
@@ -249,8 +349,97 @@ export default function MentoringEditForm({
         />
         <MentoringUserSelect
           targetList={targetUsers}
-          onTargetListChange={setTargetUsers}
+          onTargetListChange={setUserDraft}
         />
+      </div>
+
+      <div className="space-y-5 rounded-3xl border border-neutral-200 bg-white p-5">
+        <SectionHeader
+          icon={ImagePlus}
+          title="보고서 로고"
+          description="멘토링 보고서 상단 우측에 표시할 로고를 업로드합니다. 저장된 로고는 모든 페이지에 동일하게 적용됩니다."
+          action={
+            <div className="flex flex-wrap gap-2">
+              {logoDraftUrl ? (
+                <Button type="button" variant="outline" onClick={clearLogoDraft}>
+                  선택 취소
+                </Button>
+              ) : null}
+              {data.report_logo_path && !logoDraftUrl ? (
+                <LoadingButton
+                  type="button"
+                  variant="outline"
+                  loading={logoRemoveMutation.isPending}
+                  onClick={() => logoRemoveMutation.mutate()}
+                >
+                  <Trash2 className="mr-1 h-4 w-4" />
+                  로고 제거
+                </LoadingButton>
+              ) : null}
+              <LoadingButton
+                type="button"
+                loading={logoMutation.isPending}
+                onClick={() => logoMutation.mutate()}
+                disabled={!logoDraftUrl}
+              >
+                로고 저장
+              </LoadingButton>
+            </div>
+          }
+        />
+
+        <input
+          ref={logoInputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(event) =>
+            handleLogoFileChange(event.target.files?.[0] ?? null)
+          }
+        />
+
+        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
+          <button
+            type="button"
+            className="flex min-h-[180px] w-full items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-4 transition-colors hover:border-neutral-400 hover:bg-white"
+            onClick={() => logoInputRef.current?.click()}
+          >
+            {currentLogoUrl ? (
+              <Image
+                src={currentLogoUrl}
+                alt="멘토링 보고서 로고"
+                width={320}
+                height={120}
+                unoptimized
+                className="max-h-24 w-full object-contain"
+              />
+            ) : (
+              <div className="text-center text-sm text-neutral-500">
+                <ImagePlus className="mx-auto mb-2 h-5 w-5" />
+                로고 이미지 선택
+              </div>
+            )}
+          </button>
+
+          <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-500">
+                현재 상태
+              </p>
+              <p className="mt-2 text-sm font-medium text-neutral-900">
+                {logoDraftName
+                  ? `새 로고 선택됨: ${logoDraftName}`
+                  : data.report_logo_path
+                    ? "저장된 로고가 적용 중입니다."
+                    : "아직 저장된 로고가 없습니다."}
+              </p>
+            </div>
+            <p className="text-sm leading-6 text-neutral-600">
+              PNG, JPG 같은 일반 이미지 파일을 사용할 수 있습니다. 새 파일을
+              선택한 뒤 `로고 저장`을 눌러야 실제 보고서에 반영됩니다.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-5 rounded-3xl border border-neutral-200 bg-white p-5">
@@ -268,14 +457,14 @@ export default function MentoringEditForm({
             {data.companies.map((company) => (
               <div
                 key={company.company_id}
-                className="grid gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 lg:grid-cols-[minmax(0,1fr)_280px_auto]"
+                className="grid gap-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-base font-semibold text-neutral-950">
                       {company.company_name}
                     </p>
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="shrink-0">
                       {company.session_count}회 기록
                     </Badge>
                   </div>
@@ -289,40 +478,55 @@ export default function MentoringEditForm({
                   </p>
                 </div>
 
-                <Select
-                  value={company.mentor_id ?? "__unassigned"}
-                  onValueChange={(value) =>
-                    assignmentMutation.mutate({
-                      companyId: company.company_id,
-                      mentorId: value === "__unassigned" ? null : value,
-                    })
-                  }
-                  disabled={
-                    assignmentMutation.isPending || data.mentors.length === 0
-                  }
-                >
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="멘토 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__unassigned">미배정</SelectItem>
-                    {data.mentors.map((mentor) => (
-                      <SelectItem key={mentor.id} value={mentor.id}>
-                        {mentor.name}
-                        {mentor.affiliation ? ` · ${mentor.affiliation}` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-500">
+                      현재 담당 멘토
+                    </p>
+                    {company.mentor_name ? (
+                      <div className="mt-2">
+                        <p className="text-sm font-semibold text-neutral-950">
+                          {company.mentor_name}
+                        </p>
+                        <p className="mt-1 text-sm text-neutral-600">
+                          {company.mentor_affiliation || "소속 정보 없음"}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-sm text-neutral-500">미배정</p>
+                    )}
+                  </div>
 
-                <div className="flex items-center justify-end">
-                  {company.mentor_name ? (
-                    <Badge className="bg-neutral-900 text-white">
-                      {company.mentor_name}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline">미배정</Badge>
-                  )}
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-500">
+                      배정 변경
+                    </p>
+                    <Select
+                      value={company.mentor_id ?? "__unassigned"}
+                      onValueChange={(value) =>
+                        assignmentMutation.mutate({
+                          companyId: company.company_id,
+                          mentorId: value === "__unassigned" ? null : value,
+                        })
+                      }
+                      disabled={
+                        assignmentMutation.isPending || data.mentors.length === 0
+                      }
+                    >
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="멘토 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__unassigned">미배정</SelectItem>
+                        {data.mentors.map((mentor) => (
+                          <SelectItem key={mentor.id} value={mentor.id}>
+                            {mentor.name}
+                            {mentor.affiliation ? ` · ${mentor.affiliation}` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             ))}
@@ -343,9 +547,10 @@ export default function MentoringEditForm({
         ) : (
           <div className="space-y-3">
             {data.recent_sessions.map((session) => (
-              <div
+              <Link
                 key={session.id}
-                className="grid gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 lg:grid-cols-[minmax(0,1fr)_160px_180px]"
+                href={`/mentoring/${mentoringId}?companyId=${session.company_id}`}
+                className="grid gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 transition-colors hover:border-neutral-300 hover:bg-neutral-100 lg:grid-cols-[minmax(0,1fr)_160px_180px]"
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -355,7 +560,7 @@ export default function MentoringEditForm({
                     <Badge variant="secondary">{session.session_no}회차</Badge>
                   </div>
                   <p className="mt-1 text-sm text-neutral-600">
-                    {session.result?.trim() || "결과 요약이 없습니다."}
+                    {session.content?.trim() || "멘토링 내용이 없습니다."}
                   </p>
                 </div>
                 <div className="text-sm text-neutral-600">
@@ -368,7 +573,7 @@ export default function MentoringEditForm({
                   <Clock3 className="h-4 w-4" />
                   {session.mentored_at.slice(0, 16).replace("T", " ")}
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
