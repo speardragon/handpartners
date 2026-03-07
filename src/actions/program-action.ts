@@ -329,7 +329,7 @@ export async function getAllJudgingWorkspaces(
     throw new Error(statsResult.error.message);
   }
 
-  const screenings = pageResult.data;
+  const judgingRows = pageResult.data;
   const count = pageResult.count;
   const allStatuses = statsResult.data as unknown as {
     id: string;
@@ -347,7 +347,7 @@ export async function getAllJudgingWorkspaces(
   });
 
   // 심사자 로직: 해당 심사자의 group_name에 할당된 company만 필터링
-  type ScreeningRow = {
+  type JudgingRow = {
     id: string;
     status: string | null;
     program: {
@@ -365,19 +365,19 @@ export async function getAllJudgingWorkspaces(
     }[];
     judging_round_user: { user_id: string; group_name: string | null }[];
   };
-  const typedScreenings = (screenings ?? []) as unknown as ScreeningRow[];
+  const typedJudgings = (judgingRows ?? []) as unknown as JudgingRow[];
 
   if (useJudgeLogic) {
-    typedScreenings.forEach((screening) => {
-      const userGroupName = screening.judging_round_user?.[0]?.group_name;
-      screening.companies = screening.companies.filter(
+    typedJudgings.forEach((judging) => {
+      const userGroupName = judging.judging_round_user?.[0]?.group_name;
+      judging.companies = judging.companies.filter(
         (company) => company.group_name === userGroupName
       );
     });
   }
 
   // Step 2: 현재 페이지 judging_round_id 목록 추출
-  const judgingRoundIds = typedScreenings.map((s) => s.id);
+  const judgingRoundIds = typedJudgings.map((judging) => judging.id);
 
   // Step 3: judging_round_id 기준으로만 evaluation 조회 후 JS에서 쌍 매칭
   let evaluationMap: Record<string, { status: string; totalScore: number }> =
@@ -413,10 +413,9 @@ export async function getAllJudgingWorkspaces(
   }
 
   // Step 4: 심사 상태 판별 및 결과 매핑
-  const result: JudgingWorkspaceWithStatus[] = typedScreenings.map(
-    (screening) => {
+  const result: JudgingWorkspaceWithStatus[] = typedJudgings.map((judging) => {
     const status: "PENDING" | "IN_PROGRESS" | "COMPLETED" =
-      (screening.status as "PENDING" | "IN_PROGRESS" | "COMPLETED") ??
+      (judging.status as "PENDING" | "IN_PROGRESS" | "COMPLETED") ??
       "PENDING";
 
     const judgingStatusLabel =
@@ -424,24 +423,24 @@ export async function getAllJudgingWorkspaces(
         ? "진행 중"
         : status === "COMPLETED"
           ? "종료"
-          : "진행 전";
+      : "진행 전";
 
     return {
-      id: screening.id,
-      name: screening.program?.name ?? "",
-      start_date: screening.program?.start_date ?? null,
-      end_date: screening.program?.end_date ?? null,
+      id: judging.id,
+      name: judging.program?.name ?? "",
+      start_date: judging.program?.start_date ?? null,
+      end_date: judging.program?.end_date ?? null,
       judgingStatusLabel,
       status,
       program: {
-        id: screening.program!.id,
-        name: screening.program!.name,
-        description: screening.program!.description,
+        id: judging.program!.id,
+        name: judging.program!.name,
+        description: judging.program!.description,
       },
-      companies: screening.companies
+      companies: judging.companies
         .sort((a, b) => (a.judge_num ?? 0) - (b.judge_num ?? 0))
         .map((company) => {
-          const key = `${screening.id}_${company.company?.id}`;
+          const key = `${judging.id}_${company.company?.id}`;
           const evaluation = evaluationMap[key] || {
             status: "PENDING",
             totalScore: 0,
@@ -461,8 +460,7 @@ export async function getAllJudgingWorkspaces(
           };
         }),
     };
-    }
-  );
+  });
 
   result.sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""));
 
@@ -496,8 +494,8 @@ export async function getJudgingWorkspaces(): Promise<JudgingWorkspace[]> {
   const nowKst = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
   const nowKstDateString = nowKst.toISOString().slice(0, 10);
 
-  // Step 1: screening에 필요한 데이터
-  const { data: screenings, error } = await supabase
+  // Step 1: judging workspace에 필요한 데이터
+  const { data: judgingRows, error } = await supabase
     .from("judging_round")
     .select(
       `
@@ -528,18 +526,18 @@ export async function getJudgingWorkspaces(): Promise<JudgingWorkspace[]> {
     .eq("judging_round_user.user_id", userId);
 
   if (error) {
-    console.error("Error fetching screenings:", error);
+    console.error("Error fetching judgings:", error);
     throw new Error(error.message);
   }
 
   // 해당 심사자의 group_name에 할당된 company만 필터링
-  type ScreeningCompany = {
+  type JudgingCompany = {
     judge_num: number | null;
     group_name: string | null;
     category: string | null;
     company: { id: number; name: string; description: string | null } | null;
   };
-  type ScreeningItem = {
+  type JudgingItem = {
     id: string;
     program: {
       id: number;
@@ -548,25 +546,25 @@ export async function getJudgingWorkspaces(): Promise<JudgingWorkspace[]> {
       start_date: string | null;
       end_date: string | null;
     } | null;
-    companies: ScreeningCompany[];
+    companies: JudgingCompany[];
     judging_round_user: { user_id: string; group_name: string | null }[];
   };
-  const typedScreenings = (
-    (screenings ?? []) as unknown as ScreeningItem[]
-  ).filter((screening) => {
-    const startDate = screening.program?.start_date;
-    const endDate = screening.program?.end_date;
+  const typedJudgings = ((judgingRows ?? []) as unknown as JudgingItem[]).filter(
+    (judging) => {
+      const startDate = judging.program?.start_date;
+      const endDate = judging.program?.end_date;
 
-    if (!startDate || !endDate) {
-      return false;
+      if (!startDate || !endDate) {
+        return false;
+      }
+
+      return startDate <= nowKstDateString && endDate >= nowKstDateString;
     }
+  );
 
-    return startDate <= nowKstDateString && endDate >= nowKstDateString;
-  });
-
-  typedScreenings.forEach((screening) => {
-    const userGroupName = screening.judging_round_user?.[0]?.group_name;
-    screening.companies = screening.companies.filter(
+  typedJudgings.forEach((judging) => {
+    const userGroupName = judging.judging_round_user?.[0]?.group_name;
+    judging.companies = judging.companies.filter(
       (company) => company.group_name === userGroupName
     );
   });
@@ -576,11 +574,11 @@ export async function getJudgingWorkspaces(): Promise<JudgingWorkspace[]> {
     judging_round_id: string;
     company_id: number;
   }[] = [];
-  typedScreenings.forEach((screening) => {
-    screening.companies.forEach((companyEntry) => {
+  typedJudgings.forEach((judging) => {
+    judging.companies.forEach((companyEntry) => {
       if (!companyEntry.company) return;
       judgingCompanyPairs.push({
-        judging_round_id: screening.id,
+        judging_round_id: judging.id,
         company_id: companyEntry.company.id,
       });
     });
@@ -630,21 +628,21 @@ export async function getJudgingWorkspaces(): Promise<JudgingWorkspace[]> {
     evaluationMap[key].totalScore += evaluation.grade;
   });
 
-  // Step 5: Map screenings data with evaluation status and scores
-  const result: JudgingWorkspace[] = typedScreenings.map((screening) => ({
-    id: screening.id,
-    name: screening.program?.name ?? "",
-    start_date: screening.program?.start_date ?? null,
-    end_date: screening.program?.end_date ?? null,
+  // Step 5: Map judging workspace data with evaluation status and scores
+  const result: JudgingWorkspace[] = typedJudgings.map((judging) => ({
+    id: judging.id,
+    name: judging.program?.name ?? "",
+    start_date: judging.program?.start_date ?? null,
+    end_date: judging.program?.end_date ?? null,
     program: {
-      id: screening.program!.id,
-      name: screening.program!.name,
-      description: screening.program!.description,
+      id: judging.program!.id,
+      name: judging.program!.name,
+      description: judging.program!.description,
     },
-    companies: screening.companies
+    companies: judging.companies
       .sort((a, b) => (a.judge_num ?? 0) - (b.judge_num ?? 0))
       .map((company) => {
-        const key = `${screening.id}_${company.company?.id}`;
+        const key = `${judging.id}_${company.company?.id}`;
         const evaluation = evaluationMap[key] || {
           status: "PENDING",
           totalScore: 0,
@@ -669,10 +667,3 @@ export async function getJudgingWorkspaces(): Promise<JudgingWorkspace[]> {
     (b.start_date ?? "").localeCompare(a.start_date ?? "")
   );
 }
-
-export type Screening = JudgingWorkspace;
-export type ScreeningWithStatus = JudgingWorkspaceWithStatus;
-export type AllScreeningsResult = AllJudgingWorkspacesResult;
-
-export const getAllScreenings = getAllJudgingWorkspaces;
-export const getScreenings = getJudgingWorkspaces;
