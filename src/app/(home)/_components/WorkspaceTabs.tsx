@@ -4,30 +4,21 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  programId: number;
   current: "judging" | "mentoring";
 };
 
-const FEATURE_ITEMS = [
-  {
-    key: "judging",
-    label: "심사",
-    href: (programId: number) => `/admin/program/${programId}/judging`,
-  },
-  {
-    key: "mentoring",
-    label: "멘토링",
-    href: (programId: number) => `/admin/program/${programId}/mentoring`,
-  },
+const ITEMS = [
+  { key: "judging", label: "심사", href: "/" },
+  { key: "mentoring", label: "멘토링", href: "/mentoring" },
 ] as const;
 
-export default function ProgramFeatureTabs({ programId, current }: Props) {
+export default function WorkspaceTabs({ current }: Props) {
   return (
     <div className="flex flex-wrap gap-2">
-      {FEATURE_ITEMS.map((item) => (
+      {ITEMS.map((item) => (
         <Link
           key={item.key}
-          href={item.href(programId)}
+          href={item.href}
           className={cn(
             "inline-flex items-center rounded-full border px-4 py-2 text-sm transition-colors",
             current === item.key

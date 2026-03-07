@@ -1,10 +1,10 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ScreeningWithStatus } from "@/actions/program-action";
+import { JudgingWorkspaceWithStatus } from "@/actions/program-action";
 import { getStatusBadge } from "../_lib/lib";
 
-export const screeningColumns: ColumnDef<ScreeningWithStatus>[] = [
+export const judgingColumns: ColumnDef<JudgingWorkspaceWithStatus>[] = [
   {
     accessorKey: "program",
     header: "프로그램명",
@@ -52,3 +52,5 @@ export const screeningColumns: ColumnDef<ScreeningWithStatus>[] = [
     },
   },
 ];
+
+export const screeningColumns = judgingColumns;

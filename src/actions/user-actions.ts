@@ -4,7 +4,10 @@ import { Database } from "types_db";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { ProfileCreateFormSchema } from "@/app/(admin)/admin/user/_lib/ProfileFormSchema";
 import { z } from "zod";
-import { createS3PresignedUploadUrl, createPresignedDownloadUrl } from "@/lib/storage/s3";
+import {
+  createS3PresignedUploadUrl,
+  createPresignedDownloadUrl,
+} from "@/lib/storage/s3";
 
 export type UserRow = Database["public"]["Tables"]["user"]["Row"];
 export type UserRowInsert = Database["public"]["Tables"]["user"]["Insert"];
@@ -18,6 +21,7 @@ export interface UserResult {
 }
 
 function handleError(error: unknown): never {
+  console.log("Error:", error);
   const message = error instanceof Error ? error.message : String(error);
   console.error(message);
   throw new Error(message);
@@ -90,13 +94,15 @@ export async function updateUser(user: UserRowUpdate) {
 
 export async function deleteUser(userId: string) {
   const supabase = await createClient();
+  const adminClient = await createAdminClient();
 
   const { data, error } = await supabase.from("user").delete().eq("id", userId);
-  await supabase.auth.admin.deleteUser(userId);
 
   if (error) {
     handleError(error);
   }
+
+  await adminClient.auth.admin.deleteUser(userId);
 
   return data;
 }
@@ -201,7 +207,6 @@ export async function createSignatureUploadUrl(args: {
     defaultContentType: "image/png",
   });
 }
-
 
 export async function getSignatureDownloadUrl(signatureUrl: string) {
   const { downloadUrl } = await createPresignedDownloadUrl({
