@@ -263,18 +263,21 @@ export type Database = {
           created_at: string;
           id: string;
           program_id: number;
+          report_logo_path: string | null;
           status: Database["public"]["Enums"]["mentoring_status"];
         };
         Insert: {
           created_at?: string;
           id: string;
           program_id: number;
+          report_logo_path?: string | null;
           status?: Database["public"]["Enums"]["mentoring_status"];
         };
         Update: {
           created_at?: string;
           id?: string;
           program_id?: number;
+          report_logo_path?: string | null;
           status?: Database["public"]["Enums"]["mentoring_status"];
         };
         Relationships: [
@@ -346,7 +349,6 @@ export type Database = {
           mentored_at: string;
           mentoring_id: string;
           place: string | null;
-          result: string | null;
           session_no: number;
           updated_at: string;
         };
@@ -359,7 +361,6 @@ export type Database = {
           mentored_at: string;
           mentoring_id: string;
           place?: string | null;
-          result?: string | null;
           session_no: number;
           updated_at?: string;
         };
@@ -372,7 +373,6 @@ export type Database = {
           mentored_at?: string;
           mentoring_id?: string;
           place?: string | null;
-          result?: string | null;
           session_no?: number;
           updated_at?: string;
         };
