@@ -10,6 +10,7 @@ import {
   PlayCircle,
   StopCircle,
   Clock,
+  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getAllJudgeEvaluations } from "@/actions/evaluation-action";
@@ -18,8 +19,22 @@ import {
   updateJudgingRoundStatus,
   type JudgingRoundStatus,
 } from "@/actions/judging_round-action";
+import {
+  sendJudgingEmails,
+  getJudgeEmailCount,
+} from "@/actions/email-action";
 import { useQueryClient } from "@tanstack/react-query";
 import { judgingQueries, judgingRoundQueries } from "@/queries";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface AdminPanelProps {
   judgingRoundId: string;
@@ -65,6 +80,12 @@ export default function AdminPanel({
   const [isDownloading, setIsDownloading] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [status, setStatus] = useState<JudgingRoundStatus>(currentStatus);
+  const [isEmailSending, setIsEmailSending] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailCount, setEmailCount] = useState<{
+    total: number;
+    withEmail: number;
+  } | null>(null);
 
   useEffect(() => {
     setStatus(currentStatus);
@@ -91,6 +112,35 @@ export default function AdminPanel({
       toast.error("상태 변경 중 오류가 발생했습니다.");
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleEmailDialogOpen = async () => {
+    try {
+      const count = await getJudgeEmailCount(judgingRoundId);
+      setEmailCount(count);
+      setEmailDialogOpen(true);
+    } catch {
+      toast.error("심사자 정보를 불러오는 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleSendEmails = async () => {
+    setEmailDialogOpen(false);
+    setIsEmailSending(true);
+    try {
+      const result = await sendJudgingEmails(judgingRoundId);
+      if (result.failedCount === 0) {
+        toast.success(`${result.sentCount}명의 심사자에게 이메일을 발송했습니다.`);
+      } else {
+        toast.warning(
+          `${result.sentCount}명 발송 성공, ${result.failedCount}명 발송 실패`
+        );
+      }
+    } catch {
+      toast.error("이메일 발송 중 오류가 발생했습니다.");
+    } finally {
+      setIsEmailSending(false);
     }
   };
 
@@ -238,7 +288,40 @@ export default function AdminPanel({
           <Download size={14} />
           보고서 일괄 다운로드
         </LoadingButton>
+        <LoadingButton
+          variant="outline"
+          className="gap-2 text-blue-700 border-blue-200 hover:bg-blue-100"
+          loading={isEmailSending}
+          disabled={status !== "IN_PROGRESS"}
+          onClick={handleEmailDialogOpen}
+        >
+          <Mail size={14} />
+          심사자 이메일 발송
+        </LoadingButton>
       </div>
+
+      <AlertDialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <AlertDialogContent className="w-[calc(100%-2rem)] max-w-md sm:w-full">
+          <AlertDialogHeader>
+            <AlertDialogTitle>심사자 이메일 발송</AlertDialogTitle>
+            <AlertDialogDescription>
+              {emailCount
+                ? `${emailCount.withEmail}명의 심사자에게 심사 링크를 이메일로 발송합니다.${
+                    emailCount.total !== emailCount.withEmail
+                      ? ` (이메일 미등록: ${emailCount.total - emailCount.withEmail}명)`
+                      : ""
+                  }`
+                : "심사자 정보를 확인하는 중..."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSendEmails}>
+              발송
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -36,3 +36,8 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
 
 안녕하세요? 테스트에요
+
+## Release Notes
+
+- `main` 브랜치에 반영된 변경사항은 GitHub Release와 `CHANGELOG.md`에 자동 기록됩니다.
+- 고객에게 공유할 링크: [GitHub Releases](https://github.com/speardragon/handpartners/releases)
