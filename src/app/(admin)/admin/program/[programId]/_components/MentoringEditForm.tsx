@@ -67,7 +67,7 @@ function SummaryCard({
 }) {
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-      <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-500">
+      <p className="text-xs font-medium tracking-[0.18em] text-neutral-500 uppercase">
         {label}
       </p>
       <p className="mt-2 text-2xl font-semibold text-neutral-950">{value}</p>
@@ -177,7 +177,10 @@ export default function MentoringEditForm({
   });
 
   const assignmentMutation = useMutation({
-    mutationFn: async (payload: { companyId: number; mentorId: string | null }) =>
+    mutationFn: async (payload: {
+      companyId: number;
+      mentorId: string | null;
+    }) =>
       assignMentoringCompanyByAdmin({
         mentoringId,
         companyId: payload.companyId,
@@ -211,10 +214,12 @@ export default function MentoringEditForm({
         throw new Error("업로드할 로고 파일을 선택해주세요.");
       }
 
-      const { uploadUrl, publicUrl } = await createMentoringReportLogoUploadUrl({
-        fileName: logoFileRef.current.name,
-        contentType: logoFileRef.current.type,
-      });
+      const { uploadUrl, publicUrl } = await createMentoringReportLogoUploadUrl(
+        {
+          fileName: logoFileRef.current.name,
+          contentType: logoFileRef.current.type,
+        }
+      );
 
       const uploadResponse = await fetch(uploadUrl, {
         method: "PUT",
@@ -336,7 +341,7 @@ export default function MentoringEditForm({
         <SectionHeader
           icon={Users}
           title="멘토링 참여 멘토"
-          description="멘토링 페이지에서 기업을 선점하고 기록을 남길 수 있는 멘토를 선택합니다."
+          description="멘토링 페이지에서 기업을 선택하고 기록을 남길 수 있는 멘토를 선택합니다."
           action={
             <LoadingButton
               type="button"
@@ -361,7 +366,11 @@ export default function MentoringEditForm({
           action={
             <div className="flex flex-wrap gap-2">
               {logoDraftUrl ? (
-                <Button type="button" variant="outline" onClick={clearLogoDraft}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={clearLogoDraft}
+                >
                   선택 취소
                 </Button>
               ) : null}
@@ -423,7 +432,7 @@ export default function MentoringEditForm({
 
           <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
             <div>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-500">
+              <p className="text-xs font-medium tracking-[0.18em] text-neutral-500 uppercase">
                 현재 상태
               </p>
               <p className="mt-2 text-sm font-medium text-neutral-900">
@@ -480,7 +489,7 @@ export default function MentoringEditForm({
 
                 <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-500">
+                    <p className="text-xs font-medium tracking-[0.18em] text-neutral-500 uppercase">
                       현재 담당 멘토
                     </p>
                     {company.mentor_name ? (
@@ -498,7 +507,7 @@ export default function MentoringEditForm({
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-500">
+                    <p className="text-xs font-medium tracking-[0.18em] text-neutral-500 uppercase">
                       배정 변경
                     </p>
                     <Select
@@ -510,7 +519,8 @@ export default function MentoringEditForm({
                         })
                       }
                       disabled={
-                        assignmentMutation.isPending || data.mentors.length === 0
+                        assignmentMutation.isPending ||
+                        data.mentors.length === 0
                       }
                     >
                       <SelectTrigger className="bg-white">
@@ -521,7 +531,9 @@ export default function MentoringEditForm({
                         {data.mentors.map((mentor) => (
                           <SelectItem key={mentor.id} value={mentor.id}>
                             {mentor.name}
-                            {mentor.affiliation ? ` · ${mentor.affiliation}` : ""}
+                            {mentor.affiliation
+                              ? ` · ${mentor.affiliation}`
+                              : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -585,7 +597,7 @@ export default function MentoringEditForm({
           운영 메모
         </div>
         <p className="mt-2 leading-6">
-          멘토는 실제 멘토링 페이지에서 기업을 직접 선점하고 회차별 기록을
+          멘토는 실제 멘토링 페이지에서 기업을 직접 선택하고 회차별 기록을
           남깁니다. 이 화면은 참여 대상과 배정, 전체 기록 현황을 관리하는 데
           집중합니다.
         </p>

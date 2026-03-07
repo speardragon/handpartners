@@ -147,13 +147,13 @@ export default function AdminPanel({
   };
 
   return (
-    <div className="space-y-4 rounded-lg border border-blue-200 bg-blue-50/50 p-5 shadow-sm">
+    <div className="p-5 space-y-4 border border-blue-200 rounded-lg shadow-sm bg-blue-50/50">
       <div className="flex items-center gap-2">
         <Shield size={14} className="text-blue-600" />
         <h2 className="text-sm font-semibold text-blue-700">관리자 전용</h2>
       </div>
 
-      <div className="rounded-md border border-blue-100 bg-white px-4 py-3">
+      <div className="px-4 py-3 bg-white border border-blue-100 rounded-md">
         <div className="flex items-center justify-between">
           <div>
             <p className="mb-1 text-xs font-medium text-gray-500">현재 상태</p>
@@ -213,15 +213,17 @@ export default function AdminPanel({
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-100"
-          onClick={() => window.open(`/admin/program/${programId}/judging`, "_blank")}
+          className="gap-2 text-blue-700 border-blue-200 hover:bg-blue-100"
+          onClick={() =>
+            window.open(`/admin/program/${programId}/judging`, "_blank")
+          }
         >
           <SquareArrowOutUpRight size={14} />
           심사 관리
         </Button>
         <Button
           variant="outline"
-          className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-100"
+          className="gap-2 text-blue-700 border-blue-200 hover:bg-blue-100"
           onClick={() => window.open(`/admin/${judgingRoundId}`, "_blank")}
         >
           <SquareArrowOutUpRight size={14} />
@@ -229,21 +231,13 @@ export default function AdminPanel({
         </Button>
         <LoadingButton
           variant="outline"
-          className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-100"
+          className="gap-2 text-blue-700 border-blue-200 hover:bg-blue-100"
           loading={isDownloading}
           onClick={handleBulkDownload}
         >
           <Download size={14} />
           보고서 일괄 다운로드
         </LoadingButton>
-        <Button
-          variant="outline"
-          className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-100"
-          onClick={() => window.open(`/judging/${judgingRoundId}`, "_blank")}
-        >
-          <SquareArrowOutUpRight size={14} />
-          심사 진행 페이지
-        </Button>
       </div>
     </div>
   );

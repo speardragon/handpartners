@@ -91,11 +91,16 @@ export default function MentoringDetailPage() {
   const mentoringId = params.mentoringId;
   const requestedCompanyId = Number(searchParams.get("companyId"));
 
-  const { data: mentoring, isLoading, isError, error } = useQuery(
-    mentoringQueries.detail(mentoringId)
-  );
+  const {
+    data: mentoring,
+    isLoading,
+    isError,
+    error,
+  } = useQuery(mentoringQueries.detail(mentoringId));
 
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(
+    null
+  );
   const [editingSessionId, setEditingSessionId] = useState<number | null>(null);
   const [sessionNo, setSessionNo] = useState("1");
   const [mentoredAt, setMentoredAt] = useState(toLocalInputValue());
@@ -104,9 +109,9 @@ export default function MentoringDetailPage() {
   const [editorPhotos, setEditorPhotos] = useState<EditorPhotoItem[]>([]);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [selectedSessionIndex, setSelectedSessionIndex] = useState(0);
-  const [downloadingSessionId, setDownloadingSessionId] = useState<number | null>(
-    null
-  );
+  const [downloadingSessionId, setDownloadingSessionId] = useState<
+    number | null
+  >(null);
   const [sessionCarouselApi, setSessionCarouselApi] = useState<CarouselApi>();
   const composerRef = useRef<HTMLDivElement | null>(null);
   const newPhotoFilesRef = useRef<
@@ -131,14 +136,18 @@ export default function MentoringDetailPage() {
     if (
       Number.isFinite(requestedCompanyId) &&
       requestedCompanyId > 0 &&
-      mentoring.assignments.some((item) => item.company_id === requestedCompanyId)
+      mentoring.assignments.some(
+        (item) => item.company_id === requestedCompanyId
+      )
     ) {
       return requestedCompanyId;
     }
 
     if (
       selectedCompanyId &&
-      mentoring.assignments.some((item) => item.company_id === selectedCompanyId)
+      mentoring.assignments.some(
+        (item) => item.company_id === selectedCompanyId
+      )
     ) {
       return selectedCompanyId;
     }
@@ -159,22 +168,26 @@ export default function MentoringDetailPage() {
 
   const selectedCompany = useMemo(
     () =>
-      mentoring?.assignments.find((item) => item.company_id === activeCompanyId) ??
-      null,
+      mentoring?.assignments.find(
+        (item) => item.company_id === activeCompanyId
+      ) ?? null,
     [activeCompanyId, mentoring]
   );
 
   const companySessions = useMemo(
     () =>
-      mentoring?.sessions.filter((session) => session.company_id === activeCompanyId) ??
-      [],
+      mentoring?.sessions.filter(
+        (session) => session.company_id === activeCompanyId
+      ) ?? [],
     [activeCompanyId, mentoring]
   );
 
   const nextSessionNo = useMemo(() => {
     if (companySessions.length === 0) return 1;
     return (
-      Math.max(...companySessions.map((session) => Number(session.session_no || 0))) + 1
+      Math.max(
+        ...companySessions.map((session) => Number(session.session_no || 0))
+      ) + 1
     );
   }, [companySessions]);
 
@@ -227,7 +240,9 @@ export default function MentoringDetailPage() {
     if (!selectedCompany) return;
     startTransition(() => {
       setSelectedSessionIndex(0);
-      setIsComposerOpen(Boolean(selectedCompany.is_mine && companySessions.length === 0));
+      setIsComposerOpen(
+        Boolean(selectedCompany.is_mine && companySessions.length === 0)
+      );
     });
     sessionCarouselApi?.scrollTo(0);
   }, [companySessions.length, selectedCompany, sessionCarouselApi]);
@@ -238,7 +253,7 @@ export default function MentoringDetailPage() {
     mutationFn: async (companyId: number) =>
       claimMentoringCompany({ mentoringId, companyId }),
     onSuccess: () => {
-      toast.success("기업을 선점했습니다.");
+      toast.success("기업을 선택했습니다.");
       queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
     },
     onError: (mutationError: Error) => {
@@ -267,10 +282,11 @@ export default function MentoringDetailPage() {
         const fileEntry = newPhotoFilesRef.current[photoItem.fileKey];
         if (!fileEntry) continue;
 
-        const { uploadUrl, publicUrl } = await createMentoringSessionPhotoUploadUrl({
-          fileName: fileEntry.file.name,
-          contentType: fileEntry.file.type,
-        });
+        const { uploadUrl, publicUrl } =
+          await createMentoringSessionPhotoUploadUrl({
+            fileName: fileEntry.file.name,
+            contentType: fileEntry.file.type,
+          });
 
         const uploadResponse = await fetch(uploadUrl, {
           method: "PUT",
@@ -304,7 +320,9 @@ export default function MentoringDetailPage() {
     },
     onSuccess: () => {
       toast.success(
-        editingSessionId ? "멘토링 기록을 수정했습니다." : "멘토링 기록을 저장했습니다."
+        editingSessionId
+          ? "멘토링 기록을 수정했습니다."
+          : "멘토링 기록을 저장했습니다."
       );
       setEditingSessionId(null);
       setIsComposerOpen(false);
@@ -415,7 +433,9 @@ export default function MentoringDetailPage() {
           mentorAffiliation={
             session.mentor_affiliation ?? selectedCompany.mentor_affiliation
           }
-          mentorPosition={session.mentor_position ?? selectedCompany.mentor_position}
+          mentorPosition={
+            session.mentor_position ?? selectedCompany.mentor_position
+          }
           mentorSignatureUrl={session.mentor_signature_url}
           logoUrl={mentoring.report_logo_url}
           sessionNo={session.session_no}
@@ -478,8 +498,8 @@ export default function MentoringDetailPage() {
 
         <MentoringHeader mentoring={mentoring} />
 
-        <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="space-y-4">
+        <div className="grid items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <aside className="space-y-4 lg:sticky lg:top-4">
             <section className="rounded-2xl border bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-neutral-500" />
@@ -488,60 +508,63 @@ export default function MentoringDetailPage() {
                 </h2>
               </div>
               <div className="mt-4 space-y-2">
-                {(mentoring.isAdminView ? mentoring.assignments : myAssignments).length ===
-                0 ? (
+                {(mentoring.isAdminView ? mentoring.assignments : myAssignments)
+                  .length === 0 ? (
                   <div className="rounded-xl border border-dashed border-neutral-200 px-4 py-6 text-center text-sm text-neutral-400">
                     {mentoring.isAdminView
                       ? "등록된 기업이 없습니다."
-                      : "아직 선점한 기업이 없습니다."}
+                      : "아직 선택한 기업이 없습니다."}
                   </div>
                 ) : (
-                  (mentoring.isAdminView ? mentoring.assignments : myAssignments).map(
-                    (company) => (
-                      <button
-                        key={company.company_id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedCompanyId(company.company_id);
-                          setEditingSessionId(null);
-                        }}
-                        className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
+                  (mentoring.isAdminView
+                    ? mentoring.assignments
+                    : myAssignments
+                  ).map((company) => (
+                    <button
+                      key={company.company_id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCompanyId(company.company_id);
+                        setEditingSessionId(null);
+                      }}
+                      className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
+                        selectedCompanyId === company.company_id
+                          ? "border-neutral-900 bg-neutral-900 text-white"
+                          : "border-neutral-200 bg-neutral-50 hover:border-neutral-300 hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">
+                          {company.company_name}
+                        </span>
+                        <Badge
+                          variant={
+                            selectedCompanyId === company.company_id
+                              ? "outline"
+                              : "secondary"
+                          }
+                          className={
+                            selectedCompanyId === company.company_id
+                              ? "border-white/30 bg-white/10 text-white"
+                              : ""
+                          }
+                        >
+                          {company.session_count}회
+                        </Badge>
+                      </div>
+                      <p
+                        className={`mt-1 text-xs ${
                           selectedCompanyId === company.company_id
-                            ? "border-neutral-900 bg-neutral-900 text-white"
-                            : "border-neutral-200 bg-neutral-50 hover:border-neutral-300 hover:bg-white"
+                            ? "text-white/70"
+                            : "text-neutral-500"
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium">{company.company_name}</span>
-                          <Badge
-                            variant={
-                              selectedCompanyId === company.company_id
-                                ? "outline"
-                                : "secondary"
-                            }
-                            className={
-                              selectedCompanyId === company.company_id
-                                ? "border-white/30 bg-white/10 text-white"
-                                : ""
-                            }
-                          >
-                            {company.session_count}회
-                          </Badge>
-                        </div>
-                        <p
-                          className={`mt-1 text-xs ${
-                            selectedCompanyId === company.company_id
-                              ? "text-white/70"
-                              : "text-neutral-500"
-                          }`}
-                        >
-                          {company.mentor_name
-                            ? `담당 ${company.mentor_name}`
-                            : "미배정"}
-                        </p>
-                      </button>
-                    )
-                  )
+                        {company.mentor_name
+                          ? `담당 ${company.mentor_name}`
+                          : "미배정"}
+                      </p>
+                    </button>
+                  ))
                 )}
               </div>
             </section>
@@ -557,7 +580,7 @@ export default function MentoringDetailPage() {
                 <div className="mt-4 space-y-2">
                   {availableAssignments.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-neutral-200 px-4 py-6 text-center text-sm text-neutral-400">
-                      선점 가능한 기업이 없습니다.
+                      선택 가능한 기업이 없습니다.
                     </div>
                   ) : (
                     availableAssignments.map((company) => (
@@ -584,10 +607,11 @@ export default function MentoringDetailPage() {
                             claimMutation.isPending ||
                             mentoring.status === "COMPLETED"
                           }
-                          onClick={() => claimMutation.mutate(company.company_id)}
+                          onClick={() =>
+                            claimMutation.mutate(company.company_id)
+                          }
                         >
-                          <Plus className="h-4 w-4" />
-                          이 기업 선점하기
+                          <Plus className="h-4 w-4" />이 기업 선택하기
                         </Button>
                       </div>
                     ))
@@ -603,7 +627,7 @@ export default function MentoringDetailPage() {
                 <div className="rounded-2xl border bg-white p-5 shadow-sm">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                      <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-400">
+                      <p className="text-xs font-medium tracking-[0.18em] text-neutral-400 uppercase">
                         Company Workspace
                       </p>
                       <h2 className="mt-2 text-2xl font-semibold text-neutral-950">
@@ -635,14 +659,21 @@ export default function MentoringDetailPage() {
                           멘토링 세션 스택
                         </h3>
                         <p className="mt-1 text-sm text-neutral-600">
-                          최근 세션부터 한 장씩 넘겨 보면서 기록을 검토할 수 있습니다.
+                          최근 세션부터 한 장씩 넘겨 보면서 기록을 검토할 수
+                          있습니다.
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="secondary">{companySessions.length}건</Badge>
+                        <Badge variant="secondary">
+                          {companySessions.length}건
+                        </Badge>
                         {companySessions.length > 0 && (
-                          <Badge variant="outline" className="text-xs text-neutral-600">
-                            {selectedSessionIndex + 1} / {companySessions.length}
+                          <Badge
+                            variant="outline"
+                            className="text-xs text-neutral-600"
+                          >
+                            {selectedSessionIndex + 1} /{" "}
+                            {companySessions.length}
                           </Badge>
                         )}
                         {canComposeSession && (
@@ -652,8 +683,7 @@ export default function MentoringDetailPage() {
                             className="gap-1.5"
                             onClick={openComposerForNewSession}
                           >
-                            <Plus className="h-4 w-4" />
-                            새 세션 시작
+                            <Plus className="h-4 w-4" />새 세션 시작
                           </Button>
                         )}
                       </div>
@@ -666,7 +696,8 @@ export default function MentoringDetailPage() {
                             아직 저장된 멘토링 세션이 없습니다.
                           </p>
                           <p className="mt-2 text-sm text-neutral-500">
-                            첫 세션을 작성하면 이 영역에서 회차별 기록을 넘겨보며 관리할 수 있습니다.
+                            첫 세션을 작성하면 이 영역에서 회차별 기록을
+                            넘겨보며 관리할 수 있습니다.
                           </p>
                           {canComposeSession && (
                             <Button
@@ -674,8 +705,8 @@ export default function MentoringDetailPage() {
                               className="mt-5 gap-2"
                               onClick={openComposerForNewSession}
                             >
-                              <Sparkles className="h-4 w-4" />
-                              첫 멘토링 세션 작성
+                              <Sparkles className="h-4 w-4" />첫 멘토링 세션
+                              작성
                             </Button>
                           )}
                         </div>
@@ -683,7 +714,10 @@ export default function MentoringDetailPage() {
                         <>
                           <Carousel
                             setApi={setSessionCarouselApi}
-                            opts={{ align: "start", containScroll: "trimSnaps" }}
+                            opts={{
+                              align: "start",
+                              containScroll: "trimSnaps",
+                            }}
                             className="w-full"
                           >
                             <CarouselContent>
@@ -697,7 +731,9 @@ export default function MentoringDetailPage() {
                                             {session.session_no}회차
                                           </Badge>
                                           <span className="text-sm font-medium text-neutral-900">
-                                            {formatDateTime(session.mentored_at)}
+                                            {formatDateTime(
+                                              session.mentored_at
+                                            )}
                                           </span>
                                         </div>
                                         <div className="mt-3 flex flex-wrap gap-3 text-sm text-neutral-500">
@@ -707,7 +743,8 @@ export default function MentoringDetailPage() {
                                           </span>
                                           <span className="flex items-center gap-1">
                                             <UserRound className="h-4 w-4" />
-                                            {session.mentor_name || "작성자 없음"}
+                                            {session.mentor_name ||
+                                              "작성자 없음"}
                                           </span>
                                         </div>
                                       </div>
@@ -717,8 +754,12 @@ export default function MentoringDetailPage() {
                                           variant="outline"
                                           size="sm"
                                           className="gap-1.5"
-                                          loading={downloadingSessionId === session.id}
-                                          onClick={() => handleDownloadSessionPdf(session)}
+                                          loading={
+                                            downloadingSessionId === session.id
+                                          }
+                                          onClick={() =>
+                                            handleDownloadSessionPdf(session)
+                                          }
                                         >
                                           <FileText className="h-4 w-4" />
                                           보고서 저장(.pdf)
@@ -729,54 +770,71 @@ export default function MentoringDetailPage() {
                                             variant="outline"
                                             size="sm"
                                             className="gap-1.5"
-                                            onClick={() => handleEditSession(session)}
+                                            onClick={() =>
+                                              handleEditSession(session)
+                                            }
                                           >
-                                            <Pencil className="h-4 w-4" />
-                                            이 세션 수정
+                                            <Pencil className="h-4 w-4" />이
+                                            세션 수정
                                           </Button>
                                         )}
                                       </div>
                                     </div>
 
                                     <div className="mt-5 rounded-2xl border border-neutral-200 bg-white p-4">
-                                      <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                                      <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                                         멘토링 내용
                                       </p>
-                                      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
-                                        {session.content?.trim() || "기록 없음"}
-                                      </p>
+                                      <div className="mt-3 h-48 overflow-y-auto pr-1">
+                                        <p className="text-sm leading-6 whitespace-pre-wrap text-neutral-700">
+                                          {session.content?.trim() ||
+                                            "기록 없음"}
+                                        </p>
+                                      </div>
                                     </div>
 
                                     <div className="mt-5">
-                                      <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                                      <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
                                         현장 사진
                                       </p>
-                                      {session.photos.length === 0 ? (
-                                        <p className="mt-2 text-sm text-neutral-400">
-                                          첨부된 사진이 없습니다.
-                                        </p>
-                                      ) : (
-                                        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                                          {session.photos.map((photo) => (
-                                            <a
-                                              key={photo.id}
-                                              href={photo.download_url ?? photo.photo_path}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                              className="overflow-hidden rounded-2xl border border-neutral-200 bg-white"
-                                            >
-                                              <img
-                                                src={photo.download_url ?? photo.photo_path}
-                                                alt={photo.original_filename || "멘토링 사진"}
-                                                className="h-36 w-full object-cover"
-                                              />
-                                              <div className="border-t border-neutral-100 px-3 py-2 text-xs text-neutral-500">
-                                                {photo.original_filename || "사진"}
-                                              </div>
-                                            </a>
-                                          ))}
-                                        </div>
-                                      )}
+                                      <div className="mt-3 min-h-[212px]">
+                                        {session.photos.length === 0 ? (
+                                          <div className="flex h-[212px] items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 text-sm text-neutral-400">
+                                            첨부된 사진이 없습니다.
+                                          </div>
+                                        ) : (
+                                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                            {session.photos.map((photo) => (
+                                              <a
+                                                key={photo.id}
+                                                href={
+                                                  photo.download_url ??
+                                                  photo.photo_path
+                                                }
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="overflow-hidden rounded-2xl border border-neutral-200 bg-white"
+                                              >
+                                                <img
+                                                  src={
+                                                    photo.download_url ??
+                                                    photo.photo_path
+                                                  }
+                                                  alt={
+                                                    photo.original_filename ||
+                                                    "멘토링 사진"
+                                                  }
+                                                  className="h-36 w-full object-cover"
+                                                />
+                                                <div className="border-t border-neutral-100 px-3 py-2 text-xs text-neutral-500">
+                                                  {photo.original_filename ||
+                                                    "사진"}
+                                                </div>
+                                              </a>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                   </article>
                                 </CarouselItem>
@@ -795,7 +853,9 @@ export default function MentoringDetailPage() {
                                     }
                                     size="sm"
                                     className="gap-1.5 rounded-full"
-                                    onClick={() => sessionCarouselApi?.scrollTo(index)}
+                                    onClick={() =>
+                                      sessionCarouselApi?.scrollTo(index)
+                                    }
                                   >
                                     <span>{session.session_no}회차</span>
                                     <span className="text-[11px] opacity-70">
@@ -828,10 +888,13 @@ export default function MentoringDetailPage() {
                                 ? `${sessionNo}회차 기록 수정`
                                 : "새 멘토링 세션 작성"}
                             </h3>
-                            <Badge variant="outline">다음 권장 회차 {nextSessionNo}</Badge>
+                            <Badge variant="outline">
+                              다음 권장 회차 {nextSessionNo}
+                            </Badge>
                           </div>
                           <p className="mt-1 text-sm text-neutral-600">
-                            새 세션을 추가하거나 기존 세션을 열어 업데이트할 수 있습니다.
+                            새 세션을 추가하거나 기존 세션을 열어 업데이트할 수
+                            있습니다.
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -864,143 +927,151 @@ export default function MentoringDetailPage() {
                       {!isComposerOpen ? (
                         <div className="mt-4 rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-6">
                           <p className="text-sm font-medium text-neutral-700">
-                            새 멘토링 세션을 추가할 준비가 되면 작성 패널을 열어주세요.
+                            새 멘토링 세션을 추가할 준비가 되면 작성 패널을
+                            열어주세요.
                           </p>
                           <p className="mt-2 text-sm text-neutral-500">
-                            회차, 일시, 장소, 멘토링 내용, 현장 사진을 한 번에 정리할 수 있습니다.
+                            회차, 일시, 장소, 멘토링 내용, 현장 사진을 한 번에
+                            정리할 수 있습니다.
                           </p>
                         </div>
                       ) : (
                         <div className="mt-4 space-y-4">
-                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <div>
+                              <label className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                                회차
+                              </label>
+                              <Input
+                                type="number"
+                                min={1}
+                                value={sessionNo}
+                                onChange={(e) => setSessionNo(e.target.value)}
+                                className="mt-2"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                                멘토링 일시
+                              </label>
+                              <Input
+                                type="datetime-local"
+                                value={mentoredAt}
+                                onChange={(e) => setMentoredAt(e.target.value)}
+                                className="mt-2"
+                              />
+                            </div>
+                          </div>
+
                           <div>
-                            <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                              회차
+                            <label className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                              장소
                             </label>
                             <Input
-                              type="number"
-                              min={1}
-                              value={sessionNo}
-                              onChange={(e) => setSessionNo(e.target.value)}
+                              value={place}
+                              onChange={(e) => setPlace(e.target.value)}
+                              placeholder="예: 본사 회의실, 온라인 미팅"
                               className="mt-2"
                             />
                           </div>
+
                           <div>
-                            <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                              멘토링 일시
+                            <label className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                              멘토링 내용
                             </label>
-                            <Input
-                              type="datetime-local"
-                              value={mentoredAt}
-                              onChange={(e) => setMentoredAt(e.target.value)}
-                              className="mt-2"
+                            <Textarea
+                              rows={6}
+                              value={content}
+                              onChange={(e) => setContent(e.target.value)}
+                              placeholder="멘토링에서 다룬 내용과 논의 사항을 입력하세요."
+                              className="mt-2 min-h-[220px] resize-y"
                             />
                           </div>
-                        </div>
 
-                        <div>
-                          <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                            장소
-                          </label>
-                          <Input
-                            value={place}
-                            onChange={(e) => setPlace(e.target.value)}
-                            placeholder="예: 본사 회의실, 온라인 미팅"
-                            className="mt-2"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                            멘토링 내용
-                          </label>
-                          <Textarea
-                            rows={6}
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            placeholder="멘토링에서 다룬 내용과 논의 사항을 입력하세요."
-                            className="mt-2 min-h-[220px] resize-y"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                            사진 첨부
-                          </label>
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            tabIndex={-1}
-                            className="sr-only"
-                            onChange={(e) => handlePhotoFileChange(e.target.files)}
-                          />
-                          {editorPhotos.length === 0 ? (
-                            <button
-                              type="button"
-                              className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-4 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-400 hover:bg-white"
-                              onClick={() => fileInputRef.current?.click()}
-                            >
-                              <Camera className="h-4 w-4" />
-                              사진 선택
-                            </button>
-                          ) : (
-                            <div className="mt-2 space-y-3">
-                              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                                {editorPhotos.map((photo) => (
-                                  <div
-                                    key={photo.key}
-                                    className="overflow-hidden rounded-2xl border border-neutral-200 bg-white"
-                                  >
-                                    <div className="relative aspect-[4/3] bg-neutral-100">
-                                      <img
-                                        src={photo.previewUrl}
-                                        alt={photo.name}
-                                        className="h-full w-full object-cover"
-                                      />
-                                      <div className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[11px] font-medium text-white">
-                                        {photo.kind === "existing" ? "기존 사진" : "새 사진"}
-                                      </div>
-                                      <button
-                                        type="button"
-                                        className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-white hover:text-red-500"
-                                        onClick={() => handleRemovePhoto(photo.key)}
-                                      >
-                                        삭제
-                                      </button>
-                                    </div>
-                                    <div className="flex items-center gap-2 border-t border-neutral-100 px-3 py-2 text-sm text-neutral-600">
-                                      <FileImage className="h-4 w-4 shrink-0 text-neutral-400" />
-                                      <span className="min-w-0 flex-1 truncate">
-                                        {photo.name}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
+                          <div>
+                            <label className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                              사진 첨부
+                            </label>
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              tabIndex={-1}
+                              className="sr-only"
+                              onChange={(e) =>
+                                handlePhotoFileChange(e.target.files)
+                              }
+                            />
+                            {editorPhotos.length === 0 ? (
                               <button
                                 type="button"
-                                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 text-sm font-medium text-neutral-600 transition-colors hover:border-neutral-400 hover:bg-white"
+                                className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-4 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-400 hover:bg-white"
                                 onClick={() => fileInputRef.current?.click()}
                               >
-                                <Plus className="h-4 w-4" />
-                                사진 추가
+                                <Camera className="h-4 w-4" />
+                                사진 선택
                               </button>
-                            </div>
-                          )}
-                        </div>
+                            ) : (
+                              <div className="mt-2 space-y-3">
+                                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                  {editorPhotos.map((photo) => (
+                                    <div
+                                      key={photo.key}
+                                      className="overflow-hidden rounded-2xl border border-neutral-200 bg-white"
+                                    >
+                                      <div className="relative aspect-[4/3] bg-neutral-100">
+                                        <img
+                                          src={photo.previewUrl}
+                                          alt={photo.name}
+                                          className="h-full w-full object-cover"
+                                        />
+                                        <div className="absolute top-2 left-2 rounded-full bg-black/65 px-2 py-1 text-[11px] font-medium text-white">
+                                          {photo.kind === "existing"
+                                            ? "기존 사진"
+                                            : "새 사진"}
+                                        </div>
+                                        <button
+                                          type="button"
+                                          className="absolute top-2 right-2 rounded-full bg-white/90 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-white hover:text-red-500"
+                                          onClick={() =>
+                                            handleRemovePhoto(photo.key)
+                                          }
+                                        >
+                                          삭제
+                                        </button>
+                                      </div>
+                                      <div className="flex items-center gap-2 border-t border-neutral-100 px-3 py-2 text-sm text-neutral-600">
+                                        <FileImage className="h-4 w-4 shrink-0 text-neutral-400" />
+                                        <span className="min-w-0 flex-1 truncate">
+                                          {photo.name}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                <button
+                                  type="button"
+                                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 text-sm font-medium text-neutral-600 transition-colors hover:border-neutral-400 hover:bg-white"
+                                  onClick={() => fileInputRef.current?.click()}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                  사진 추가
+                                </button>
+                              </div>
+                            )}
+                          </div>
 
-                        <LoadingButton
-                          type="button"
-                          className="w-full gap-2"
-                          loading={saveMutation.isPending}
-                          onClick={() => saveMutation.mutate()}
-                          disabled={mentoring.status === "COMPLETED"}
-                        >
-                          <CheckCircle2 className="h-4 w-4" />
-                          {editingSessionId ? "기록 수정" : "기록 저장"}
-                        </LoadingButton>
+                          <LoadingButton
+                            type="button"
+                            className="w-full gap-2"
+                            loading={saveMutation.isPending}
+                            onClick={() => saveMutation.mutate()}
+                            disabled={mentoring.status === "COMPLETED"}
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            {editingSessionId ? "기록 수정" : "기록 저장"}
+                          </LoadingButton>
                         </div>
                       )}
                     </div>
@@ -1014,10 +1085,10 @@ export default function MentoringDetailPage() {
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <h3 className="text-lg font-semibold text-neutral-950">
-                              먼저 기업을 선점해주세요
+                              먼저 기업을 선택해주세요
                             </h3>
                             <p className="mt-1 text-sm text-neutral-600">
-                              이 기업은 아직 담당 멘토가 없습니다. 선점한 뒤
+                              이 기업은 아직 담당 멘토가 없습니다. 선택한 뒤
                               멘토링 기록을 작성할 수 있습니다.
                             </p>
                           </div>
@@ -1026,10 +1097,11 @@ export default function MentoringDetailPage() {
                           type="button"
                           className="mt-4 w-full gap-2"
                           loading={claimMutation.isPending}
-                          onClick={() => claimMutation.mutate(selectedCompany.company_id)}
+                          onClick={() =>
+                            claimMutation.mutate(selectedCompany.company_id)
+                          }
                         >
-                          <Plus className="h-4 w-4" />
-                          이 기업 선점하기
+                          <Plus className="h-4 w-4" />이 기업 선택하기
                         </LoadingButton>
                       </div>
                     )}

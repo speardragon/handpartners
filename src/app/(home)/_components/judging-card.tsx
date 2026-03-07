@@ -16,29 +16,40 @@ export function JudgingCard({ judging, onClick }: JudgingCardProps) {
   return (
     <div
       onClick={() => onClick(judging)}
-      className="relative cursor-pointer rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+      className="group relative cursor-pointer overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div className="absolute right-4 top-4">
-        {getStatusBadge(judging.status)}
+      <div className="border-b border-neutral-200 bg-[linear-gradient(180deg,#fafafa_0%,#f3f4f6_100%)] px-5 py-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium tracking-[0.2em] text-neutral-400 uppercase">
+              심사 세션
+            </p>
+            <h3
+              title={judging.name}
+              className="mt-2 text-lg font-semibold line-clamp-1 text-neutral-950"
+            >
+              {judging.name}
+            </h3>
+          </div>
+          <div className="shrink-0">{getStatusBadge(judging.status)}</div>
+        </div>
       </div>
 
-      <h3 className="mt-1 line-clamp-1 pr-16 text-base font-semibold">
-        {judging.name}
-      </h3>
+      <div className="p-5">
+        <p className="text-sm leading-6 line-clamp-2 text-neutral-600">
+          {judging.program.description?.trim() || "프로그램 설명이 없습니다."}
+        </p>
 
-      <p className="mt-1 line-clamp-2 pr-16 text-sm text-muted-foreground">
-        {judging.program.description?.trim() || "프로그램 설명이 없습니다."}
-      </p>
-
-      <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <Building2 size={14} />
-          {judging.companies.length}개 기업
-        </span>
-        <span className="flex items-center gap-1 truncate">
-          <Calendar size={14} className="shrink-0" />
-          {startDate} ~ {endDate}
-        </span>
+        <div className="grid gap-2 p-3 mt-4 text-sm rounded-xl bg-neutral-50 text-neutral-600 sm:grid-cols-2">
+          <span className="flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-neutral-400" />
+            참여 기업 {judging.companies.length}개
+          </span>
+          <span className="flex items-center gap-2 sm:col-span-2">
+            <Calendar className="w-4 h-4 shrink-0 text-neutral-400" />
+            {startDate} ~ {endDate}
+          </span>
+        </div>
       </div>
     </div>
   );
