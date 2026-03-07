@@ -13,15 +13,14 @@ export const Filter = React.memo(
     const { filterVariant } = column.columnDef.meta ?? {};
 
     const columnFilterValue = column.getFilterValue();
+    const facetedUniqueValues = column.getFacetedUniqueValues();
 
     const sortedUniqueValues = useMemo(
       () =>
         filterVariant === "range"
           ? []
-          : Array.from(column.getFacetedUniqueValues().keys())
-              .sort()
-              .slice(0, 5000),
-      [column.getFacetedUniqueValues(), filterVariant]
+          : Array.from(facetedUniqueValues.keys()).sort().slice(0, 5000),
+      [facetedUniqueValues, filterVariant]
     );
 
     return filterVariant === "select" ? (

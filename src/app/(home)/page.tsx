@@ -34,7 +34,7 @@ const PAGE_SIZE = 10;
 
 export default function Home() {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuthStore();
+  const { user } = useAuthStore();
 
   const isAdmin = user ? user.role === USER_ROLES.ADMIN : undefined;
 

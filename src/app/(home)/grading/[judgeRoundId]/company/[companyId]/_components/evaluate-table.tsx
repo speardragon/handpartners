@@ -111,13 +111,12 @@ export default function EvaluateTable({
       return { ...item, grade: existing ? Number(existing.grade) : 0 };
     });
 
-    setEvaluations(initialEvaluations);
-    setFeedback(existEvaluation.evaluations[0]?.feedback ?? "");
-    setStatus(
-      (existEvaluation.evaluations[0]?.status as EvaluationStatus) ?? null
-    );
-
-    setTimeout(() => {
+    window.setTimeout(() => {
+      setEvaluations(initialEvaluations);
+      setFeedback(existEvaluation.evaluations[0]?.feedback ?? "");
+      setStatus(
+        (existEvaluation.evaluations[0]?.status as EvaluationStatus) ?? null
+      );
       isInitialized.current = true;
     }, 0);
   }, [judgeRound, existEvaluation]);

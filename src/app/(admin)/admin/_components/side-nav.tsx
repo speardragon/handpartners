@@ -8,7 +8,7 @@ import handpartnersLogo from "../../../../../public/images/handpartners_logo.png
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const navItems = [
   { href: "/admin/user", label: "사용자 관리", icon: Users, key: "user" },
@@ -71,11 +71,6 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export default function SideNav() {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   return (
     <>

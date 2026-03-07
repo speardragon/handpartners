@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { ColumnDef } from "@tanstack/react-table";
 import { CircleCheck, Loader } from "lucide-react";
 import Link from "next/link";
-import { useMemo } from "react";
 
 export type ReviewStatus = {
   score: number; // 접수번호
@@ -38,19 +37,6 @@ export const columns: ColumnDef<ReviewStatus>[] = [
     header: "",
     cell: ({ row }) => {
       const answerType = row.getValue("status") as string;
-      const getColorClass = (type: string) => {
-        switch (type) {
-          case "심사 예정":
-            return "text-red-500";
-          case "심사 중":
-            return "text-red-500";
-          case "심사 완료":
-            return "text-green-500";
-          default:
-            return "";
-        }
-      };
-
       return (
         <Badge variant="outline" className="flex justify-center gap-2 px-1.5">
           {answerType === "심사 완료" ? (
