@@ -9,19 +9,28 @@ export function getStatusBadge(status: JudgingRoundStatus | MentoringStatus) {
     case "IN_PROGRESS":
       return createElement(
         Badge,
-        { className: "bg-blue-500 hover:bg-blue-500/80 text-white" },
+        {
+          className:
+            "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-50 shadow-none",
+        },
         "진행 중"
       );
     case "COMPLETED":
       return createElement(
         Badge,
-        { className: "bg-green-500 hover:bg-green-500/80 text-white" },
+        {
+          className:
+            "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 shadow-none",
+        },
         "종료"
       );
     case "PENDING":
       return createElement(
         Badge,
-        { className: "bg-gray-500 hover:bg-gray-500/80 text-white" },
+        {
+          className:
+            "border-stone-200 bg-stone-100 text-stone-700 hover:bg-stone-100 shadow-none",
+        },
         "진행 전"
       );
   }

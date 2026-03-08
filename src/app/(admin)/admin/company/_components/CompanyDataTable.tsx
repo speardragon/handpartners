@@ -81,7 +81,7 @@ export function CompanyDataTable<TData, TValue>({
           <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400" />
           <Input
             type="text"
-            placeholder="기업명으로 검색..."
+            placeholder="기업명 또는 대표자 성명으로 검색..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-9"

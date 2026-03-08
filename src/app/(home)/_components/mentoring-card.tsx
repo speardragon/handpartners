@@ -51,7 +51,7 @@ export function MentoringCard({ mentoring, isAdminView, onClick }: Props) {
       <div className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="mt-2 line-clamp-2 text-sm leading-6 text-neutral-600">
+            <p className="line-clamp-2 text-sm leading-6 text-neutral-600">
               {mentoring.program.description?.trim() ||
                 "프로그램 설명이 없습니다."}
             </p>
