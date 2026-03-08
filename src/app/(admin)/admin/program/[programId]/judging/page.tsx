@@ -4,6 +4,7 @@ import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import { judgingQueries, judgingRoundQueries } from "@/queries";
 import { getAllJudgeEvaluations } from "@/actions/evaluation-action";
 import {
@@ -102,8 +103,7 @@ export default function Page({ params }: Props) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6">
         <div className="max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-          {(error as Error | undefined)?.message ||
-            "심사 관리 정보를 불러오지 못했습니다."}
+          {getErrorMessage(error, "심사 관리 정보를 불러오지 못했습니다.")}
         </div>
       </div>
     );
@@ -113,14 +113,18 @@ export default function Page({ params }: Props) {
     setIsStatusUpdating(true);
 
     try {
-      await updateJudgingRoundStatus(judgingRound.id, nextStatus);
+      await executeAction(
+        updateJudgingRoundStatus(judgingRound.id, nextStatus)
+      );
       queryClient.invalidateQueries({ queryKey: judgingRoundQueries.all() });
       queryClient.invalidateQueries({ queryKey: judgingQueries.all() });
       toast.success(
         `심사 상태가 "${STATUS_LABEL[nextStatus]}"(으)로 변경되었습니다.`
       );
-    } catch {
-      toast.error("심사 상태 변경 중 오류가 발생했습니다.");
+    } catch (actionError) {
+      toast.error(
+        getErrorMessage(actionError, "심사 상태 변경 중 오류가 발생했습니다.")
+      );
     } finally {
       setIsStatusUpdating(false);
     }
@@ -130,7 +134,9 @@ export default function Page({ params }: Props) {
     setIsBulkDownloading(true);
 
     try {
-      const judgeEvaluations = await getAllJudgeEvaluations(judgingRound.id);
+      const judgeEvaluations = await executeAction(
+        getAllJudgeEvaluations(judgingRound.id)
+      );
 
       if (judgeEvaluations.length === 0) {
         toast.error("다운로드할 심사 데이터가 없습니다.");
@@ -185,7 +191,9 @@ export default function Page({ params }: Props) {
     setIsBulkPresentationDownloading(true);
 
     try {
-      const companies = await getJudgingRoundCompaniesById(judgingRound.id);
+      const companies = await executeAction(
+        getJudgingRoundCompaniesById(judgingRound.id)
+      );
       const companiesWithPdf = companies.filter((company) => company.pdf_path);
 
       if (companiesWithPdf.length === 0) {
@@ -203,8 +211,8 @@ export default function Page({ params }: Props) {
       await Promise.all(
         companiesWithPdf.map(async (company) => {
           try {
-            const { downloadUrl } = await getCompanyPdfDownloadUrl(
-              company.pdf_path!
+            const { downloadUrl } = await executeAction(
+              getCompanyPdfDownloadUrl(company.pdf_path!)
             );
             const response = await fetch(downloadUrl);
             if (!response.ok) throw new Error("Network response was not ok");
@@ -237,11 +245,16 @@ export default function Page({ params }: Props) {
 
   const handleEmailDialogOpen = async () => {
     try {
-      const count = await getJudgeEmailCount(judgingRound.id);
+      const count = await executeAction(getJudgeEmailCount(judgingRound.id));
       setEmailCount(count);
       setEmailDialogOpen(true);
-    } catch {
-      toast.error("심사자 정보를 불러오는 중 오류가 발생했습니다.");
+    } catch (actionError) {
+      toast.error(
+        getErrorMessage(
+          actionError,
+          "심사자 정보를 불러오는 중 오류가 발생했습니다."
+        )
+      );
     }
   };
 
@@ -249,7 +262,7 @@ export default function Page({ params }: Props) {
     setEmailDialogOpen(false);
     setIsEmailSending(true);
     try {
-      const result = await sendJudgingEmails(judgingRound.id);
+      const result = await executeAction(sendJudgingEmails(judgingRound.id));
       if (result.failedCount === 0) {
         toast.success(
           `${result.sentCount}명의 심사자에게 이메일을 발송했습니다.`
@@ -259,8 +272,10 @@ export default function Page({ params }: Props) {
           `${result.sentCount}명 발송 성공, ${result.failedCount}명 발송 실패`
         );
       }
-    } catch {
-      toast.error("이메일 발송 중 오류가 발생했습니다.");
+    } catch (actionError) {
+      toast.error(
+        getErrorMessage(actionError, "이메일 발송 중 오류가 발생했습니다.")
+      );
     } finally {
       setIsEmailSending(false);
     }

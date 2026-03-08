@@ -1,6 +1,7 @@
 // useEvaluationMutation.ts
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import { createEvaluation } from "@/actions/evaluation-action";
 
 interface EvaluationItem {
@@ -37,10 +38,9 @@ export function useEvaluationMutation() {
       }));
 
       // createEvaluation server action 호출
-      const result = await createEvaluation(
-        judgeRoundId,
-        companyId,
-        evaluationRecords
+      const result = await executeAction(
+        createEvaluation(judgeRoundId, companyId, evaluationRecords),
+        "저장 중 문제가 발생했습니다."
       );
       return result;
     },
@@ -50,7 +50,7 @@ export function useEvaluationMutation() {
       });
     },
     onError: (error: unknown) => {
-      toast.error("저장 중 문제가 발생했습니다.");
+      toast.error(getErrorMessage(error, "저장 중 문제가 발생했습니다."));
       console.error(error);
     },
   });

@@ -3,6 +3,7 @@
 // -----------------------------------
 // /actions/judging_round_criteria-action.ts
 // -----------------------------------
+import { raiseActionError, withActionResult } from "@/lib/action";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -17,7 +18,7 @@ export async function getJudgingCriteriaByRound(judgingRoundId: string) {
     .eq("judging_round_id", judgingRoundId);
 
   if (error) {
-    throw new Error(error.message);
+    raiseActionError(error);
   }
 
   return data ?? [];
@@ -41,10 +42,10 @@ export interface UpdateJudgeCriteriaData {
  *   - 새 목록과 비교 → 삽입/삭제/업데이트
  */
 export async function updateJudgeCriteria(data: UpdateJudgeCriteriaData) {
-  const supabase = await createClient();
-  const { judgingRoundId, criteriaList } = data;
+  return withActionResult(async () => {
+    const supabase = await createClient();
+    const { judgingRoundId, criteriaList } = data;
 
-  try {
     // 1) 기존 레코드 조회
     const { data: oldCriteria, error: oldCriteriaError } = await supabase
       .from("evaluation_criteria")
@@ -52,8 +53,7 @@ export async function updateJudgeCriteria(data: UpdateJudgeCriteriaData) {
       .eq("judging_round_id", judgingRoundId);
 
     if (oldCriteriaError) {
-      console.error("oldCriteriaError:", oldCriteriaError);
-      throw new Error(oldCriteriaError.message);
+      raiseActionError(oldCriteriaError);
     }
 
     // 2) 새 목록을 Map으로(key: id - 단, 새 항목은 id가 없을 수 있음)
@@ -108,8 +108,7 @@ export async function updateJudgeCriteria(data: UpdateJudgeCriteriaData) {
         .delete()
         .in("id", deleteIds);
       if (deleteError) {
-        console.error("deleteError:", deleteError);
-        throw new Error(deleteError.message);
+        raiseActionError(deleteError);
       }
     }
 
@@ -128,8 +127,7 @@ export async function updateJudgeCriteria(data: UpdateJudgeCriteriaData) {
         .insert(insertPayload);
 
       if (insertError) {
-        console.error("insertError:", insertError);
-        throw new Error(insertError.message);
+        raiseActionError(insertError);
       }
     }
 
@@ -148,15 +146,10 @@ export async function updateJudgeCriteria(data: UpdateJudgeCriteriaData) {
         .eq("id", rowId);
 
       if (updateError) {
-        console.error("updateError:", updateError);
-        throw new Error(updateError.message);
+        raiseActionError(updateError);
       }
     }
 
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("updateJudgeCriteria error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, message };
-  }
+    return undefined;
+  });
 }

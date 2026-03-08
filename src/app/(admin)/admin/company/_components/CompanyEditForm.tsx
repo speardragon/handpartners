@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import { companyQueries } from "@/queries";
 import {
   CompanyUpdateFormType,
@@ -49,9 +50,13 @@ export default function CompanyEditForm({ companyId, companyInfo }: Props) {
     );
 
     if (Object.keys(updatedData).length > 0) {
-      await updateCompany({ ...updatedData, id: companyId });
-      queryClient.invalidateQueries({ queryKey: companyQueries.all() });
-      toast.success("기업 정보를 수정하였습니다.");
+      try {
+        await executeAction(updateCompany({ ...updatedData, id: companyId }));
+        queryClient.invalidateQueries({ queryKey: companyQueries.all() });
+        toast.success("기업 정보를 수정하였습니다.");
+      } catch (error) {
+        toast.error(getErrorMessage(error, "기업 정보를 수정하지 못했습니다."));
+      }
     } else {
       toast.error("수정사항이 존재하지 않습니다.");
     }

@@ -4,6 +4,7 @@ import { use, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import { mentoringQueries } from "@/queries";
 import {
   type MentoringStatus,
@@ -105,8 +106,7 @@ export default function Page({ params }: Props) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6">
         <div className="max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-          {(error as Error | undefined)?.message ||
-            "멘토링 관리 정보를 불러오지 못했습니다."}
+          {getErrorMessage(error, "멘토링 관리 정보를 불러오지 못했습니다.")}
         </div>
       </div>
     );
@@ -116,13 +116,18 @@ export default function Page({ params }: Props) {
     setIsStatusUpdating(true);
 
     try {
-      await updateMentoringStatus(mentoring.id, nextStatus);
+      await executeAction(updateMentoringStatus(mentoring.id, nextStatus));
       queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
       toast.success(
         `멘토링 상태가 "${STATUS_LABEL[nextStatus]}"(으)로 변경되었습니다.`
       );
-    } catch {
-      toast.error("멘토링 상태 변경 중 오류가 발생했습니다.");
+    } catch (actionError) {
+      toast.error(
+        getErrorMessage(
+          actionError,
+          "멘토링 상태 변경 중 오류가 발생했습니다."
+        )
+      );
     } finally {
       setIsStatusUpdating(false);
     }

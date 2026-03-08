@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { getErrorMessage } from "@/lib/action";
 import { useMutation } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -29,8 +30,10 @@ export function useLoginMutation() {
       const redirect = searchParams.get("redirect");
       window.location.href = redirect ?? "/";
     },
-    onError: (error: Error) => {
-      if (error.message === "invalid_credentials") {
+    onError: (error: unknown) => {
+      const message = getErrorMessage(error, "로그인에 실패했습니다");
+
+      if (message === "invalid_credentials") {
         toast.error("이메일 또는 비밀번호가 잘못되었습니다");
         return;
       }

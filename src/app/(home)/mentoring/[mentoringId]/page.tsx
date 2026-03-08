@@ -5,6 +5,7 @@ import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import {
   claimMentoringCompany,
   createMentoringSessionPhotoUploadUrl,
@@ -50,6 +51,13 @@ function toLocalInputValue(dateString?: string | null) {
 
 function formatDateTime(dateString: string) {
   return dateString.slice(0, 16).replace("T", " ");
+}
+
+function isWebpFile(file: File) {
+  return (
+    file.type.toLowerCase() === "image/webp" ||
+    file.name.toLowerCase().endsWith(".webp")
+  );
 }
 
 type EditorPhotoItem =
@@ -251,13 +259,13 @@ export default function MentoringDetailPage() {
 
   const claimMutation = useMutation({
     mutationFn: async (companyId: number) =>
-      claimMentoringCompany({ mentoringId, companyId }),
+      executeAction(claimMentoringCompany({ mentoringId, companyId })),
     onSuccess: () => {
       toast.success("기업을 선택했습니다.");
       queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
     },
-    onError: (mutationError: Error) => {
-      toast.error(mutationError.message);
+    onError: (mutationError: unknown) => {
+      toast.error(getErrorMessage(mutationError, "기업 선택에 실패했습니다."));
     },
   });
 
@@ -280,11 +288,12 @@ export default function MentoringDetailPage() {
           const fileEntry = newPhotoFilesRef.current[photoItem.fileKey];
           if (!fileEntry) return null;
 
-          const { uploadUrl, publicUrl } =
-            await createMentoringSessionPhotoUploadUrl({
+          const { uploadUrl, publicUrl } = await executeAction(
+            createMentoringSessionPhotoUploadUrl({
               fileName: fileEntry.file.name,
               contentType: fileEntry.file.type,
-            });
+            })
+          );
 
           const uploadResponse = await fetch(uploadUrl, {
             method: "PUT",
@@ -306,16 +315,18 @@ export default function MentoringDetailPage() {
         })
       ).then((results) => results.filter((r) => r !== null));
 
-      return upsertMentoringSession({
-        id: editingSessionId ?? undefined,
-        mentoringId,
-        companyId: selectedCompany.company_id,
-        sessionNo: Number(sessionNo),
-        mentoredAt: new Date(mentoredAt).toISOString(),
-        place,
-        content,
-        photos: uploadedPhotos,
-      });
+      return executeAction(
+        upsertMentoringSession({
+          id: editingSessionId ?? undefined,
+          mentoringId,
+          companyId: selectedCompany.company_id,
+          sessionNo: Number(sessionNo),
+          mentoredAt: new Date(mentoredAt).toISOString(),
+          place,
+          content,
+          photos: uploadedPhotos,
+        })
+      );
     },
     onSuccess: () => {
       toast.success(
@@ -328,8 +339,10 @@ export default function MentoringDetailPage() {
       clearEditorPhotos();
       queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
     },
-    onError: (mutationError: Error) => {
-      toast.error(mutationError.message);
+    onError: (mutationError: unknown) => {
+      toast.error(
+        getErrorMessage(mutationError, "멘토링 기록을 저장하지 못했습니다.")
+      );
     },
   });
 
@@ -378,7 +391,21 @@ export default function MentoringDetailPage() {
   };
 
   const handlePhotoFileChange = (files: FileList | null) => {
-    const added = Array.from(files ?? []).map((file, index) => {
+    const selectedFiles = Array.from(files ?? []);
+    const allowedFiles = selectedFiles.filter((file) => !isWebpFile(file));
+
+    if (allowedFiles.length !== selectedFiles.length) {
+      toast.error(
+        "WEBP 이미지는 업로드할 수 없습니다. PNG 또는 JPG 파일을 사용해주세요."
+      );
+    }
+
+    if (allowedFiles.length === 0) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    const added = allowedFiles.map((file, index) => {
       const fileKey =
         typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
           ? crypto.randomUUID()
@@ -475,8 +502,7 @@ export default function MentoringDetailPage() {
             목록으로 돌아가기
           </Button>
           <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-            {(error as Error | undefined)?.message ||
-              "멘토링 상세 정보를 불러오지 못했습니다."}
+            {getErrorMessage(error, "멘토링 상세 정보를 불러오지 못했습니다.")}
           </div>
         </div>
       </main>

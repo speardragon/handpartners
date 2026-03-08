@@ -29,6 +29,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { EllipsisVertical, Pencil, Trash } from "lucide-react";
 import { toast } from "sonner";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import { useQueryClient } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
@@ -48,9 +49,13 @@ function CompanyActionsCell({
   const queryClient = useQueryClient();
 
   const deleteHandler = async (companyId: number) => {
-    await deleteCompany(companyId);
-    toast.success("기업이 삭제되었습니다.");
-    queryClient.invalidateQueries({ queryKey: companyQueries.all() });
+    try {
+      await executeAction(deleteCompany(companyId));
+      toast.success("기업이 삭제되었습니다.");
+      queryClient.invalidateQueries({ queryKey: companyQueries.all() });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "기업을 삭제하지 못했습니다."));
+    }
   };
 
   const companyId = Number(row.original.id?.toString());

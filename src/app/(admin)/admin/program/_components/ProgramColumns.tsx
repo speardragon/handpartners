@@ -1,6 +1,7 @@
 "use client";
 
 import { deleteProgram, ProgramRow } from "@/actions/program-action";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   DropdownMenu,
@@ -73,9 +74,13 @@ function ProgramActionsCell({
   const programId = Number(row.original.id?.toString());
 
   const deleteHandler = async (id: number) => {
-    await deleteProgram(id);
-    toast.success("프로그램이 삭제되었습니다.");
-    queryClient.invalidateQueries({ queryKey: programQueries.all() });
+    try {
+      await executeAction(deleteProgram(id));
+      toast.success("프로그램이 삭제되었습니다.");
+      queryClient.invalidateQueries({ queryKey: programQueries.all() });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "프로그램을 삭제하지 못했습니다."));
+    }
   };
 
   return (

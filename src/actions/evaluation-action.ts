@@ -1,6 +1,7 @@
 "use server";
 
 import { Database } from "types_db";
+import { raiseActionError, withActionResult } from "@/lib/action";
 import { createClient } from "@/lib/supabase/server";
 import { createPresignedDownloadUrl } from "@/lib/storage/s3";
 import {
@@ -15,12 +16,6 @@ export type EvaluationRowInsert =
   Database["public"]["Tables"]["evaluation"]["Insert"];
 export type EvaluationRowUpdate =
   Database["public"]["Tables"]["evaluation"]["Update"];
-
-function handleError(error: unknown): never {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error("Database error:", message);
-  throw new Error(message);
-}
 
 /**
  * 평가 데이터를 저장하는 함수
@@ -39,37 +34,40 @@ export async function createEvaluation(
   companyId: number,
   data: EvaluationUpsert[]
 ) {
-  const supabase = await createClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const userId = user?.id;
-  if (!userId) {
-    throw new Error("User not authenticated");
-  }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const userId = user?.id;
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
 
-  // Upsert 데이터에 user_id, judgeRoundId, companyId 추가
-  const dataWithKeys = data.map((item) => ({
-    ...item,
-    judging_round_id: judgeRoundId,
-    company_id: companyId,
-    user_id: userId,
-  }));
+    const dataWithKeys = data.map((item) => ({
+      ...item,
+      judging_round_id: judgeRoundId,
+      company_id: companyId,
+      user_id: userId,
+    }));
 
-  const { error: evaluationError, data: result } = await supabase
-    .from("evaluation")
-    .upsert(dataWithKeys, {
-      onConflict:
-        "judging_round_id, company_id, user_id, evaluation_criterion_id",
-    })
-    .select();
+    const { error: evaluationError, data: result } = await supabase
+      .from("evaluation")
+      .upsert(dataWithKeys, {
+        onConflict:
+          "judging_round_id, company_id, user_id, evaluation_criterion_id",
+      })
+      .select();
 
-  if (evaluationError) {
-    throw new Error(`Failed to save evaluations: ${evaluationError.message}`);
-  }
+    if (evaluationError) {
+      raiseActionError(
+        new Error(`Failed to save evaluations: ${evaluationError.message}`)
+      );
+    }
 
-  return result;
+    return result;
+  });
 }
 
 type EvaluationRecord = {
@@ -106,7 +104,7 @@ export async function getEvaluationByUser(
     .eq("user_id", userId);
 
   if (evaluationError) {
-    handleError(evaluationError);
+    raiseActionError(evaluationError);
     // throw new Error(`Failed to fetch evaluations: ${evaluationError.message}`);
   }
 
@@ -119,7 +117,7 @@ export async function getEvaluationByUser(
     .single(); // 단일 결과 반환
 
   if (companyError) {
-    handleError(companyError);
+    raiseActionError(companyError);
     // throw new Error(
     //   `Failed to fetch judging_round_company data: ${companyError.message}`
     // );
@@ -163,7 +161,7 @@ export async function getDetailedEvaluationsByUser(
     .single();
 
   if (userError) {
-    handleError(userError);
+    raiseActionError(userError);
   }
 
   let signaturePresignedUrl: string | null = null;
@@ -197,7 +195,7 @@ export async function getDetailedEvaluationsByUser(
     if (jruError.code === "PGRST116") {
       return [];
     }
-    handleError(jruError);
+    raiseActionError(jruError);
   }
 
   const userGroupName = jru!.group_name;
@@ -315,7 +313,7 @@ export async function getDetailedEvaluationsByUserId(
     .single();
 
   if (userError) {
-    handleError(userError);
+    raiseActionError(userError);
   }
 
   let signaturePresignedUrl2: string | null = null;
@@ -345,7 +343,7 @@ export async function getDetailedEvaluationsByUserId(
     .single();
 
   if (jruError) {
-    handleError(jruError);
+    raiseActionError(jruError);
   }
 
   const userGroupName = jru!.group_name;
@@ -453,36 +451,37 @@ export type JudgeEvaluationResult = {
  */
 export async function getAllJudgeEvaluations(
   judgingRoundId: string
-): Promise<JudgeEvaluationResult[]> {
-  const supabase = await createClient();
+){
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  // 해당 라운드의 모든 심사자 조회
-  const { data: judges, error: judgesError } = await supabase
-    .from("judging_round_user")
-    .select("user_id, user:user_id(username)")
-    .eq("judging_round_id", judgingRoundId);
+    const { data: judges, error: judgesError } = await supabase
+      .from("judging_round_user")
+      .select("user_id, user:user_id(username)")
+      .eq("judging_round_id", judgingRoundId);
 
-  if (judgesError) {
-    throw new Error(`Failed to fetch judges: ${judgesError.message}`);
-  }
+    if (judgesError) {
+      raiseActionError(`Failed to fetch judges: ${judgesError.message}`);
+    }
 
-  const results: JudgeEvaluationResult[] = [];
+    const results: JudgeEvaluationResult[] = [];
 
-  for (const judge of judges as unknown as {
-    user_id: string;
-    user: { username: string } | null;
-  }[]) {
-    const evaluations = await getDetailedEvaluationsByUserId(
-      judgingRoundId,
-      judge.user_id
-    );
+    for (const judge of judges as unknown as {
+      user_id: string;
+      user: { username: string } | null;
+    }[]) {
+      const evaluations = await getDetailedEvaluationsByUserId(
+        judgingRoundId,
+        judge.user_id
+      );
 
-    results.push({
-      userId: judge.user_id,
-      username: judge.user?.username ?? "(이름 없음)",
-      evaluations,
-    });
-  }
+      results.push({
+        userId: judge.user_id,
+        username: judge.user?.username ?? "(이름 없음)",
+        evaluations,
+      });
+    }
 
-  return results;
+    return results;
+  });
 }

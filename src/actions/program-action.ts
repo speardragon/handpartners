@@ -1,6 +1,7 @@
 "use server";
 
 import { Database } from "types_db";
+import { raiseActionError, withActionResult } from "@/lib/action";
 import { createClient } from "@/lib/supabase/server";
 import { generateJudgingRoundId } from "@/lib/utils/judging-round-id";
 import { generateMentoringId } from "@/lib/utils/mentoring-id";
@@ -41,12 +42,6 @@ interface Result {
   result: ProgramRow[];
 }
 
-function handleError(error: unknown): never {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(message);
-  throw new Error(message);
-}
-
 export async function getProgramById(programId: number) {
   const supabase = await createClient();
 
@@ -84,7 +79,7 @@ export async function getPrograms(
   );
 
   if (error) {
-    handleError(error);
+    raiseActionError(error);
   }
 
   const totalElements = count || 0;
@@ -108,97 +103,103 @@ export async function createProgram(
   program: ProgramRowInsert,
   companyIds: number[]
 ) {
-  const supabase = await createClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  // 1) program 테이블에 레코드 추가
-  //    insert 후 생성된 program_id를 받아야 하므로 select, single() 사용
-  const { data: insertedData, error: programError } = await supabase
-    .from("program")
-    .insert({
-      ...program,
-      created_at: new Date().toISOString(),
-    })
-    .select("id") // 새로 추가된 행의 id를 반환
-    .single();
+    // 1) program 테이블에 레코드 추가
+    //    insert 후 생성된 program_id를 받아야 하므로 select, single() 사용
+    const { data: insertedData, error: programError } = await supabase
+      .from("program")
+      .insert({
+        ...program,
+        created_at: new Date().toISOString(),
+      })
+      .select("id") // 새로 추가된 행의 id를 반환
+      .single();
 
-  if (programError) {
-    handleError(programError);
-  }
-
-  const newProgramId = insertedData!.id;
-
-  const [judgingRoundResult, mentoringResult] = await Promise.all([
-    supabase.from("judging_round").insert({
-      id: generateJudgingRoundId(),
-      program_id: newProgramId,
-      created_at: new Date().toISOString(),
-      status: "PENDING",
-    }),
-    supabase.from("mentoring").insert({
-      id: generateMentoringId(),
-      program_id: newProgramId,
-      created_at: new Date().toISOString(),
-      status: "PENDING",
-    }),
-  ]);
-
-  if (judgingRoundResult.error) {
-    handleError(judgingRoundResult.error);
-  }
-
-  if (mentoringResult.error) {
-    handleError(mentoringResult.error);
-  }
-
-  // 2) program_company 테이블에 (program_id, company_id) 쌍으로 레코드 생성
-  if (newProgramId && companyIds.length > 0) {
-    const inserts = companyIds.map((companyId) => ({
-      program_id: newProgramId,
-      company_id: companyId,
-      created_at: new Date().toISOString(),
-    }));
-
-    const { error: programCompanyError } = await supabase
-      .from("program_company")
-      .insert(inserts);
-
-    if (programCompanyError) {
-      handleError(programCompanyError);
+    if (programError) {
+      raiseActionError(programError);
     }
-  }
 
-  return insertedData; // 방금 생성된 program 정보(또는 null)
+    const newProgramId = insertedData!.id;
+
+    const [judgingRoundResult, mentoringResult] = await Promise.all([
+      supabase.from("judging_round").insert({
+        id: generateJudgingRoundId(),
+        program_id: newProgramId,
+        created_at: new Date().toISOString(),
+        status: "PENDING",
+      }),
+      supabase.from("mentoring").insert({
+        id: generateMentoringId(),
+        program_id: newProgramId,
+        created_at: new Date().toISOString(),
+        status: "PENDING",
+      }),
+    ]);
+
+    if (judgingRoundResult.error) {
+      raiseActionError(judgingRoundResult.error);
+    }
+
+    if (mentoringResult.error) {
+      raiseActionError(mentoringResult.error);
+    }
+
+    // 2) program_company 테이블에 (program_id, company_id) 쌍으로 레코드 생성
+    if (newProgramId && companyIds.length > 0) {
+      const inserts = companyIds.map((companyId) => ({
+        program_id: newProgramId,
+        company_id: companyId,
+        created_at: new Date().toISOString(),
+      }));
+
+      const { error: programCompanyError } = await supabase
+        .from("program_company")
+        .insert(inserts);
+
+      if (programCompanyError) {
+        raiseActionError(programCompanyError);
+      }
+    }
+
+    return insertedData;
+  });
 }
 
 export async function updateProgram(program: ProgramRowUpdate) {
-  const supabase = await createClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("program")
-    .update({
-      ...program,
-    })
-    .eq("id", program.id!);
+    const { data, error } = await supabase
+      .from("program")
+      .update({
+        ...program,
+      })
+      .eq("id", program.id!);
 
-  if (error) {
-    handleError(error);
-  }
-  return data;
+    if (error) {
+      raiseActionError(error);
+    }
+    return data;
+  });
 }
 
 export async function deleteProgram(programId: number) {
-  const supabase = await createClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("program")
-    .delete()
-    .eq("id", programId);
+    const { data, error } = await supabase
+      .from("program")
+      .delete()
+      .eq("id", programId);
 
-  if (error) {
-    handleError(error);
-  }
+    if (error) {
+      raiseActionError(error);
+    }
 
-  return data;
+    return data;
+  });
 }
 
 export interface JudgingWorkspaceWithStatus extends JudgingWorkspace {

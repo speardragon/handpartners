@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { executeAction } from "@/lib/action";
 import { cn } from "@/lib/utils";
 import { judgingRoundQueries } from "@/queries";
 import JudgeCompanySelect from "./JudgeCompanySelect";
@@ -513,7 +514,9 @@ export default function JudgeEditForm({
     if (!company.pdf_path) return;
 
     try {
-      const { downloadUrl } = await getCompanyPdfDownloadUrl(company.pdf_path);
+      const { downloadUrl } = await executeAction(
+        getCompanyPdfDownloadUrl(company.pdf_path)
+      );
       window.open(downloadUrl, "_blank", "noopener,noreferrer");
     } catch {
       toast.error("발표자료를 여는 중 오류가 발생했습니다.");
@@ -527,7 +530,9 @@ export default function JudgeEditForm({
 
     try {
       const [{ saveAs }] = await Promise.all([import("file-saver")]);
-      const { downloadUrl } = await getCompanyPdfDownloadUrl(company.pdf_path);
+      const { downloadUrl } = await executeAction(
+        getCompanyPdfDownloadUrl(company.pdf_path)
+      );
       const response = await fetch(downloadUrl);
       if (!response.ok) {
         throw new Error("파일 다운로드에 실패했습니다.");
@@ -562,8 +567,8 @@ export default function JudgeEditForm({
 
       await Promise.all(
         companiesWithPdf.map(async (company) => {
-          const { downloadUrl } = await getCompanyPdfDownloadUrl(
-            company.pdf_path!
+          const { downloadUrl } = await executeAction(
+            getCompanyPdfDownloadUrl(company.pdf_path!)
           );
           const response = await fetch(downloadUrl);
           if (!response.ok) return;

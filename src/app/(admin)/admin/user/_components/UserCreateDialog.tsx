@@ -23,6 +23,7 @@ import { useForm } from "react-hook-form";
 import { ProfileCreateFormSchema } from "../_lib/ProfileFormSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerUser } from "@/actions/user-actions";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -59,13 +60,13 @@ export default function UserCreateDialog() {
     userData: z.infer<typeof ProfileCreateFormSchema>
   ) => {
     try {
-      await registerUser(userData);
+      await executeAction(registerUser(userData));
       queryClient.invalidateQueries({ queryKey: userQueries.all() });
       setCreateOpen(false);
       form.reset();
       toast.success("새로운 사용자가 추가되었습니다.");
-    } catch (error) {
-      toast.error("사용자 등록에 실패했습니다.");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "사용자 등록에 실패했습니다."));
     }
   };
 

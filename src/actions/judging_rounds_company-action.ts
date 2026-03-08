@@ -2,6 +2,7 @@
 
 import { Database } from "types_db";
 import { v4 as uuidv4 } from "uuid";
+import { raiseActionError, withActionResult } from "@/lib/action";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
   createPresignedDownloadUrl,
@@ -23,38 +24,34 @@ export type JudgingRoundCompanyInsert =
 export type JudgingRoundCompanyUpdate =
   Database["public"]["Tables"]["judging_round_company"]["Update"];
 
-function handleError(error: unknown): never {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(message);
-  throw new Error(message);
-}
-
 export type JudgingRoundCompanyWithCompany = JudgingRoundCompanyRow & {
   company: { name: string } | null;
 };
 
 export async function getJudgingRoundCompaniesById(
   judgingRoundId: string
-): Promise<JudgingRoundCompanyWithCompany[]> {
-  const supabase = await createClient();
+) {
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("judging_round_company")
-    .select(
-      `*,
-        company:company_id (
-          name
-        )
-        `
-    )
-    .eq("judging_round_id", judgingRoundId)
-    .order("judge_num", { ascending: true, nullsFirst: false });
+    const { data, error } = await supabase
+      .from("judging_round_company")
+      .select(
+        `*,
+          company:company_id (
+            name
+          )
+          `
+      )
+      .eq("judging_round_id", judgingRoundId)
+      .order("judge_num", { ascending: true, nullsFirst: false });
 
-  if (error) {
-    handleError(error);
-  }
+    if (error) {
+      raiseActionError(error);
+    }
 
-  return (data ?? []) as unknown as JudgingRoundCompanyWithCompany[];
+    return (data ?? []) as unknown as JudgingRoundCompanyWithCompany[];
+  });
 }
 
 interface CompanyPayload {
@@ -66,11 +63,13 @@ export async function createJudgeCompanyPdfUploadUrl(args: {
   fileName: string;
   contentType?: string;
 }) {
-  return createS3PresignedUploadUrl({
-    fileName: args.fileName || "company.pdf",
-    keyPrefix: "judging-round-pdfs",
-    contentType: args.contentType,
-    defaultContentType: "application/pdf",
+  return withActionResult(async () => {
+    return createS3PresignedUploadUrl({
+      fileName: args.fileName || "company.pdf",
+      keyPrefix: "judging-round-pdfs",
+      contentType: args.contentType,
+      defaultContentType: "application/pdf",
+    });
   });
 }
 
@@ -84,9 +83,9 @@ export async function createJudgeCompanyPdfUploadUrl(args: {
  * 3) pdf_file 있으면 S3에 업로드 후 pdf_path 업데이트
  */
 export async function updateJudgeCompany(formData: FormData) {
-  const supabase = await createClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  try {
     // 1) 기본 데이터 파싱
     const judgingRoundIdString = formData.get("judgingRoundId") as string;
     if (!judgingRoundIdString) {
@@ -108,8 +107,7 @@ export async function updateJudgeCompany(formData: FormData) {
       .eq("judging_round_id", judgingRoundId);
 
     if (oldCompaniesError) {
-      console.error("조회 실패:", oldCompaniesError);
-      throw new Error(oldCompaniesError.message);
+      raiseActionError(oldCompaniesError);
     }
 
     // 4) 새 목록(companies)와 기존 목록(oldCompanies) 비교
@@ -172,8 +170,7 @@ export async function updateJudgeCompany(formData: FormData) {
         .in("id", ids);
 
       if (deleteError) {
-        console.error("delete error:", deleteError);
-        throw new Error(deleteError.message);
+        raiseActionError(deleteError);
       }
     }
 
@@ -210,8 +207,7 @@ export async function updateJudgeCompany(formData: FormData) {
           .insert(insertPayload);
 
         if (insertError) {
-          console.error("insert error:", insertError);
-          throw new Error(insertError.message);
+          raiseActionError(insertError);
         }
       }
     }
@@ -248,17 +244,12 @@ export async function updateJudgeCompany(formData: FormData) {
         .eq("id", rowId);
 
       if (updateError) {
-        console.error("update error:", updateError);
-        throw new Error(updateError.message);
+        raiseActionError(updateError);
       }
     }
 
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("updateJudgeCompany error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, message };
-  }
+    return undefined;
+  });
 }
 
 interface CompanyPayload2 {
@@ -278,9 +269,9 @@ export async function updateJudgeCompany2(args: {
   judgingRoundId: string;
   companies: CompanyPayload2[];
 }) {
-  const supabase = await createClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  try {
     const { judgingRoundId, companies } = args;
     if (!judgingRoundId) {
       throw new Error("judgingRoundId가 없습니다.");
@@ -295,9 +286,12 @@ export async function updateJudgeCompany2(args: {
       .eq("judging_round_id", judgingRoundId)
       .in("company_id", companyIds.length > 0 ? companyIds : [-1]);
 
-    if (oldCompaniesError) throw oldCompaniesError;
-    if (!oldCompanies)
-      return { success: false, message: "기존 기업 조회 실패" };
+    if (oldCompaniesError) {
+      raiseActionError(oldCompaniesError);
+    }
+    if (!oldCompanies) {
+      throw new Error("기존 기업 조회 실패");
+    }
 
     // 2) 새 목록 vs. 기존 목록 비교
     const newMap = new Map<number, CompanyPayload2>();
@@ -347,7 +341,9 @@ export async function updateJudgeCompany2(args: {
         .from("judging_round_company")
         .delete()
         .in("id", ids);
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        raiseActionError(deleteError);
+      }
     }
 
     // 4) 삽입 처리
@@ -355,7 +351,9 @@ export async function updateJudgeCompany2(args: {
       const { error: insertError } = await supabase
         .from("judging_round_company")
         .insert(toInsert);
-      if (insertError) throw insertError;
+      if (insertError) {
+        raiseActionError(insertError);
+      }
     }
 
     // 5) 업데이트 처리
@@ -384,68 +382,68 @@ export async function updateJudgeCompany2(args: {
         .from("judging_round_company")
         .update(updateData)
         .eq("id", rowId);
-      if (updateError) throw updateError;
+      if (updateError) {
+        raiseActionError(updateError);
+      }
     }
 
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("updateJudgeCompany2 error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, message };
-  }
+    return undefined;
+  });
 }
 
 export async function getJudgingRoundCompaniesPublic(judgingRoundId: string) {
-  const supabase = await createAdminClient();
+  return withActionResult(async () => {
+    const supabase = await createAdminClient();
 
-  const { data: round, error: roundError } = await supabase
-    .from("judging_round")
-    .select(
-      `
-      status,
-      program:program_id (
-        name
-      )
-    `
-    )
-    .eq("id", judgingRoundId)
-    .single();
-
-  if (roundError || !round) {
-    throw Object.assign(new Error("심사를 찾을 수 없습니다."), {
-      statusCode: 404,
-    });
-  }
-
-  if (round.status === "COMPLETED") {
-    throw Object.assign(new Error("이미 완료된 심사입니다."), {
-      statusCode: 403,
-    });
-  }
-
-  const { data: companies, error: companiesError } = await supabase
-    .from("judging_round_company")
-    .select(
-      `id,
-        pdf_path,
-        original_filename,
-        submitted_at,
-        company:company_id (
+    const { data: round, error: roundError } = await supabase
+      .from("judging_round")
+      .select(
+        `
+        status,
+        program:program_id (
           name
-        )`
-    )
-    .eq("judging_round_id", judgingRoundId)
-    .order("id", { ascending: true });
+        )
+      `
+      )
+      .eq("id", judgingRoundId)
+      .single();
 
-  if (companiesError) {
-    throw new Error(companiesError.message);
-  }
+    if (roundError || !round) {
+      throw Object.assign(new Error("심사를 찾을 수 없습니다."), {
+        statusCode: 404,
+      });
+    }
 
-  return {
-    roundName: ((round.program as { name: string } | null) ?? { name: "" })
-      .name,
-    companies: companies ?? [],
-  };
+    if (round.status === "COMPLETED") {
+      throw Object.assign(new Error("이미 완료된 심사입니다."), {
+        statusCode: 403,
+      });
+    }
+
+    const { data: companies, error: companiesError } = await supabase
+      .from("judging_round_company")
+      .select(
+        `id,
+          pdf_path,
+          original_filename,
+          submitted_at,
+          company:company_id (
+            name
+          )`
+      )
+      .eq("judging_round_id", judgingRoundId)
+      .order("id", { ascending: true });
+
+    if (companiesError) {
+      throw new Error(companiesError.message);
+    }
+
+    return {
+      roundName: ((round.program as { name: string } | null) ?? { name: "" })
+        .name,
+      companies: companies ?? [],
+    };
+  });
 }
 
 export async function updateCompanyPdfPath(args: {
@@ -453,27 +451,31 @@ export async function updateCompanyPdfPath(args: {
   pdfPath: string;
   originalFilename: string;
 }) {
-  const supabase = await createAdminClient();
+  return withActionResult(async () => {
+    const supabase = await createAdminClient();
 
-  const { error } = await supabase
-    .from("judging_round_company")
-    .update({
-      pdf_path: args.pdfPath,
-      original_filename: args.originalFilename,
-      submitted_at: new Date().toISOString(),
-    })
-    .eq("id", args.judgingRoundCompanyId);
+    const { error } = await supabase
+      .from("judging_round_company")
+      .update({
+        pdf_path: args.pdfPath,
+        original_filename: args.originalFilename,
+        submitted_at: new Date().toISOString(),
+      })
+      .eq("id", args.judgingRoundCompanyId);
 
-  if (error) {
-    throw new Error(error.message);
-  }
+    if (error) {
+      raiseActionError(error);
+    }
 
-  return { success: true };
+    return undefined;
+  });
 }
 
 export async function getCompanyPdfDownloadUrl(pdfPath: string) {
-  const { downloadUrl } = await createPresignedDownloadUrl({
-    objectPathOrUrl: pdfPath,
+  return withActionResult(async () => {
+    const { downloadUrl } = await createPresignedDownloadUrl({
+      objectPathOrUrl: pdfPath,
+    });
+    return { downloadUrl };
   });
-  return { downloadUrl };
 }

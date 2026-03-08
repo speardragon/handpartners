@@ -1,6 +1,7 @@
 "use server";
 
 import { Database } from "types_db";
+import { raiseActionError, withActionResult } from "@/lib/action";
 import { createClient } from "@/lib/supabase/server";
 
 export type ProgramCompanyRow =
@@ -12,12 +13,6 @@ export type ProgramCompanyRow =
     } | null;
   };
 type ProgramRowUpdate = Database["public"]["Tables"]["program"]["Update"];
-
-function handleError(error: unknown): never {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(message);
-  throw new Error(message);
-}
 
 /**
  * 특정 program_id에 해당하는 program_company 레코드를 모두 조회
@@ -38,7 +33,7 @@ export async function getProgramCompanies(
     .eq("program_id", programId);
 
   if (error) {
-    handleError(error);
+    raiseActionError(error);
   }
 
   // data가 null인 경우 빈 배열 반환
@@ -55,44 +50,43 @@ export async function updateProgramAndCompanies(
   programData: ProgramRowUpdate,
   companyIds: number[]
 ) {
-  const supabase = await createClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  // 1) program 업데이트
-  const { error: programError } = await supabase
-    .from("program")
-    .update(programData)
-    .eq("id", programId);
+    const { error: programError } = await supabase
+      .from("program")
+      .update(programData)
+      .eq("id", programId);
 
-  if (programError) {
-    handleError(programError);
-  }
-
-  // 2) program_company 기존 레코드 삭제
-  const { error: deleteError } = await supabase
-    .from("program_company")
-    .delete()
-    .eq("program_id", programId);
-
-  if (deleteError) {
-    handleError(deleteError);
-  }
-
-  // 3) program_company 재삽입
-  if (companyIds.length > 0) {
-    const inserts = companyIds.map((cid) => ({
-      program_id: programId,
-      company_id: cid,
-      created_at: new Date().toISOString(),
-    }));
-
-    const { error: insertError } = await supabase
-      .from("program_company")
-      .insert(inserts);
-
-    if (insertError) {
-      handleError(insertError);
+    if (programError) {
+      raiseActionError(programError);
     }
-  }
 
-  return { success: true };
+    const { error: deleteError } = await supabase
+      .from("program_company")
+      .delete()
+      .eq("program_id", programId);
+
+    if (deleteError) {
+      raiseActionError(deleteError);
+    }
+
+    if (companyIds.length > 0) {
+      const inserts = companyIds.map((cid) => ({
+        program_id: programId,
+        company_id: cid,
+        created_at: new Date().toISOString(),
+      }));
+
+      const { error: insertError } = await supabase
+        .from("program_company")
+        .insert(inserts);
+
+      if (insertError) {
+        raiseActionError(insertError);
+      }
+    }
+
+    return undefined;
+  });
 }

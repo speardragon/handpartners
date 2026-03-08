@@ -21,6 +21,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import { useQueryClient } from "@tanstack/react-query";
 import { ProgramCreateFormSchema } from "../_lib/ProgramFormSchema";
 import { createProgram, ProgramRowInsert } from "@/actions/program-action";
@@ -48,13 +49,21 @@ export default function ProgramCreateSheet() {
   });
 
   const onSubmit = async (data: z.infer<typeof ProgramCreateFormSchema>) => {
-    await createProgram(
-      data as ProgramRowInsert,
-      targetList.map((company) => company.id)
-    );
-    queryClient.invalidateQueries({ queryKey: programQueries.all() });
-    setCreateOpen(false);
-    toast.success("새로운 프로그램 추가되었습니다.");
+    try {
+      await executeAction(
+        createProgram(
+          data as ProgramRowInsert,
+          targetList.map((company) => company.id)
+        )
+      );
+      queryClient.invalidateQueries({ queryKey: programQueries.all() });
+      setCreateOpen(false);
+      toast.success("새로운 프로그램 추가되었습니다.");
+    } catch (error) {
+      toast.error(
+        getErrorMessage(error, "프로그램을 추가하지 못했습니다.")
+      );
+    }
   };
 
   return (

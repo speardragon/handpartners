@@ -1,6 +1,7 @@
 "use server";
 
 import { Database } from "types_db";
+import { raiseActionError, withActionResult } from "@/lib/action";
 import { createClient } from "@/lib/supabase/server";
 import { generateJudgingRoundId } from "@/lib/utils/judging-round-id";
 
@@ -27,12 +28,6 @@ export type JudgingRoundUserInsert =
   Database["public"]["Tables"]["judging_round_user"]["Insert"];
 export type JudgingRoundUserUpdate =
   Database["public"]["Tables"]["judging_round_user"]["Update"];
-
-function handleError(error: unknown): never {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(message);
-  throw new Error(message);
-}
 
 export interface JudgingProgramSummary {
   id: number;
@@ -94,7 +89,7 @@ export async function ensureJudgingRoundForProgram(
     .maybeSingle();
 
   if (existingRoundError) {
-    handleError(existingRoundError);
+    raiseActionError(existingRoundError);
   }
 
   if (existingRound) {
@@ -108,7 +103,7 @@ export async function ensureJudgingRoundForProgram(
     .single();
 
   if (programError) {
-    handleError(programError);
+    raiseActionError(programError);
   }
 
   const { data: createdRound, error: createError } = await supabase
@@ -123,7 +118,7 @@ export async function ensureJudgingRoundForProgram(
     .single();
 
   if (createError) {
-    handleError(createError);
+    raiseActionError(createError);
   }
 
   return createdRound;
@@ -165,15 +160,15 @@ export async function getJudgingRoundByProgramId(
     ]);
 
   if (error) {
-    handleError(error);
+    raiseActionError(error);
   }
 
   if (companyCountResult.error) {
-    handleError(companyCountResult.error);
+    raiseActionError(companyCountResult.error);
   }
 
   if (userCountResult.error) {
-    handleError(userCountResult.error);
+    raiseActionError(userCountResult.error);
   }
 
   return withProgramDisplayFields({
@@ -187,70 +182,78 @@ export async function getJudgingRoundByProgramId(
 }
 
 export async function createJudgingRound(judgingRound: JudgingRoundRowInsert) {
-  const supabase = await createClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  const { data, error } = await supabase.from("judging_round").insert({
-    ...judgingRound,
-    id: generateJudgingRoundId(),
-    created_at: new Date().toISOString(),
-    status: judgingRound.status ?? "PENDING",
+    const { data, error } = await supabase.from("judging_round").insert({
+      ...judgingRound,
+      id: generateJudgingRoundId(),
+      created_at: new Date().toISOString(),
+      status: judgingRound.status ?? "PENDING",
+    });
+
+    if (error) {
+      raiseActionError(error);
+    }
+
+    return data;
   });
-
-  if (error) {
-    handleError(error);
-  }
-
-  return data;
 }
 
 export async function updateJudgingRound(judgingRound: JudgingRoundRowUpdate) {
-  const supabase = await createClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("judging_round")
-    .update({
-      ...judgingRound,
-    })
-    .eq("id", judgingRound.id!);
+    const { data, error } = await supabase
+      .from("judging_round")
+      .update({
+        ...judgingRound,
+      })
+      .eq("id", judgingRound.id!);
 
-  if (error) {
-    handleError(error);
-  }
+    if (error) {
+      raiseActionError(error);
+    }
 
-  return data;
+    return data;
+  });
 }
 
 export async function deleteJudgingRound(judgingRoundId: string) {
-  const supabase = await createClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("judging_round")
-    .delete()
-    .eq("id", judgingRoundId);
+    const { data, error } = await supabase
+      .from("judging_round")
+      .delete()
+      .eq("id", judgingRoundId);
 
-  if (error) {
-    handleError(error);
-  }
+    if (error) {
+      raiseActionError(error);
+    }
 
-  return data;
+    return data;
+  });
 }
 
 export async function updateJudgingRoundStatus(
   judgingRoundId: string,
   status: JudgingRoundStatus
 ) {
-  const supabase = await createClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("judging_round")
-    .update({ status })
-    .eq("id", judgingRoundId);
+    const { data, error } = await supabase
+      .from("judging_round")
+      .update({ status })
+      .eq("id", judgingRoundId);
 
-  if (error) {
-    handleError(error);
-  }
+    if (error) {
+      raiseActionError(error);
+    }
 
-  return data;
+    return data;
+  });
 }
 
 /** 심사 틀 가져오기 */
@@ -296,7 +299,7 @@ export async function getJudgeById(
   ]);
 
   if (judgingRoundError) {
-    handleError(judgingRoundError);
+    raiseActionError(judgingRoundError);
   }
 
   if (!judgingRoundData) {
@@ -304,7 +307,7 @@ export async function getJudgeById(
   }
 
   if (criteriasError) {
-    handleError(criteriasError);
+    raiseActionError(criteriasError);
   }
 
   return withProgramDisplayFields({
