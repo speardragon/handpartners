@@ -10,9 +10,7 @@ export interface SendJudgingEmailsResult {
   failedCount: number;
 }
 
-export async function sendJudgingEmails(
-  judgingRoundId: string
-){
+export async function sendJudgingEmails(judgingRoundId: string) {
   return withActionResult(async () => {
     const supabase = await createClient();
 
@@ -30,7 +28,9 @@ export async function sendJudgingEmails(
       .single();
 
     if (roundError || !judgingRound) {
-      raiseActionError(roundError ?? new Error("심사 라운드를 찾을 수 없습니다."));
+      raiseActionError(
+        roundError ?? new Error("심사 라운드를 찾을 수 없습니다.")
+      );
     }
 
     if (judgingRound.status !== "IN_PROGRESS") {
@@ -63,11 +63,11 @@ export async function sendJudgingEmails(
 
     for (const judge of validJudges) {
       try {
-        const { data, error } = await resend.emails.send({
-          from: "Startup Partners <startuppartners@resend.dev>",
-          // from: "noreply@startuppartners.co.kr",
-          to: "rkdckdfyyd@naver.com",
-          // to: judge.email,
+        const { error } = await resend.emails.send({
+          // from: "Startup Partners <startuppartners@resend.dev>",
+          from: "noreply@startuppartners.co.kr",
+          // to: "rkdckdfyyd@naver.com",
+          to: judge.email,
           subject: `[${programName}] 심사 안내`,
           react: JudgingInvitationEmail({
             judgeName: judge.username,
@@ -76,9 +76,10 @@ export async function sendJudgingEmails(
             judgingUrl,
           }),
         });
-        console.log("Email sent:", data, error);
         sentCount++;
-      } catch {
+        throw error;
+      } catch (e) {
+        console.error("error sending email to", judge.email, "error msg:", e);
         failedCount++;
       }
     }
@@ -87,9 +88,7 @@ export async function sendJudgingEmails(
   });
 }
 
-export async function getJudgeEmailCount(
-  judgingRoundId: string
-){
+export async function getJudgeEmailCount(judgingRoundId: string) {
   return withActionResult(async () => {
     const supabase = await createClient();
 
