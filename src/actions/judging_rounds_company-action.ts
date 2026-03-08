@@ -277,14 +277,11 @@ export async function updateJudgeCompany2(args: {
       throw new Error("judgingRoundId가 없습니다.");
     }
 
-    const companyIds = companies.map((c) => c.company_id);
-
-    // 1) DB에서 기존 기업 목록 조회 (judging_round_id + company_id 동시 일치)
+    // 1) DB에서 라운드의 기존 기업 목록 전체 조회
     const { data: oldCompanies, error: oldCompaniesError } = await supabase
       .from("judging_round_company")
       .select("*")
-      .eq("judging_round_id", judgingRoundId)
-      .in("company_id", companyIds.length > 0 ? companyIds : [-1]);
+      .eq("judging_round_id", judgingRoundId);
 
     if (oldCompaniesError) {
       raiseActionError(oldCompaniesError);
@@ -336,6 +333,25 @@ export async function updateJudgeCompany2(args: {
 
     // 3) 삭제 처리
     if (toDelete.length > 0) {
+      const deletingCompanyIds = toDelete.map((item) => item.company_id);
+
+      const { data: linkedEvaluations, error: evaluationError } = await supabase
+        .from("evaluation")
+        .select("company_id")
+        .eq("judging_round_id", judgingRoundId)
+        .in("company_id", deletingCompanyIds)
+        .limit(1);
+
+      if (evaluationError) {
+        raiseActionError(evaluationError);
+      }
+
+      if ((linkedEvaluations?.length ?? 0) > 0) {
+        throw new Error(
+          "이미 심사 데이터가 있는 기업은 참여 기업에서 제거할 수 없습니다."
+        );
+      }
+
       const ids = toDelete.map((x) => x.id);
       const { error: deleteError } = await supabase
         .from("judging_round_company")
