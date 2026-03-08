@@ -21,6 +21,7 @@ import { useQuery } from "@tanstack/react-query";
 import { judgingRoundQueries } from "@/queries";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
+import { getErrorMessage } from "@/lib/action";
 
 export default function JudgingRoundDetailPage() {
   const params = useParams();
@@ -47,7 +48,7 @@ export default function JudgingRoundDetailPage() {
     return (
       <div className="mx-auto max-w-4xl px-6 py-8">
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          에러 발생: {(error as Error).message}
+          에러 발생: {getErrorMessage(error)}
         </div>
       </div>
     );

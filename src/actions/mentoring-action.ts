@@ -2,6 +2,7 @@
 
 import { Database } from "types_db";
 import { USER_ROLES } from "@/constants/auth";
+import { raiseActionError, withActionResult } from "@/lib/action";
 import { createClient } from "@/lib/supabase/server";
 import {
   createPresignedDownloadUrl,
@@ -142,12 +143,6 @@ type ViewerContext = {
   isAdmin: boolean;
 };
 
-function handleError(error: unknown): never {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(message);
-  throw new Error(message);
-}
-
 function normalizeProgram(
   program: Partial<MentoringProgramSummary> | null | undefined
 ): MentoringProgramSummary {
@@ -183,6 +178,21 @@ function takeFirstRelation<T>(value: unknown): T | null {
   return (value as T | null | undefined) ?? null;
 }
 
+function isWebpUpload(fileName: string, contentType?: string) {
+  const normalizedType = contentType?.toLowerCase();
+  const normalizedName = fileName.toLowerCase();
+
+  return normalizedType === "image/webp" || normalizedName.endsWith(".webp");
+}
+
+function assertNonWebpUpload(fileName: string, contentType?: string) {
+  if (isWebpUpload(fileName, contentType)) {
+    throw new Error(
+      "WEBP 이미지는 업로드할 수 없습니다. PNG 또는 JPG 파일을 사용해주세요."
+    );
+  }
+}
+
 async function getViewerContext(): Promise<ViewerContext> {
   const supabase = await createClient();
   const {
@@ -201,7 +211,7 @@ async function getViewerContext(): Promise<ViewerContext> {
     .single();
 
   if (viewerError || !viewer) {
-    handleError(viewerError || new Error("사용자 정보를 찾을 수 없습니다."));
+    raiseActionError(viewerError || new Error("사용자 정보를 찾을 수 없습니다."));
   }
 
   return {
@@ -236,7 +246,7 @@ async function ensureMentoringParticipant(
     .maybeSingle();
 
   if (error) {
-    handleError(error);
+    raiseActionError(error);
   }
 
   if (!data) {
@@ -266,7 +276,7 @@ async function getMentoringBase(
     .single();
 
   if (error || !data) {
-    handleError(error || new Error("멘토링 정보를 불러오지 못했습니다."));
+    raiseActionError(error || new Error("멘토링 정보를 불러오지 못했습니다."));
   }
 
   const reportLogoUrl = await safePresignedUrl(data.report_logo_path, 600);
@@ -311,7 +321,7 @@ export async function ensureMentoringForProgram(
     .maybeSingle();
 
   if (existingError) {
-    handleError(existingError);
+    raiseActionError(existingError);
   }
 
   if (existing) {
@@ -325,7 +335,7 @@ export async function ensureMentoringForProgram(
     .single();
 
   if (programError) {
-    handleError(programError);
+    raiseActionError(programError);
   }
 
   const { data: created, error: createError } = await supabase
@@ -340,7 +350,7 @@ export async function ensureMentoringForProgram(
     .single();
 
   if (createError || !created) {
-    handleError(createError || new Error("멘토링 생성에 실패했습니다."));
+    raiseActionError(createError || new Error("멘토링 생성에 실패했습니다."));
   }
 
   return created;
@@ -360,7 +370,7 @@ export async function createMentoring(mentoring: MentoringRowInsert) {
     .single();
 
   if (error) {
-    handleError(error);
+    raiseActionError(error);
   }
 
   return data;
@@ -378,7 +388,7 @@ export async function updateMentoring(mentoring: MentoringRowUpdate) {
     .single();
 
   if (error) {
-    handleError(error);
+    raiseActionError(error);
   }
 
   return data;
@@ -388,20 +398,22 @@ export async function updateMentoringStatus(
   mentoringId: string,
   status: MentoringStatus
 ) {
-  const context = await assertAdmin();
+  return withActionResult(async () => {
+    const context = await assertAdmin();
 
-  const { data, error } = await context.supabase
-    .from("mentoring")
-    .update({ status })
-    .eq("id", mentoringId)
-    .select("*")
-    .single();
+    const { data, error } = await context.supabase
+      .from("mentoring")
+      .update({ status })
+      .eq("id", mentoringId)
+      .select("*")
+      .single();
 
-  if (error) {
-    handleError(error);
-  }
+    if (error) {
+      raiseActionError(error);
+    }
 
-  return data;
+    return data;
+  });
 }
 
 export async function getMentoringByProgramId(
@@ -480,9 +492,9 @@ export async function getMentoringByProgramId(
       .order("mentored_at", { ascending: false }),
   ]);
 
-  if (companiesError) handleError(companiesError);
-  if (mentorsError) handleError(mentorsError);
-  if (sessionsError) handleError(sessionsError);
+  if (companiesError) raiseActionError(companiesError);
+  if (mentorsError) raiseActionError(mentorsError);
+  if (sessionsError) raiseActionError(sessionsError);
 
   const sessionStats = new Map<
     number,
@@ -665,7 +677,7 @@ export async function getAllMentorings(
       .ilike("name", `%${normalizedSearch}%`);
 
     if (programError) {
-      handleError(programError);
+      raiseActionError(programError);
     }
 
     const matchedProgramIds = (programs ?? []).map((program) => program.id);
@@ -681,7 +693,7 @@ export async function getAllMentorings(
   const { data, error } = await query;
 
   if (error) {
-    handleError(error);
+    raiseActionError(error);
   }
 
   const items = (
@@ -846,9 +858,9 @@ export async function getMentoringDetail(
       .eq("mentoring_id", mentoringId),
   ]);
 
-  if (assignmentsError) handleError(assignmentsError);
-  if (sessionsError) handleError(sessionsError);
-  if (mentorsError) handleError(mentorsError);
+  if (assignmentsError) raiseActionError(assignmentsError);
+  if (sessionsError) raiseActionError(sessionsError);
+  if (mentorsError) raiseActionError(mentorsError);
 
   const availableMentorIds = new Set(
     (mentors ?? []).map((item) => item.user_id)
@@ -1012,143 +1024,147 @@ export async function updateMentoringCompanies(args: {
   mentoringId: string;
   companyIds: number[];
 }) {
-  const context = await assertAdmin();
-  const companyIds = Array.from(new Set(args.companyIds));
+  return withActionResult(async () => {
+    const context = await assertAdmin();
+    const companyIds = Array.from(new Set(args.companyIds));
 
-  const { data: existing, error: existingError } = await context.supabase
-    .from("mentoring_company")
-    .select("company_id")
-    .eq("mentoring_id", args.mentoringId);
-
-  if (existingError) {
-    handleError(existingError);
-  }
-
-  const existingIds = new Set((existing ?? []).map((item) => item.company_id));
-  const nextIds = new Set(companyIds);
-  const toAdd = companyIds.filter((id) => !existingIds.has(id));
-  const toRemove = Array.from(existingIds).filter((id) => !nextIds.has(id));
-
-  if (toRemove.length > 0) {
-    const { count, error: sessionError } = await context.supabase
-      .from("mentoring_session")
-      .select("id", { count: "exact", head: true })
-      .eq("mentoring_id", args.mentoringId)
-      .in("company_id", toRemove);
-
-    if (sessionError) {
-      handleError(sessionError);
-    }
-
-    if ((count ?? 0) > 0) {
-      throw new Error("멘토링 기록이 있는 기업은 대상에서 제거할 수 없습니다.");
-    }
-
-    const { error: deleteError } = await context.supabase
+    const { data: existing, error: existingError } = await context.supabase
       .from("mentoring_company")
-      .delete()
-      .eq("mentoring_id", args.mentoringId)
-      .in("company_id", toRemove);
+      .select("company_id")
+      .eq("mentoring_id", args.mentoringId);
 
-    if (deleteError) {
-      handleError(deleteError);
+    if (existingError) {
+      raiseActionError(existingError);
     }
-  }
 
-  if (toAdd.length > 0) {
-    const { error: insertError } = await context.supabase
-      .from("mentoring_company")
-      .insert(
-        toAdd.map((companyId) => ({
-          mentoring_id: args.mentoringId,
-          company_id: companyId,
-          created_at: new Date().toISOString(),
-        }))
-      );
+    const existingIds = new Set((existing ?? []).map((item) => item.company_id));
+    const nextIds = new Set(companyIds);
+    const toAdd = companyIds.filter((id) => !existingIds.has(id));
+    const toRemove = Array.from(existingIds).filter((id) => !nextIds.has(id));
 
-    if (insertError) {
-      handleError(insertError);
+    if (toRemove.length > 0) {
+      const { count, error: sessionError } = await context.supabase
+        .from("mentoring_session")
+        .select("id", { count: "exact", head: true })
+        .eq("mentoring_id", args.mentoringId)
+        .in("company_id", toRemove);
+
+      if (sessionError) {
+        raiseActionError(sessionError);
+      }
+
+      if ((count ?? 0) > 0) {
+        throw new Error("멘토링 기록이 있는 기업은 대상에서 제거할 수 없습니다.");
+      }
+
+      const { error: deleteError } = await context.supabase
+        .from("mentoring_company")
+        .delete()
+        .eq("mentoring_id", args.mentoringId)
+        .in("company_id", toRemove);
+
+      if (deleteError) {
+        raiseActionError(deleteError);
+      }
     }
-  }
 
-  return { success: true };
+    if (toAdd.length > 0) {
+      const { error: insertError } = await context.supabase
+        .from("mentoring_company")
+        .insert(
+          toAdd.map((companyId) => ({
+            mentoring_id: args.mentoringId,
+            company_id: companyId,
+            created_at: new Date().toISOString(),
+          }))
+        );
+
+      if (insertError) {
+        raiseActionError(insertError);
+      }
+    }
+
+    return undefined;
+  });
 }
 
 export async function updateMentoringUsers(args: {
   mentoringId: string;
   userIds: string[];
 }) {
-  const context = await assertAdmin();
-  const userIds = Array.from(new Set(args.userIds));
+  return withActionResult(async () => {
+    const context = await assertAdmin();
+    const userIds = Array.from(new Set(args.userIds));
 
-  const { data: existing, error: existingError } = await context.supabase
-    .from("mentoring_user")
-    .select("user_id")
-    .eq("mentoring_id", args.mentoringId);
-
-  if (existingError) {
-    handleError(existingError);
-  }
-
-  const existingIds = new Set((existing ?? []).map((item) => item.user_id));
-  const nextIds = new Set(userIds);
-  const toAdd = userIds.filter((id) => !existingIds.has(id));
-  const toRemove = Array.from(existingIds).filter((id) => !nextIds.has(id));
-
-  if (toRemove.length > 0) {
-    const [
-      { count: assignmentCount, error: assignmentError },
-      { count: sessionCount, error: sessionError },
-    ] = await Promise.all([
-      context.supabase
-        .from("mentoring_company")
-        .select("id", { count: "exact", head: true })
-        .eq("mentoring_id", args.mentoringId)
-        .in("mentor_id", toRemove),
-      context.supabase
-        .from("mentoring_session")
-        .select("id", { count: "exact", head: true })
-        .eq("mentoring_id", args.mentoringId)
-        .in("mentor_id", toRemove),
-    ]);
-
-    if (assignmentError) handleError(assignmentError);
-    if (sessionError) handleError(sessionError);
-
-    if ((assignmentCount ?? 0) > 0 || (sessionCount ?? 0) > 0) {
-      throw new Error(
-        "배정 또는 기록이 있는 멘토는 대상에서 제거할 수 없습니다."
-      );
-    }
-
-    const { error: deleteError } = await context.supabase
+    const { data: existing, error: existingError } = await context.supabase
       .from("mentoring_user")
-      .delete()
-      .eq("mentoring_id", args.mentoringId)
-      .in("user_id", toRemove);
+      .select("user_id")
+      .eq("mentoring_id", args.mentoringId);
 
-    if (deleteError) {
-      handleError(deleteError);
+    if (existingError) {
+      raiseActionError(existingError);
     }
-  }
 
-  if (toAdd.length > 0) {
-    const { error: insertError } = await context.supabase
-      .from("mentoring_user")
-      .insert(
-        toAdd.map((userId) => ({
-          mentoring_id: args.mentoringId,
-          user_id: userId,
-          created_at: new Date().toISOString(),
-        }))
-      );
+    const existingIds = new Set((existing ?? []).map((item) => item.user_id));
+    const nextIds = new Set(userIds);
+    const toAdd = userIds.filter((id) => !existingIds.has(id));
+    const toRemove = Array.from(existingIds).filter((id) => !nextIds.has(id));
 
-    if (insertError) {
-      handleError(insertError);
+    if (toRemove.length > 0) {
+      const [
+        { count: assignmentCount, error: assignmentError },
+        { count: sessionCount, error: sessionError },
+      ] = await Promise.all([
+        context.supabase
+          .from("mentoring_company")
+          .select("id", { count: "exact", head: true })
+          .eq("mentoring_id", args.mentoringId)
+          .in("mentor_id", toRemove),
+        context.supabase
+          .from("mentoring_session")
+          .select("id", { count: "exact", head: true })
+          .eq("mentoring_id", args.mentoringId)
+          .in("mentor_id", toRemove),
+      ]);
+
+      if (assignmentError) raiseActionError(assignmentError);
+      if (sessionError) raiseActionError(sessionError);
+
+      if ((assignmentCount ?? 0) > 0 || (sessionCount ?? 0) > 0) {
+        throw new Error(
+          "배정 또는 기록이 있는 멘토는 대상에서 제거할 수 없습니다."
+        );
+      }
+
+      const { error: deleteError } = await context.supabase
+        .from("mentoring_user")
+        .delete()
+        .eq("mentoring_id", args.mentoringId)
+        .in("user_id", toRemove);
+
+      if (deleteError) {
+        raiseActionError(deleteError);
+      }
     }
-  }
 
-  return { success: true };
+    if (toAdd.length > 0) {
+      const { error: insertError } = await context.supabase
+        .from("mentoring_user")
+        .insert(
+          toAdd.map((userId) => ({
+            mentoring_id: args.mentoringId,
+            user_id: userId,
+            created_at: new Date().toISOString(),
+          }))
+        );
+
+      if (insertError) {
+        raiseActionError(insertError);
+      }
+    }
+
+    return undefined;
+  });
 }
 
 export async function assignMentoringCompanyByAdmin(args: {
@@ -1156,98 +1172,106 @@ export async function assignMentoringCompanyByAdmin(args: {
   companyId: number;
   mentorId: string | null;
 }) {
-  const context = await assertAdmin();
+  return withActionResult(async () => {
+    const context = await assertAdmin();
 
-  if (args.mentorId) {
-    const { data: mentor, error: mentorError } = await context.supabase
-      .from("mentoring_user")
-      .select("id")
+    if (args.mentorId) {
+      const { data: mentor, error: mentorError } = await context.supabase
+        .from("mentoring_user")
+        .select("id")
+        .eq("mentoring_id", args.mentoringId)
+        .eq("user_id", args.mentorId)
+        .maybeSingle();
+
+      if (mentorError) {
+        raiseActionError(mentorError);
+      }
+
+      if (!mentor) {
+        throw new Error("멘토링 참여 멘토만 배정할 수 있습니다.");
+      }
+    }
+
+    const { data, error } = await context.supabase
+      .from("mentoring_company")
+      .update({
+        mentor_id: args.mentorId,
+        claimed_at: args.mentorId ? new Date().toISOString() : null,
+      })
       .eq("mentoring_id", args.mentoringId)
-      .eq("user_id", args.mentorId)
+      .eq("company_id", args.companyId)
+      .select("id")
       .maybeSingle();
 
-    if (mentorError) {
-      handleError(mentorError);
+    if (error) {
+      raiseActionError(error);
     }
 
-    if (!mentor) {
-      throw new Error("멘토링 참여 멘토만 배정할 수 있습니다.");
+    if (!data) {
+      throw new Error("멘토링 대상 기업을 찾을 수 없습니다.");
     }
-  }
 
-  const { data, error } = await context.supabase
-    .from("mentoring_company")
-    .update({
-      mentor_id: args.mentorId,
-      claimed_at: args.mentorId ? new Date().toISOString() : null,
-    })
-    .eq("mentoring_id", args.mentoringId)
-    .eq("company_id", args.companyId)
-    .select("id")
-    .maybeSingle();
-
-  if (error) {
-    handleError(error);
-  }
-
-  if (!data) {
-    throw new Error("멘토링 대상 기업을 찾을 수 없습니다.");
-  }
-
-  return { success: true };
+    return undefined;
+  });
 }
 
 export async function claimMentoringCompany(args: {
   mentoringId: string;
   companyId: number;
 }) {
-  const context = await getViewerContext();
+  return withActionResult(async () => {
+    const context = await getViewerContext();
 
-  await ensureMentoringParticipant(context, args.mentoringId);
+    await ensureMentoringParticipant(context, args.mentoringId);
 
-  const { data: mentoringStatus, error: mentoringStatusError } =
-    await context.supabase
-      .from("mentoring")
-      .select("status")
-      .eq("id", args.mentoringId)
-      .single();
-  if (mentoringStatusError) handleError(mentoringStatusError);
-  if (mentoringStatus?.status === "COMPLETED") {
-    throw new Error("종료된 멘토링에서는 기업을 선택할 수 없습니다.");
-  }
+    const { data: mentoringStatus, error: mentoringStatusError } =
+      await context.supabase
+        .from("mentoring")
+        .select("status")
+        .eq("id", args.mentoringId)
+        .single();
+    if (mentoringStatusError) raiseActionError(mentoringStatusError);
+    if (mentoringStatus?.status === "COMPLETED") {
+      throw new Error("종료된 멘토링에서는 기업을 선택할 수 없습니다.");
+    }
 
-  const { data, error } = await context.supabase
-    .from("mentoring_company")
-    .update({
-      mentor_id: context.viewer.id,
-      claimed_at: new Date().toISOString(),
-    })
-    .eq("mentoring_id", args.mentoringId)
-    .eq("company_id", args.companyId)
-    .is("mentor_id", null)
-    .select("id")
-    .maybeSingle();
+    const { data, error } = await context.supabase
+      .from("mentoring_company")
+      .update({
+        mentor_id: context.viewer.id,
+        claimed_at: new Date().toISOString(),
+      })
+      .eq("mentoring_id", args.mentoringId)
+      .eq("company_id", args.companyId)
+      .is("mentor_id", null)
+      .select("id")
+      .maybeSingle();
 
-  if (error) {
-    handleError(error);
-  }
+    if (error) {
+      raiseActionError(error);
+    }
 
-  if (!data) {
-    throw new Error("이미 다른 멘토가 선택한 기업입니다.");
-  }
+    if (!data) {
+      throw new Error("이미 다른 멘토가 선택한 기업입니다.");
+    }
 
-  return { success: true };
+    return undefined;
+  });
 }
 
 export async function createMentoringSessionPhotoUploadUrl(args: {
   fileName: string;
   contentType?: string;
 }) {
-  return createS3PresignedUploadUrl({
-    fileName: args.fileName,
-    keyPrefix: "mentoring-session-images",
-    contentType: args.contentType,
-    defaultContentType: "image/jpeg",
+  return withActionResult(async () => {
+    assertNonWebpUpload(args.fileName, args.contentType);
+
+    return createS3PresignedUploadUrl({
+      fileName: args.fileName,
+      keyPrefix: "mentoring-session-images",
+      contentType: args.contentType,
+      defaultContentType: "image/jpeg",
+    });
   });
 }
 
@@ -1255,11 +1279,15 @@ export async function createMentoringReportLogoUploadUrl(args: {
   fileName: string;
   contentType?: string;
 }) {
-  return createS3PresignedUploadUrl({
-    fileName: args.fileName,
-    keyPrefix: "mentoring-report-logos",
-    contentType: args.contentType,
-    defaultContentType: "image/png",
+  return withActionResult(async () => {
+    assertNonWebpUpload(args.fileName, args.contentType);
+
+    return createS3PresignedUploadUrl({
+      fileName: args.fileName,
+      keyPrefix: "mentoring-report-logos",
+      contentType: args.contentType,
+      defaultContentType: "image/png",
+    });
   });
 }
 
@@ -1267,26 +1295,28 @@ export async function updateMentoringReportLogo(args: {
   mentoringId: string;
   reportLogoPath: string | null;
 }) {
-  const context = await assertAdmin();
+  return withActionResult(async () => {
+    const context = await assertAdmin();
 
-  const { data, error } = await context.supabase
-    .from("mentoring")
-    .update({
-      report_logo_path: args.reportLogoPath,
-    })
-    .eq("id", args.mentoringId)
-    .select("id")
-    .maybeSingle();
+    const { data, error } = await context.supabase
+      .from("mentoring")
+      .update({
+        report_logo_path: args.reportLogoPath,
+      })
+      .eq("id", args.mentoringId)
+      .select("id")
+      .maybeSingle();
 
-  if (error) {
-    handleError(error);
-  }
+    if (error) {
+      raiseActionError(error);
+    }
 
-  if (!data) {
-    throw new Error("멘토링 정보를 찾을 수 없습니다.");
-  }
+    if (!data) {
+      throw new Error("멘토링 정보를 찾을 수 없습니다.");
+    }
 
-  return { success: true };
+    return undefined;
+  });
 }
 
 export async function upsertMentoringSession(args: {
@@ -1303,134 +1333,136 @@ export async function upsertMentoringSession(args: {
     sort_order?: number;
   }>;
 }) {
-  const context = await getViewerContext();
+  return withActionResult(async () => {
+    const context = await getViewerContext();
 
-  await ensureMentoringParticipant(context, args.mentoringId);
+    await ensureMentoringParticipant(context, args.mentoringId);
 
-  const { data: mentoringStatus, error: mentoringStatusError } =
-    await context.supabase
-      .from("mentoring")
-      .select("status")
-      .eq("id", args.mentoringId)
-      .single();
-  if (mentoringStatusError) handleError(mentoringStatusError);
-  if (mentoringStatus?.status === "COMPLETED") {
-    throw new Error("종료된 멘토링에서는 기록을 수정할 수 없습니다.");
-  }
+    const { data: mentoringStatus, error: mentoringStatusError } =
+      await context.supabase
+        .from("mentoring")
+        .select("status")
+        .eq("id", args.mentoringId)
+        .single();
+    if (mentoringStatusError) raiseActionError(mentoringStatusError);
+    if (mentoringStatus?.status === "COMPLETED") {
+      throw new Error("종료된 멘토링에서는 기록을 수정할 수 없습니다.");
+    }
 
-  const { data: assignment, error: assignmentError } = await context.supabase
-    .from("mentoring_company")
-    .select("mentor_id")
-    .eq("mentoring_id", args.mentoringId)
-    .eq("company_id", args.companyId)
-    .maybeSingle();
-
-  if (assignmentError) {
-    handleError(assignmentError);
-  }
-
-  if (!assignment || assignment.mentor_id !== context.viewer.id) {
-    throw new Error(
-      "현재 담당 기업에 대해서만 멘토링 기록을 작성할 수 있습니다."
-    );
-  }
-
-  const payload = {
-    mentoring_id: args.mentoringId,
-    company_id: args.companyId,
-    mentor_id: context.viewer.id,
-    session_no: args.sessionNo,
-    mentored_at: args.mentoredAt,
-    place: args.place?.trim() || null,
-    content: args.content?.trim() || null,
-    updated_at: new Date().toISOString(),
-  };
-
-  let sessionId = args.id;
-
-  if (args.id) {
-    const { data: existing, error: existingError } = await context.supabase
-      .from("mentoring_session")
-      .select("id, mentor_id")
-      .eq("id", args.id)
+    const { data: assignment, error: assignmentError } = await context.supabase
+      .from("mentoring_company")
+      .select("mentor_id")
       .eq("mentoring_id", args.mentoringId)
+      .eq("company_id", args.companyId)
       .maybeSingle();
 
-    if (existingError) {
-      handleError(existingError);
+    if (assignmentError) {
+      raiseActionError(assignmentError);
     }
 
-    if (!existing || existing.mentor_id !== context.viewer.id) {
-      throw new Error("작성한 멘토링 기록만 수정할 수 있습니다.");
-    }
-
-    const { error: updateError } = await context.supabase
-      .from("mentoring_session")
-      .update(payload)
-      .eq("id", args.id);
-
-    if (updateError) {
-      if ("code" in updateError && updateError.code === "23505") {
-        throw new Error("같은 기업에 동일한 회차가 이미 존재합니다.");
-      }
-      handleError(updateError);
-    }
-  } else {
-    const { data: created, error: createError } = await context.supabase
-      .from("mentoring_session")
-      .insert({
-        ...payload,
-        created_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
-
-    if (createError || !created) {
-      if (
-        createError &&
-        "code" in createError &&
-        createError.code === "23505"
-      ) {
-        throw new Error("같은 기업에 동일한 회차가 이미 존재합니다.");
-      }
-      handleError(createError || new Error("멘토링 기록 저장에 실패했습니다."));
-    }
-
-    sessionId = created.id;
-  }
-
-  if (!sessionId) {
-    return { success: true, sessionId };
-  }
-
-  if (args.id) {
-    const { error: deletePhotoError } = await context.supabase
-      .from("mentoring_session_photo")
-      .delete()
-      .eq("mentoring_session_id", sessionId);
-
-    if (deletePhotoError) {
-      handleError(deletePhotoError);
-    }
-  }
-
-  if (args.photos.length > 0) {
-    const { error: insertPhotoError } = await context.supabase
-      .from("mentoring_session_photo")
-      .insert(
-        args.photos.map((photo, index) => ({
-          mentoring_session_id: sessionId,
-          photo_path: photo.photo_path,
-          original_filename: photo.original_filename ?? null,
-          sort_order: photo.sort_order ?? index + 1,
-          created_at: new Date().toISOString(),
-        }))
+    if (!assignment || assignment.mentor_id !== context.viewer.id) {
+      throw new Error(
+        "현재 담당 기업에 대해서만 멘토링 기록을 작성할 수 있습니다."
       );
-
-    if (insertPhotoError) {
-      handleError(insertPhotoError);
     }
-  }
 
-  return { success: true, sessionId };
+    const payload = {
+      mentoring_id: args.mentoringId,
+      company_id: args.companyId,
+      mentor_id: context.viewer.id,
+      session_no: args.sessionNo,
+      mentored_at: args.mentoredAt,
+      place: args.place?.trim() || null,
+      content: args.content?.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    let sessionId = args.id;
+
+    if (args.id) {
+      const { data: existing, error: existingError } = await context.supabase
+        .from("mentoring_session")
+        .select("id, mentor_id")
+        .eq("id", args.id)
+        .eq("mentoring_id", args.mentoringId)
+        .maybeSingle();
+
+      if (existingError) {
+        raiseActionError(existingError);
+      }
+
+      if (!existing || existing.mentor_id !== context.viewer.id) {
+        throw new Error("작성한 멘토링 기록만 수정할 수 있습니다.");
+      }
+
+      const { error: updateError } = await context.supabase
+        .from("mentoring_session")
+        .update(payload)
+        .eq("id", args.id);
+
+      if (updateError) {
+        if ("code" in updateError && updateError.code === "23505") {
+          throw new Error("같은 기업에 동일한 회차가 이미 존재합니다.");
+        }
+        raiseActionError(updateError);
+      }
+    } else {
+      const { data: created, error: createError } = await context.supabase
+        .from("mentoring_session")
+        .insert({
+          ...payload,
+          created_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (createError || !created) {
+        if (
+          createError &&
+          "code" in createError &&
+          createError.code === "23505"
+        ) {
+          throw new Error("같은 기업에 동일한 회차가 이미 존재합니다.");
+        }
+        raiseActionError(createError || new Error("멘토링 기록 저장에 실패했습니다."));
+      }
+
+      sessionId = created.id;
+    }
+
+    if (!sessionId) {
+      return { sessionId };
+    }
+
+    if (args.id) {
+      const { error: deletePhotoError } = await context.supabase
+        .from("mentoring_session_photo")
+        .delete()
+        .eq("mentoring_session_id", sessionId);
+
+      if (deletePhotoError) {
+        raiseActionError(deletePhotoError);
+      }
+    }
+
+    if (args.photos.length > 0) {
+      const { error: insertPhotoError } = await context.supabase
+        .from("mentoring_session_photo")
+        .insert(
+          args.photos.map((photo, index) => ({
+            mentoring_session_id: sessionId,
+            photo_path: photo.photo_path,
+            original_filename: photo.original_filename ?? null,
+            sort_order: photo.sort_order ?? index + 1,
+            created_at: new Date().toISOString(),
+          }))
+        );
+
+      if (insertPhotoError) {
+        raiseActionError(insertPhotoError);
+      }
+    }
+
+    return { sessionId };
+  });
 }

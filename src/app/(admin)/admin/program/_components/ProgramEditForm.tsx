@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import { useQueryClient } from "@tanstack/react-query";
 import { ProgramUpdateFormSchema } from "../_lib/ProgramFormSchema";
 import { ProgramRow } from "@/actions/program-action";
@@ -53,18 +54,20 @@ export default function ProgramEditForm({
   });
 
   const onSubmit = async (data: z.infer<typeof ProgramUpdateFormSchema>) => {
-    const result = await updateProgramAndCompanies(
-      programId ?? 0,
-      data,
-      targetList.map((company) => company.id)
-    );
-    if (result.success) {
+    try {
+      await executeAction(
+        updateProgramAndCompanies(
+          programId ?? 0,
+          data,
+          targetList.map((company) => company.id)
+        )
+      );
       queryClient.invalidateQueries({ queryKey: programQueries.all() });
       toast.success("프로그램 정보를 수정하였습니다.");
-    } else {
-      toast.error("예상치 못한 오류가 발생했습니다.");
+      setOpenEdit(false);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "예상치 못한 오류가 발생했습니다."));
     }
-    setOpenEdit(false);
   };
 
   return (

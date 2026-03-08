@@ -1,6 +1,7 @@
 "use server";
 
 import { Database } from "types_db";
+import { raiseActionError, withActionResult } from "@/lib/action";
 import { createClient } from "@/lib/supabase/server";
 
 export type JudgingRoundRow =
@@ -16,12 +17,6 @@ export type JudgingRoundUserInsert =
   Database["public"]["Tables"]["judging_round_user"]["Insert"];
 export type JudgingRoundUserUpdate =
   Database["public"]["Tables"]["judging_round_user"]["Update"];
-
-function handleError(error: unknown): never {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(message);
-  throw new Error(message);
-}
 
 export type JudgingRoundUserWithUser = JudgingRoundUserRow & {
   user: { username: string; affiliation: string | null } | null;
@@ -45,7 +40,7 @@ export async function getJudgingRoundUsersById(
     .eq("judging_round_id", judgingRoundId);
 
   if (error) {
-    handleError(error);
+    raiseActionError(error);
   }
 
   return (data ?? []) as JudgingRoundUserWithUser[];
@@ -70,10 +65,10 @@ interface UpdateJudgeUserData {
  *   - 기존 + 새 모두 존재 -> update
  */
 export async function updateJudgeUser(data: UpdateJudgeUserData) {
-  const supabase = await createClient();
-  const { judgingRoundId, users } = data;
+  return withActionResult(async () => {
+    const supabase = await createClient();
+    const { judgingRoundId, users } = data;
 
-  try {
     // 1) 현재 DB에 있는 목록 조회
     const { data: oldUsers, error: oldUsersError } = await supabase
       .from("judging_round_user")
@@ -81,8 +76,7 @@ export async function updateJudgeUser(data: UpdateJudgeUserData) {
       .eq("judging_round_id", judgingRoundId);
 
     if (oldUsersError) {
-      console.error("조회 실패:", oldUsersError);
-      throw new Error(oldUsersError.message);
+      raiseActionError(oldUsersError);
     }
 
     // 2) 새 목록을 Map으로(key: user_id)
@@ -116,8 +110,7 @@ export async function updateJudgeUser(data: UpdateJudgeUserData) {
         .in("id", ids);
 
       if (deleteError) {
-        console.error("delete error:", deleteError);
-        throw new Error(deleteError.message);
+        raiseActionError(deleteError);
       }
     }
 
@@ -134,8 +127,7 @@ export async function updateJudgeUser(data: UpdateJudgeUserData) {
         .insert(insertPayload);
 
       if (insertError) {
-        console.error("insert error:", insertError);
-        throw new Error(insertError.message);
+        raiseActionError(insertError);
       }
     }
 
@@ -154,15 +146,10 @@ export async function updateJudgeUser(data: UpdateJudgeUserData) {
         .eq("id", rowId);
 
       if (updateError) {
-        console.error("update error:", updateError);
-        throw new Error(updateError.message);
+        raiseActionError(updateError);
       }
     }
 
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("updateJudgeUser error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, message };
-  }
+    return undefined;
+  });
 }

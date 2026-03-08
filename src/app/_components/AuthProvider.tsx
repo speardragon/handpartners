@@ -1,5 +1,6 @@
 "use client";
 
+import { executeAction } from "@/lib/action";
 import { createClient } from "@/lib/supabase/client";
 import { getUserProfile } from "@/actions/user-actions";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -18,7 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (event === "INITIAL_SESSION") {
         try {
           if (session) {
-            const profile = await getUserProfile();
+            const profile = await executeAction(getUserProfile());
             if (mounted) {
               setUser(profile);
               setAccessToken(session.access_token);
@@ -33,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
         try {
-          const profile = await getUserProfile();
+          const profile = await executeAction(getUserProfile());
           if (mounted) {
             setUser(profile);
             setAccessToken(session?.access_token ?? null);

@@ -7,6 +7,7 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { getErrorMessage } from "@/lib/action";
 import { toast } from "sonner";
 
 const handleReactQueryError = (
@@ -21,11 +22,8 @@ const handleReactQueryError = (
 
   if (meta?.errorMessage) {
     toast.error(meta.errorMessage as string);
-  } else if (err.message) {
-    // toast.error(err.message);
-    toast.error("요청을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.");
   } else {
-    toast.error("요청을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+    toast.error(getErrorMessage(err));
   }
 };
 

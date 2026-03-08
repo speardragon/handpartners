@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { judgingRoundQueries } from "@/queries";
 import {
@@ -146,10 +147,12 @@ export default function UploadPageClient() {
     setUploadingIds((prev) => new Set(prev).add(companyRowId));
 
     try {
-      const { uploadUrl, publicUrl } = await createJudgeCompanyPdfUploadUrl({
-        fileName: file.name,
-        contentType: file.type,
-      });
+      const { uploadUrl, publicUrl } = await executeAction(
+        createJudgeCompanyPdfUploadUrl({
+          fileName: file.name,
+          contentType: file.type,
+        })
+      );
 
       const uploadResponse = await fetch(uploadUrl, {
         method: "PUT",
@@ -161,11 +164,13 @@ export default function UploadPageClient() {
         throw new Error("파일 업로드에 실패했습니다.");
       }
 
-      await updateCompanyPdfPath({
-        judgingRoundCompanyId: companyRowId,
-        pdfPath: publicUrl,
-        originalFilename: file.name,
-      });
+      await executeAction(
+        updateCompanyPdfPath({
+          judgingRoundCompanyId: companyRowId,
+          pdfPath: publicUrl,
+          originalFilename: file.name,
+        })
+      );
 
       setSelectedFiles((prev) => {
         const next = { ...prev };
@@ -180,7 +185,7 @@ export default function UploadPageClient() {
 
       toast.success("PDF 업로드 완료");
     } catch (err: unknown) {
-      toast.error("업로드 중 오류가 발생했습니다.");
+      toast.error(getErrorMessage(err, "업로드 중 오류가 발생했습니다."));
     } finally {
       setUploadingIds((prev) => {
         const next = new Set(prev);
@@ -192,6 +197,10 @@ export default function UploadPageClient() {
 
   const uploadedCount = data?.companies.filter((c) => c.pdf_path).length ?? 0;
   const totalCount = data?.companies.length ?? 0;
+  const queryErrorMessage = getErrorMessage(
+    error,
+    "데이터를 불러오는 중 오류가 발생했습니다."
+  );
 
   return (
     <div className="min-h-full">
@@ -259,9 +268,7 @@ export default function UploadPageClient() {
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              {error instanceof Error
-                ? "심사가 종료되었거나 존재하지 않습니다."
-                : "데이터를 불러오는 중 오류가 발생했습니다."}
+              {queryErrorMessage}
             </p>
           )}
         </div>

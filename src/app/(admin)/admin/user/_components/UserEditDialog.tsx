@@ -37,6 +37,7 @@ import {
   updateUser,
   UserRow,
 } from "@/actions/user-actions";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -79,7 +80,7 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
     form.setValue("signature_url", userProfile.signature_url ?? "");
     setSignatureFile(null);
     if (userProfile.signature_url) {
-      getSignatureDownloadUrl(userProfile.signature_url)
+      executeAction(getSignatureDownloadUrl(userProfile.signature_url))
         .then(({ downloadUrl }) => {
           setSignaturePreview(downloadUrl);
         })
@@ -120,10 +121,12 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
   };
 
   const uploadSignature = async (file: File): Promise<string> => {
-    const { uploadUrl, publicUrl } = await createSignatureUploadUrl({
-      fileName: file.name,
-      contentType: file.type,
-    });
+    const { uploadUrl, publicUrl } = await executeAction(
+      createSignatureUploadUrl({
+        fileName: file.name,
+        contentType: file.type,
+      })
+    );
 
     const uploadResponse = await fetch(uploadUrl, {
       method: "PUT",
@@ -158,7 +161,7 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
       }
 
       if (Object.keys(updatedData).length > 0) {
-        await updateUser({ ...updatedData, id: userId });
+        await executeAction(updateUser({ ...updatedData, id: userId }));
         queryClient.invalidateQueries({ queryKey: userQueries.all() });
         setOpen(false);
         toast.success("유저 정보를 수정하였습니다.");
@@ -166,9 +169,7 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
         toast.error("수정사항이 존재하지 않습니다.");
       }
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "수정에 실패했습니다.";
-      toast.error(message);
+      toast.error(getErrorMessage(error, "수정에 실패했습니다."));
     } finally {
       setIsUploading(false);
     }
@@ -178,10 +179,14 @@ export default function UserEditDialog({ userId, userProfile }: Props) {
     const confirmation = window.confirm("정말로 이 사용자를 삭제하시겠습니까?");
     if (!confirmation) return;
 
-    await deleteUser(userId);
-    toast.success("사용자가 삭제되었습니다.");
-    setOpen(false);
-    queryClient.invalidateQueries({ queryKey: userQueries.all() });
+    try {
+      await executeAction(deleteUser(userId));
+      toast.success("사용자가 삭제되었습니다.");
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: userQueries.all() });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "사용자를 삭제하지 못했습니다."));
+    }
   };
 
   return (

@@ -2,6 +2,7 @@
 
 import { Database } from "types_db";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { raiseActionError, withActionResult } from "@/lib/action";
 import { ProfileCreateFormSchema } from "@/app/(admin)/admin/user/_lib/ProfileFormSchema";
 import { z } from "zod";
 import {
@@ -18,13 +19,6 @@ export interface UserResult {
   totalElements: number;
   size: number;
   result: UserRow[];
-}
-
-function handleError(error: unknown): never {
-  console.log("Error:", error);
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(message);
-  throw new Error(message);
 }
 
 export async function getUsers(
@@ -46,7 +40,7 @@ export async function getUsers(
     .range((page - 1) * size, page * size - 1);
 
   if (error) {
-    handleError(error);
+    raiseActionError(error);
   }
 
   const totalElements = count || 0;
@@ -62,49 +56,58 @@ export async function getUsers(
 }
 
 export async function createUser(user: UserRowInsert) {
-  const supabase = await createClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  const { data, error } = await supabase.from("user").insert({
-    ...user,
-    created_at: new Date().toISOString(),
+    const { data, error } = await supabase.from("user").insert({
+      ...user,
+      created_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      raiseActionError(error);
+    }
+    return data;
   });
-
-  if (error) {
-    handleError(error);
-  }
-  return data;
 }
 
 export async function updateUser(user: UserRowUpdate) {
-  const supabase = await createClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("user")
-    .update({
-      ...user,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", user.id!);
+    const { data, error } = await supabase
+      .from("user")
+      .update({
+        ...user,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id!);
 
-  if (error) {
-    handleError(error);
-  }
-  return data;
+    if (error) {
+      raiseActionError(error);
+    }
+    return data;
+  });
 }
 
 export async function deleteUser(userId: string) {
-  const supabase = await createClient();
-  const adminClient = await createAdminClient();
+  return withActionResult(async () => {
+    const supabase = await createClient();
+    const adminClient = await createAdminClient();
 
-  const { data, error } = await supabase.from("user").delete().eq("id", userId);
+    const { data, error } = await supabase
+      .from("user")
+      .delete()
+      .eq("id", userId);
 
-  if (error) {
-    handleError(error);
-  }
+    if (error) {
+      raiseActionError(error);
+    }
 
-  await adminClient.auth.admin.deleteUser(userId);
+    await adminClient.auth.admin.deleteUser(userId);
 
-  return data;
+    return data;
+  });
 }
 
 export type UserProfile = {
@@ -119,31 +122,31 @@ export type UserProfile = {
   phone_number: string | null;
   signature_url: string | null;
 };
-export async function getUserProfile(): Promise<UserProfile | null> {
-  const supabase = await createClient();
+export async function getUserProfile() {
+  return withActionResult(async () => {
+    const supabase = await createClient();
 
-  // 인증된 사용자 정보 가져오기
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const userId = user?.id;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const userId = user?.id;
 
-  if (!userId) {
-    throw new Error("User not authenticated");
-  }
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
 
-  // user 테이블에서 프로필 정보 가져오기
-  const { data: userProfile, error } = await supabase
-    .from("user")
-    .select("*")
-    .eq("id", userId)
-    .single(); // 단일 결과를 가져오기
+    const { data: userProfile, error } = await supabase
+      .from("user")
+      .select("*")
+      .eq("id", userId)
+      .single();
 
-  if (error) {
-    throw new Error(`Failed to fetch user profile: ${error.message}`);
-  }
+    if (error) {
+      raiseActionError(`Failed to fetch user profile: ${error.message}`);
+    }
 
-  return userProfile;
+    return userProfile;
+  });
 }
 
 /**
@@ -152,65 +155,67 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 export async function registerUser(
   userData: z.infer<typeof ProfileCreateFormSchema>
 ) {
-  // const supabase = await createServerSupabaseClient(cookies(), true);
-  const supabase = await createAdminClient();
+  return withActionResult(async () => {
+    const supabase = await createAdminClient();
 
-  // 먼저 Supabase Auth에 사용자 생성
-  const { data: signUpData, error: signUpError } =
-    await supabase.auth.admin.createUser({
-      email: userData.email,
-      password: userData.password,
-      email_confirm: true,
-    });
+    const { data: signUpData, error: signUpError } =
+      await supabase.auth.admin.createUser({
+        email: userData.email,
+        password: userData.password,
+        email_confirm: true,
+      });
 
-  if (signUpError) {
-    handleError(signUpError);
-  }
+    if (signUpError) {
+      raiseActionError(signUpError);
+    }
 
-  // Auth를 통해 생성된 user id 가져오기
-  const newUserId = signUpData?.user?.id;
-  if (!newUserId) {
-    throw new Error("Sign up succeeded but user id not found.");
-  }
+    const newUserId = signUpData?.user?.id;
+    if (!newUserId) {
+      throw new Error("Sign up succeeded but user id not found.");
+    }
 
-  // user 테이블에 레코드 생성 (Auth에 만들어진 UID(newUserId)를 id 필드로 사용)
-  const { data: userInsertData, error: userInsertError } = await supabase
-    .from("user")
-    .insert({
-      id: newUserId,
-      username: userData.username,
-      email: userData.email,
-      role: userData.role,
-      affiliation: userData.affiliation,
-      position: userData.position,
-      phone_number: userData.phone_number,
-      created_at: new Date().toISOString(),
-    })
-    .select()
-    .single(); // 단일 레코드 반환
+    const { data: userInsertData, error: userInsertError } = await supabase
+      .from("user")
+      .insert({
+        id: newUserId,
+        username: userData.username,
+        email: userData.email,
+        role: userData.role,
+        affiliation: userData.affiliation,
+        position: userData.position,
+        phone_number: userData.phone_number,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
 
-  if (userInsertError) {
-    handleError(userInsertError);
-  }
+    if (userInsertError) {
+      raiseActionError(userInsertError);
+    }
 
-  return userInsertData;
+    return userInsertData;
+  });
 }
 
 export async function createSignatureUploadUrl(args: {
   fileName: string;
   contentType?: string;
 }) {
-  return createS3PresignedUploadUrl({
-    fileName: args.fileName || "signature.png",
-    keyPrefix: "images/signature",
-    contentType: args.contentType,
-    defaultContentType: "image/png",
+  return withActionResult(async () => {
+    return createS3PresignedUploadUrl({
+      fileName: args.fileName || "signature.png",
+      keyPrefix: "images/signature",
+      contentType: args.contentType,
+      defaultContentType: "image/png",
+    });
   });
 }
 
 export async function getSignatureDownloadUrl(signatureUrl: string) {
-  const { downloadUrl } = await createPresignedDownloadUrl({
-    objectPathOrUrl: signatureUrl,
+  return withActionResult(async () => {
+    const { downloadUrl } = await createPresignedDownloadUrl({
+      objectPathOrUrl: signatureUrl,
+    });
+    return { downloadUrl };
   });
-  return { downloadUrl };
 }

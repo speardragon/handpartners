@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/ui/loading-button";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import {
   Shield,
   SquareArrowOutUpRight,
@@ -91,7 +92,7 @@ export default function AdminPanel({
   const handleStatusChange = async (nextStatus: JudgingRoundStatus) => {
     setIsUpdatingStatus(true);
     try {
-      await updateJudgingRoundStatus(judgingRoundId, nextStatus);
+      await executeAction(updateJudgingRoundStatus(judgingRoundId, nextStatus));
       setStatus(nextStatus);
       queryClient.invalidateQueries({
         queryKey: judgingQueries.detailKeyPrefix(),
@@ -105,8 +106,8 @@ export default function AdminPanel({
       toast.success(
         `심사 상태가 "${STATUS_LABEL[nextStatus]}"(으)로 변경되었습니다.`
       );
-    } catch {
-      toast.error("상태 변경 중 오류가 발생했습니다.");
+    } catch (actionError) {
+      toast.error(getErrorMessage(actionError, "상태 변경 중 오류가 발생했습니다."));
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -114,11 +115,16 @@ export default function AdminPanel({
 
   const handleEmailDialogOpen = async () => {
     try {
-      const count = await getJudgeEmailCount(judgingRoundId);
+      const count = await executeAction(getJudgeEmailCount(judgingRoundId));
       setEmailCount(count);
       setEmailDialogOpen(true);
-    } catch {
-      toast.error("심사자 정보를 불러오는 중 오류가 발생했습니다.");
+    } catch (actionError) {
+      toast.error(
+        getErrorMessage(
+          actionError,
+          "심사자 정보를 불러오는 중 오류가 발생했습니다."
+        )
+      );
     }
   };
 
@@ -126,7 +132,7 @@ export default function AdminPanel({
     setEmailDialogOpen(false);
     setIsEmailSending(true);
     try {
-      const result = await sendJudgingEmails(judgingRoundId);
+      const result = await executeAction(sendJudgingEmails(judgingRoundId));
       if (result.failedCount === 0) {
         toast.success(
           `${result.sentCount}명의 심사자에게 이메일을 발송했습니다.`
@@ -136,8 +142,10 @@ export default function AdminPanel({
           `${result.sentCount}명 발송 성공, ${result.failedCount}명 발송 실패`
         );
       }
-    } catch {
-      toast.error("이메일 발송 중 오류가 발생했습니다.");
+    } catch (actionError) {
+      toast.error(
+        getErrorMessage(actionError, "이메일 발송 중 오류가 발생했습니다.")
+      );
     } finally {
       setIsEmailSending(false);
     }
@@ -146,7 +154,9 @@ export default function AdminPanel({
   const handleBulkDownload = async () => {
     setIsDownloading(true);
     try {
-      const judgeEvaluations = await getAllJudgeEvaluations(judgingRoundId);
+      const judgeEvaluations = await executeAction(
+        getAllJudgeEvaluations(judgingRoundId)
+      );
 
       if (judgeEvaluations.length === 0) {
         toast.error("다운로드할 심사 데이터가 없습니다.");

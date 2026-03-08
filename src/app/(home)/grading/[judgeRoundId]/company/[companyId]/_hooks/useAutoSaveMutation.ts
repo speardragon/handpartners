@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { executeAction } from "@/lib/action";
 import { createEvaluation } from "@/actions/evaluation-action";
 import { judgingQueries, evaluationQueries } from "@/queries";
 
@@ -32,7 +33,9 @@ export function useAutoSaveMutation() {
         created_at: new Date().toISOString(),
       }));
 
-      return createEvaluation(judgeRoundId, companyId, evaluationRecords);
+      return executeAction(
+        createEvaluation(judgeRoundId, companyId, evaluationRecords)
+      );
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({

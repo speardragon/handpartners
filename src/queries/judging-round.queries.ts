@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import { executeAction, unwrapActionResult } from "@/lib/action";
 import {
   getJudgingRoundByProgramId,
   getJudgingRoundDetails,
@@ -62,7 +63,8 @@ export const judgingRoundQueries = {
           ...judgingRoundQueries.companies.all(),
           judgingRoundId,
         ] as const,
-        queryFn: () => getJudgingRoundCompaniesById(judgingRoundId),
+        queryFn: () =>
+          executeAction(getJudgingRoundCompaniesById(judgingRoundId)),
       }),
     public: (judgingRoundId: string) =>
       queryOptions({
@@ -71,7 +73,10 @@ export const judgingRoundQueries = {
           "public",
           judgingRoundId,
         ] as const,
-        queryFn: () => getJudgingRoundCompaniesPublic(judgingRoundId),
+        queryFn: async () =>
+          unwrapActionResult(
+            await getJudgingRoundCompaniesPublic(judgingRoundId)
+          ),
         retry: 0,
       }),
   },

@@ -19,6 +19,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { executeAction, getErrorMessage } from "@/lib/action";
 
 import useDialogOpenStore from "@/store/useDialogOpenStore";
 
@@ -53,15 +54,13 @@ export default function CompanyCreateSheet() {
   // 폼 제출 함수
   const onSubmit = async (data: CompanyCreateFormType) => {
     try {
-      await createCompany(data as CompanyRowInsert);
+      await executeAction(createCompany(data as CompanyRowInsert));
       toast.success("새로운 기업이 생성되었습니다.");
       queryClient.invalidateQueries({ queryKey: companyQueries.all() });
       form.reset();
       setCreateOpen(false);
     } catch (error: unknown) {
-      toast.error(
-        error instanceof Error ? error.message : "오류가 발생했습니다."
-      );
+      toast.error(getErrorMessage(error, "오류가 발생했습니다."));
     }
   };
 

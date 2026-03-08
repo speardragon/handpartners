@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/ui/loading-button";
@@ -55,6 +56,13 @@ const STATUS_LABEL: Record<MentoringStatus, string> = {
   IN_PROGRESS: "진행 중",
   COMPLETED: "종료",
 };
+
+function isWebpFile(file: File) {
+  return (
+    file.type.toLowerCase() === "image/webp" ||
+    file.name.toLowerCase().endsWith(".webp")
+  );
+}
 
 function SummaryCard({
   label,
@@ -146,33 +154,37 @@ export default function MentoringEditForm({
 
   const companyMutation = useMutation({
     mutationFn: async () =>
-      updateMentoringCompanies({
-        mentoringId,
-        companyIds: targetCompanies.map((company) => company.id),
-      }),
+      executeAction(
+        updateMentoringCompanies({
+          mentoringId,
+          companyIds: targetCompanies.map((company) => company.id),
+        })
+      ),
     onSuccess: () => {
       toast.success("멘토링 대상 기업을 저장했습니다.");
       setCompanyDraft(null);
       queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, "대상 기업을 저장하지 못했습니다."));
     },
   });
 
   const userMutation = useMutation({
     mutationFn: async () =>
-      updateMentoringUsers({
-        mentoringId,
-        userIds: targetUsers.map((user) => user.id),
-      }),
+      executeAction(
+        updateMentoringUsers({
+          mentoringId,
+          userIds: targetUsers.map((user) => user.id),
+        })
+      ),
     onSuccess: () => {
       toast.success("멘토링 참여 멘토를 저장했습니다.");
       setUserDraft(null);
       queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, "참여 멘토를 저장하지 못했습니다."));
     },
   });
 
@@ -181,17 +193,19 @@ export default function MentoringEditForm({
       companyId: number;
       mentorId: string | null;
     }) =>
-      assignMentoringCompanyByAdmin({
-        mentoringId,
-        companyId: payload.companyId,
-        mentorId: payload.mentorId,
-      }),
+      executeAction(
+        assignMentoringCompanyByAdmin({
+          mentoringId,
+          companyId: payload.companyId,
+          mentorId: payload.mentorId,
+        })
+      ),
     onSuccess: () => {
       toast.success("멘토 배정을 수정했습니다.");
       queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, "멘토 배정을 수정하지 못했습니다."));
     },
   });
 
@@ -214,11 +228,11 @@ export default function MentoringEditForm({
         throw new Error("업로드할 로고 파일을 선택해주세요.");
       }
 
-      const { uploadUrl, publicUrl } = await createMentoringReportLogoUploadUrl(
-        {
+      const { uploadUrl, publicUrl } = await executeAction(
+        createMentoringReportLogoUploadUrl({
           fileName: logoFileRef.current.name,
           contentType: logoFileRef.current.type,
-        }
+        })
       );
 
       const uploadResponse = await fetch(uploadUrl, {
@@ -233,34 +247,38 @@ export default function MentoringEditForm({
         throw new Error("로고 업로드에 실패했습니다.");
       }
 
-      return updateMentoringReportLogo({
-        mentoringId,
-        reportLogoPath: publicUrl,
-      });
+      return executeAction(
+        updateMentoringReportLogo({
+          mentoringId,
+          reportLogoPath: publicUrl,
+        })
+      );
     },
     onSuccess: () => {
       toast.success("보고서 로고를 저장했습니다.");
       clearLogoDraft();
       queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, "보고서 로고를 저장하지 못했습니다."));
     },
   });
 
   const logoRemoveMutation = useMutation({
     mutationFn: async () =>
-      updateMentoringReportLogo({
-        mentoringId,
-        reportLogoPath: null,
-      }),
+      executeAction(
+        updateMentoringReportLogo({
+          mentoringId,
+          reportLogoPath: null,
+        })
+      ),
     onSuccess: () => {
       toast.success("보고서 로고를 제거했습니다.");
       clearLogoDraft();
       queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, "보고서 로고를 제거하지 못했습니다."));
     },
   });
 
@@ -271,6 +289,16 @@ export default function MentoringEditForm({
 
   const handleLogoFileChange = (file: File | null) => {
     if (!file) return;
+
+    if (isWebpFile(file)) {
+      toast.error(
+        "WEBP 이미지는 업로드할 수 없습니다. PNG 또는 JPG 파일을 사용해주세요."
+      );
+      if (logoInputRef.current) {
+        logoInputRef.current.value = "";
+      }
+      return;
+    }
 
     if (logoObjectUrlRef.current) {
       URL.revokeObjectURL(logoObjectUrlRef.current);
