@@ -66,7 +66,6 @@ export function getErrorMessage(
   error: unknown,
   fallback = DEFAULT_ACTION_ERROR_MESSAGE
 ): string {
-  console.log("Extracting error message from:", error);
   if (isMeaningfulMessage(error)) {
     return error.trim();
   }
