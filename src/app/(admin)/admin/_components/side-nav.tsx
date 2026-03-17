@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Building2, FolderKanban, Menu } from "lucide-react";
+import { Users, Building2, FolderKanban, LayoutDashboard, Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -11,6 +11,12 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 const navItems = [
+  {
+    href: "/admin",
+    label: "운영 대시보드",
+    icon: LayoutDashboard,
+    key: "/admin",
+  },
   { href: "/admin/user", label: "사용자 관리", icon: Users, key: "user" },
   {
     href: "/admin/program",
