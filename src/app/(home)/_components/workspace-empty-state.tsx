@@ -26,25 +26,20 @@ export default function WorkspaceEmptyState({
   return (
     <section
       className={cn(
-        "relative overflow-hidden rounded-3xl border border-neutral-200/80 bg-[linear-gradient(180deg,#ffffff_0%,#fafaf9_100%)] px-6 py-10 shadow-[0_18px_60px_-45px_rgba(15,23,42,0.45)]",
+        "rounded-xl border border-neutral-200 bg-white px-6 py-10",
         className
       )}
     >
-      <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-neutral-300/80 to-transparent" />
-      <div className="absolute top-0 right-0 h-32 w-32 rounded-full bg-[radial-gradient(circle,_rgba(15,23,42,0.08)_0%,_rgba(15,23,42,0)_72%)]" />
-
-      <div className="relative flex flex-col items-center text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-neutral-200 bg-white shadow-sm">
-          <Icon className="h-6 w-6 text-neutral-500" />
+      <div className="flex flex-col items-center text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50">
+          <Icon className="h-5 w-5 text-neutral-400" />
         </div>
 
-        <p className="mt-5 text-[11px] font-semibold tracking-[0.24em] text-neutral-400 uppercase">
+        <p className="mt-4 text-[11px] font-semibold tracking-[0.2em] text-neutral-400 uppercase">
           {eyebrow}
         </p>
-        <h3 className="mt-3 text-xl font-semibold tracking-tight text-neutral-950">
-          {title}
-        </h3>
-        <p className="mt-3 max-w-lg text-sm leading-6 text-neutral-500">
+        <h3 className="mt-2 text-lg font-semibold text-neutral-900">{title}</h3>
+        <p className="mt-2 max-w-md text-sm leading-6 text-neutral-500">
           {description}
         </p>
 
@@ -52,7 +47,7 @@ export default function WorkspaceEmptyState({
           <Button
             type="button"
             variant="outline"
-            className="mt-6 h-10 rounded-full border-neutral-300 px-5 text-sm text-neutral-700 hover:bg-neutral-50"
+            className="mt-5 h-9 rounded-lg border-neutral-300 px-4 text-sm text-neutral-700 hover:bg-neutral-50"
             onClick={onAction}
           >
             {actionLabel}

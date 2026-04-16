@@ -12,7 +12,8 @@ export const judgingQueries = {
     page: number,
     size: number,
     isAdmin: boolean,
-    searchKeyword?: string
+    searchKeyword?: string,
+    statusFilter?: string
   ) =>
     queryOptions({
       queryKey: [
@@ -22,9 +23,18 @@ export const judgingQueries = {
         size,
         isAdmin,
         searchKeyword,
+        statusFilter,
       ] as const,
       queryFn: () =>
-        getAllJudgingWorkspaces(page, size, isAdmin, searchKeyword),
+        getAllJudgingWorkspaces(
+          page,
+          size,
+          isAdmin,
+          searchKeyword,
+          undefined,
+          undefined,
+          statusFilter
+        ),
     }),
   detailKeyPrefix: () => [...judgingQueries.all(), "detail"] as const,
   detail: (judgingRoundId: string, isAdmin: boolean) =>

@@ -143,7 +143,7 @@ export default function MentoringPage() {
         {items.length === 0 && searchKeyword && (
           <WorkspaceEmptyState
             icon={Search}
-            eyebrow="No Matches"
+            eyebrow="검색 결과 없음"
             title="검색 결과가 없습니다"
             description={`"${searchKeyword}"와 일치하는 멘토링이나 프로그램을 찾지 못했습니다. 번호를 다시 확인하거나 프로그램명으로 검색해 보세요.`}
             actionLabel="검색 초기화"
@@ -167,7 +167,7 @@ export default function MentoringPage() {
         {items.length === 0 && !searchKeyword && (
           <WorkspaceEmptyState
             icon={CalendarX2}
-            eyebrow={isAdminView ? "Mentoring Workspace" : "My Mentoring"}
+            eyebrow={isAdminView ? "멘토링 워크스페이스" : "내 멘토링"}
             title={
               isAdminView
                 ? "아직 등록된 멘토링이 없습니다"

@@ -683,7 +683,7 @@ export default function MentoringDetailPage() {
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
                       <p className="text-xs font-medium tracking-[0.18em] text-neutral-400 uppercase">
-                        Company Workspace
+                        기업 워크스페이스
                       </p>
                       <h2 className="mt-2 text-2xl font-semibold text-neutral-950">
                         {selectedCompany.company_name}
@@ -857,8 +857,8 @@ export default function MentoringDetailPage() {
                                                   <AlertDialogDescription>
                                                     {session.session_no}회차
                                                     기록과 첨부된 사진이 모두
-                                                    삭제됩니다. 이 작업은
-                                                    되돌릴 수 없습니다.
+                                                    삭제됩니다. 이 작업은 되돌릴
+                                                    수 없습니다.
                                                   </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
