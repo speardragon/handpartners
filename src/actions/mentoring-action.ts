@@ -1466,3 +1466,52 @@ export async function upsertMentoringSession(args: {
     return { sessionId };
   });
 }
+
+export async function deleteMentoringSession(args: {
+  sessionId: number;
+  mentoringId: string;
+}) {
+  return withActionResult(async () => {
+    const context = await getViewerContext();
+
+    await ensureMentoringParticipant(context, args.mentoringId);
+
+    const { data: mentoringStatus, error: mentoringStatusError } =
+      await context.supabase
+        .from("mentoring")
+        .select("status")
+        .eq("id", args.mentoringId)
+        .single();
+    if (mentoringStatusError) raiseActionError(mentoringStatusError);
+    if (mentoringStatus?.status === "COMPLETED") {
+      throw new Error("종료된 멘토링에서는 기록을 삭제할 수 없습니다.");
+    }
+
+    const { data: session, error: sessionError } = await context.supabase
+      .from("mentoring_session")
+      .select("id, mentor_id")
+      .eq("id", args.sessionId)
+      .eq("mentoring_id", args.mentoringId)
+      .maybeSingle();
+
+    if (sessionError) raiseActionError(sessionError);
+    if (!session) throw new Error("멘토링 세션을 찾을 수 없습니다.");
+    if (session.mentor_id !== context.viewer.id) {
+      throw new Error("본인이 작성한 멘토링 기록만 삭제할 수 있습니다.");
+    }
+
+    const { error: deletePhotoError } = await context.supabase
+      .from("mentoring_session_photo")
+      .delete()
+      .eq("mentoring_session_id", args.sessionId);
+    if (deletePhotoError) raiseActionError(deletePhotoError);
+
+    const { error: deleteError } = await context.supabase
+      .from("mentoring_session")
+      .delete()
+      .eq("id", args.sessionId);
+    if (deleteError) raiseActionError(deleteError);
+
+    return undefined;
+  });
+}
