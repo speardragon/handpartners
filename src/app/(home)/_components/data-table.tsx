@@ -57,6 +57,10 @@ export function DataTable<TData, TValue>({
                   <TableHead
                     className="font-semibold text-gray-700"
                     key={header.id}
+                    style={{
+                      width:
+                        header.getSize() !== 150 ? header.getSize() : undefined,
+                    }}
                   >
                     {header.isPlaceholder
                       ? null

@@ -2,18 +2,46 @@
 
 import { use, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { executeAction, getErrorMessage } from "@/lib/action";
 import { mentoringQueries } from "@/queries";
 import {
+  deleteMentoringSessionByAdmin,
+  type MentoringSession,
   type MentoringStatus,
   updateMentoringStatus,
+  upsertMentoringSessionByAdmin,
 } from "@/actions/mentoring-action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -23,12 +51,17 @@ import {
 } from "@/components/ui/select";
 import {
   ArrowLeft,
+  Building2,
   Clock3,
   Download,
   FileText,
+  MapPin,
+  Pencil,
   PlayCircle,
   SquareArrowOutUpRight,
   StopCircle,
+  Trash2,
+  UserRound,
 } from "lucide-react";
 import ProgramFeatureTabs from "../_components/ProgramFeatureTabs";
 import MentoringEditForm from "../_components/MentoringEditForm";
@@ -45,6 +78,12 @@ const STATUS_LABEL: Record<MentoringStatus, string> = {
   IN_PROGRESS: "진행 중",
   COMPLETED: "종료",
 };
+
+function toLocalInputValue(dateString?: string | null) {
+  const date = dateString ? new Date(dateString) : new Date();
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
+}
 
 function ManagementSkeleton() {
   return (
@@ -69,6 +108,13 @@ export default function Page({ params }: Props) {
   const [isSingleReportDownloading, setIsSingleReportDownloading] =
     useState(false);
   const [selectedReportSessionId, setSelectedReportSessionId] = useState("");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<MentoringSession | null>(null);
+  const [editSessionNo, setEditSessionNo] = useState("");
+  const [editMentoredAt, setEditMentoredAt] = useState("");
+  const [editPlace, setEditPlace] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [downloadingSessionId, setDownloadingSessionId] = useState<number | null>(null);
 
   const {
     data: mentoring,
@@ -97,6 +143,76 @@ export default function Page({ params }: Props) {
       ) ?? null
     );
   }, [mentoringDetail, selectedReportSessionId]);
+
+  const sessionsByCompany = useMemo(() => {
+    if (!mentoringDetail) return [];
+
+    const grouped = new Map<
+      number,
+      { companyId: number; companyName: string; sessions: MentoringSession[] }
+    >();
+
+    for (const session of mentoringDetail.sessions) {
+      const existing = grouped.get(session.company_id);
+      if (existing) {
+        existing.sessions.push(session);
+      } else {
+        grouped.set(session.company_id, {
+          companyId: session.company_id,
+          companyName: session.company_name,
+          sessions: [session],
+        });
+      }
+    }
+
+    return Array.from(grouped.values()).sort((a, b) =>
+      a.companyName.localeCompare(b.companyName, "ko")
+    );
+  }, [mentoringDetail]);
+
+  const adminEditMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingSession || !mentoring) return;
+      return executeAction(
+        upsertMentoringSessionByAdmin({
+          sessionId: editingSession.id,
+          mentoringId: mentoring.id,
+          sessionNo: Number(editSessionNo),
+          mentoredAt: new Date(editMentoredAt).toISOString(),
+          place: editPlace,
+          content: editContent,
+        })
+      );
+    },
+    onSuccess: () => {
+      toast.success("멘토링 기록을 수정했습니다.");
+      setEditDialogOpen(false);
+      setEditingSession(null);
+      queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
+    },
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err, "멘토링 기록 수정에 실패했습니다."));
+    },
+  });
+
+  const adminDeleteMutation = useMutation({
+    mutationFn: async (sessionId: number) => {
+      if (!mentoring) return;
+      return executeAction(
+        deleteMentoringSessionByAdmin({
+          sessionId,
+          mentoringId: mentoring.id,
+        })
+      );
+    },
+    onSuccess: () => {
+      toast.success("멘토링 기록을 삭제했습니다.");
+      queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
+    },
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err, "멘토링 기록 삭제에 실패했습니다."));
+    },
+  });
 
   if (isLoading) {
     return <ManagementSkeleton />;
@@ -246,6 +362,65 @@ export default function Page({ params }: Props) {
       toast.error("멘토링 보고서 일괄 저장 중 오류가 발생했습니다.");
     } finally {
       setIsBulkReportDownloading(false);
+    }
+  };
+
+  const openEditDialog = (session: MentoringSession) => {
+    setEditingSession(session);
+    setEditSessionNo(String(session.session_no));
+    setEditMentoredAt(toLocalInputValue(session.mentored_at));
+    setEditPlace(session.place ?? "");
+    setEditContent(session.content ?? "");
+    setEditDialogOpen(true);
+  };
+
+  const handleSessionPdfDownload = async (session: MentoringSession) => {
+    if (!mentoring || !mentoringDetail) return;
+
+    setDownloadingSessionId(session.id);
+    try {
+      const company = mentoringDetail.assignments.find(
+        (a) => a.company_id === session.company_id
+      );
+
+      const [{ pdf }, { saveAs }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("file-saver"),
+      ]);
+
+      const blob = await pdf(
+        <MentoringSessionDocument
+          programName={mentoring.program.name}
+          companyName={company?.company_name ?? session.company_name}
+          companyDescription={company?.company_description ?? null}
+          representativeName={company?.representative_name ?? null}
+          mentorName={session.mentor_name}
+          mentorAffiliation={
+            session.mentor_affiliation ?? company?.mentor_affiliation ?? null
+          }
+          mentorPosition={
+            session.mentor_position ?? company?.mentor_position ?? null
+          }
+          mentorSignatureUrl={session.mentor_signature_url}
+          logoUrl={mentoring.report_logo_url}
+          sessionNo={session.session_no}
+          mentoredAt={session.mentored_at}
+          place={session.place}
+          content={session.content}
+          photos={session.photos}
+        />
+      ).toBlob();
+
+      const sessionDate = session.mentored_at.slice(0, 10);
+      saveAs(
+        blob,
+        `${company?.company_name ?? session.company_name}_멘토링일지_${session.session_no}회차_${sessionDate}.pdf`
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("멘토링 보고서 저장 중 오류가 발생했습니다.");
+    } finally {
+      setDownloadingSessionId(null);
     }
   };
 
@@ -492,6 +667,214 @@ export default function Page({ params }: Props) {
         mentoringId={mentoring.id}
         data={mentoring}
       />
+
+      {/* 팀별 멘토링 기록 */}
+      <section className="rounded-7 border border-neutral-200 bg-white shadow-sm">
+        <div className="border-b border-neutral-200 p-6 sm:p-7">
+          <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">
+            Sessions by Company
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-neutral-950">
+            팀별 멘토링 기록
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-neutral-600">
+            참여 기업별로 멘토링 세션을 확인하고, 각 세션을 수정·삭제하거나
+            보고서를 저장할 수 있습니다.
+          </p>
+        </div>
+
+        <div className="p-6 sm:p-7">
+          {sessionsByCompany.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-10 text-center text-sm text-neutral-400">
+              아직 작성된 멘토링 기록이 없습니다.
+            </div>
+          ) : (
+            <Accordion type="multiple" className="space-y-3">
+              {sessionsByCompany.map((group) => (
+                <AccordionItem
+                  key={group.companyId}
+                  value={String(group.companyId)}
+                  className="rounded-2xl border border-neutral-200 bg-neutral-50/50 px-5"
+                >
+                  <AccordionTrigger className="py-4 hover:no-underline">
+                    <div className="flex items-center gap-3">
+                      <Building2 className="h-4 w-4 text-neutral-500" />
+                      <span className="font-semibold text-neutral-900">
+                        {group.companyName}
+                      </span>
+                      <Badge variant="secondary">{group.sessions.length}건</Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-3 pb-4">
+                    {group.sessions.map((session) => (
+                      <article
+                        key={session.id}
+                        className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm"
+                      >
+                        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge variant="secondary">
+                                {session.session_no}회차
+                              </Badge>
+                              <span className="text-sm font-medium text-neutral-900">
+                                {session.mentored_at
+                                  .slice(0, 16)
+                                  .replace("T", " ")}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-3 text-sm text-neutral-500">
+                              <span className="flex items-center gap-1">
+                                <UserRound className="h-3.5 w-3.5" />
+                                {session.mentor_name || "작성자 없음"}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-3.5 w-3.5" />
+                                {session.place || "장소 미입력"}
+                              </span>
+                            </div>
+                            {session.content && (
+                              <p className="mt-2 line-clamp-2 text-sm leading-6 text-neutral-600">
+                                {session.content}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <LoadingButton
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5"
+                              loading={downloadingSessionId === session.id}
+                              onClick={() => handleSessionPdfDownload(session)}
+                            >
+                              <FileText className="h-4 w-4" />
+                              보고서
+                            </LoadingButton>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5"
+                              onClick={() => openEditDialog(session)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              수정
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                  disabled={adminDeleteMutation.isPending}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  삭제
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    멘토링 세션을 삭제하시겠습니까?
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {group.companyName} · {session.session_no}
+                                    회차 기록과 첨부된 사진이 모두 삭제됩니다.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>취소</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() =>
+                                      adminDeleteMutation.mutate(session.id)
+                                    }
+                                    className="bg-red-500 hover:bg-red-600"
+                                  >
+                                    삭제
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          )}
+        </div>
+      </section>
+
+      {/* Edit dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>멘토링 세션 수정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                  회차
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={editSessionNo}
+                  onChange={(e) => setEditSessionNo(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                  멘토링 일시
+                </label>
+                <Input
+                  type="datetime-local"
+                  value={editMentoredAt}
+                  onChange={(e) => setEditMentoredAt(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                장소
+              </label>
+              <Input
+                value={editPlace}
+                onChange={(e) => setEditPlace(e.target.value)}
+                placeholder="예: 본사 회의실, 온라인 미팅"
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                멘토링 내용
+              </label>
+              <Textarea
+                rows={6}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                placeholder="멘토링에서 다룬 내용을 입력하세요."
+                className="mt-2 min-h-40 resize-y"
+              />
+            </div>
+            <LoadingButton
+              type="button"
+              className="w-full"
+              loading={adminEditMutation.isPending}
+              onClick={() => adminEditMutation.mutate()}
+            >
+              수정 저장
+            </LoadingButton>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

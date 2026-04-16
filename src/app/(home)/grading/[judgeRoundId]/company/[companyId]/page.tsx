@@ -44,13 +44,13 @@ const Page = () => {
 
   return (
     <div
-      className={`flex h-full min-h-0 w-full overflow-hidden ${
+      className={`fixed inset-0 top-16 z-10 flex overflow-hidden bg-white ${
         isFull ? "flex-col" : "flex-row"
       }`}
     >
       <div
         className={`flex min-h-0 flex-col ${
-          isFull ? "h-full w-full" : "w-1/2"
+          isFull ? "h-full w-full" : "h-full w-1/2"
         }`}
       >
         {!isFull && (
@@ -61,19 +61,21 @@ const Page = () => {
             </span>
           </div>
         )}
-        <PdfViewer
-          isFull={isFull}
-          handleFullButton={handleFullButton}
-          pdfPath={existEvaluation?.pdfPath ?? ""}
-        />
+        <div className="min-h-0 flex-1 overflow-auto">
+          <PdfViewer
+            isFull={isFull}
+            handleFullButton={handleFullButton}
+            pdfPath={existEvaluation?.pdfPath ?? ""}
+          />
+        </div>
       </div>
 
       <div
-        className={`flex min-h-0 flex-1 flex-col overflow-y-auto border-l bg-gray-50 ${
-          isFull ? "hidden" : "w-1/2"
+        className={`flex min-h-0 flex-col border-l bg-gray-50 ${
+          isFull ? "hidden" : "h-full w-1/2"
         }`}
       >
-        <div className="border-b bg-white px-6 py-4">
+        <div className="shrink-0 border-b bg-white px-6 py-4">
           <div className="text-muted-foreground mb-1 flex items-center gap-2 text-sm">
             <ClipboardList size={14} />
             <span>심사 ID {judgeRound.id}</span>
@@ -85,7 +87,7 @@ const Page = () => {
             </p>
           )}
         </div>
-        <div className="p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">
           <EvaluateTable
             judgeRoundId={judgeRoundId}
             companyId={companyId}
