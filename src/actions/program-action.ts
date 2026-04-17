@@ -244,23 +244,18 @@ export async function getAllJudgingWorkspaces(
   searchKeyword?: string,
   isParticipating?: boolean,
   exactJudgingRoundId?: string,
-  statusFilter?: string,
-  preAuthedUserId?: string
+  statusFilter?: string
 ): Promise<AllJudgingWorkspacesResult> {
   const supabase = await createClient();
 
-  let userId = preAuthedUserId;
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  const userId = user?.id;
 
-  if (!userId) {
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    userId = user?.id;
-
-    if (authError || !userId) {
-      throw new Error("User not authenticated");
-    }
+  if (authError || !userId) {
+    throw new Error("User not authenticated");
   }
 
   // isParticipating이 미제공(undefined)이고 관리자인 경우, 서버에서 직접 체크
