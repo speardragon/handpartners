@@ -247,6 +247,7 @@ export async function getAllJudgingWorkspaces(
   statusFilter?: string,
   preAuthedUserId?: string
 ): Promise<AllJudgingWorkspacesResult> {
+  const __perfStart = Date.now();
   const supabase = await createClient();
 
   let userId = preAuthedUserId;
@@ -359,6 +360,7 @@ export async function getAllJudgingWorkspaces(
     ),
     buildBaseQuery(statsQueryFields, { skipStatusFilter: true }),
   ]);
+  const __perfStep1 = Date.now();
 
   if (pageResult.error) {
     throw new Error(pageResult.error.message);
@@ -449,6 +451,10 @@ export async function getAllJudgingWorkspaces(
       evaluationMap[key].totalScore += evaluation.grade;
     });
   }
+  const __perfStep3 = Date.now();
+  console.log(
+    `[PERF getAllJudgingWorkspaces] total=${__perfStep3 - __perfStart}ms step1_parallel=${__perfStep1 - __perfStart}ms step3_eval=${__perfStep3 - __perfStep1}ms isAdmin=${isAdmin} judgingRounds=${judgingRoundIds.length}`
+  );
 
   // Step 4: 심사 상태 판별 및 결과 매핑
   const result: JudgingWorkspaceWithStatus[] = typedJudgings.map((judging) => {
