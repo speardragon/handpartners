@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/speardragon/handpartners/compare/v0.2.0...v0.3.0) (2026-04-17)
+
+
+### Features
+
+* 멘토링 관리 기능 추가 및 전반적인 UI Polish ([#15](https://github.com/speardragon/handpartners/issues/15)) ([94b962a](https://github.com/speardragon/handpartners/commit/94b962ad41f8dc4a938980a8dd34db2ff575d46a))
+
 ## [0.2.0](https://github.com/speardragon/handpartners/compare/v0.1.0...v0.2.0) (2026-03-08)
 
 
