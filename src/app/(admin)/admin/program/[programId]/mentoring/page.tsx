@@ -11,12 +11,9 @@ import {
   type MentoringSession,
   type MentoringStatus,
   updateMentoringStatus,
-  upsertMentoringSessionByAdmin,
 } from "@/actions/mentoring-action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -37,19 +34,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   ArrowLeft,
   Building2,
   Clock3,
@@ -66,6 +50,13 @@ import {
 import ProgramFeatureTabs from "../_components/ProgramFeatureTabs";
 import MentoringEditForm from "../_components/MentoringEditForm";
 import MentoringSessionDocument from "@/app/(home)/mentoring/[mentoringId]/_components/MentoringSessionDocument";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Props = {
   params: Promise<{
@@ -79,21 +70,15 @@ const STATUS_LABEL: Record<MentoringStatus, string> = {
   COMPLETED: "종료",
 };
 
-function toLocalInputValue(dateString?: string | null) {
-  const date = dateString ? new Date(dateString) : new Date();
-  const offset = date.getTimezoneOffset();
-  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
-}
-
 function ManagementSkeleton() {
   return (
     <div className="flex min-h-screen w-full flex-col gap-4 p-4 sm:p-6 lg:p-8">
       <Skeleton className="h-10 w-28" />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.75fr)_360px]">
-        <Skeleton className="h-72 rounded-7" />
-        <Skeleton className="h-80 rounded-7" />
+        <Skeleton className="rounded-7 h-72" />
+        <Skeleton className="rounded-7 h-80" />
       </div>
-      <Skeleton className="h-240 rounded-7" />
+      <Skeleton className="rounded-7 h-240" />
     </div>
   );
 }
@@ -108,13 +93,9 @@ export default function Page({ params }: Props) {
   const [isSingleReportDownloading, setIsSingleReportDownloading] =
     useState(false);
   const [selectedReportSessionId, setSelectedReportSessionId] = useState("");
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingSession, setEditingSession] = useState<MentoringSession | null>(null);
-  const [editSessionNo, setEditSessionNo] = useState("");
-  const [editMentoredAt, setEditMentoredAt] = useState("");
-  const [editPlace, setEditPlace] = useState("");
-  const [editContent, setEditContent] = useState("");
-  const [downloadingSessionId, setDownloadingSessionId] = useState<number | null>(null);
+  const [downloadingSessionId, setDownloadingSessionId] = useState<
+    number | null
+  >(null);
 
   const {
     data: mentoring,
@@ -170,31 +151,6 @@ export default function Page({ params }: Props) {
     );
   }, [mentoringDetail]);
 
-  const adminEditMutation = useMutation({
-    mutationFn: async () => {
-      if (!editingSession || !mentoring) return;
-      return executeAction(
-        upsertMentoringSessionByAdmin({
-          sessionId: editingSession.id,
-          mentoringId: mentoring.id,
-          sessionNo: Number(editSessionNo),
-          mentoredAt: new Date(editMentoredAt).toISOString(),
-          place: editPlace,
-          content: editContent,
-        })
-      );
-    },
-    onSuccess: () => {
-      toast.success("멘토링 기록을 수정했습니다.");
-      setEditDialogOpen(false);
-      setEditingSession(null);
-      queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
-    },
-    onError: (err: unknown) => {
-      toast.error(getErrorMessage(err, "멘토링 기록 수정에 실패했습니다."));
-    },
-  });
-
   const adminDeleteMutation = useMutation({
     mutationFn: async (sessionId: number) => {
       if (!mentoring) return;
@@ -239,10 +195,7 @@ export default function Page({ params }: Props) {
       );
     } catch (actionError) {
       toast.error(
-        getErrorMessage(
-          actionError,
-          "멘토링 상태 변경 중 오류가 발생했습니다."
-        )
+        getErrorMessage(actionError, "멘토링 상태 변경 중 오류가 발생했습니다.")
       );
     } finally {
       setIsStatusUpdating(false);
@@ -365,15 +318,6 @@ export default function Page({ params }: Props) {
     }
   };
 
-  const openEditDialog = (session: MentoringSession) => {
-    setEditingSession(session);
-    setEditSessionNo(String(session.session_no));
-    setEditMentoredAt(toLocalInputValue(session.mentored_at));
-    setEditPlace(session.place ?? "");
-    setEditContent(session.content ?? "");
-    setEditDialogOpen(true);
-  };
-
   const handleSessionPdfDownload = async (session: MentoringSession) => {
     if (!mentoring || !mentoringDetail) return;
 
@@ -440,7 +384,7 @@ export default function Page({ params }: Props) {
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.75fr)_360px]">
-        <section className="overflow-hidden rounded-7 border border-neutral-200 bg-white shadow-sm">
+        <section className="rounded-7 overflow-hidden border border-neutral-200 bg-white shadow-sm">
           <div className="grid gap-0 xl:grid-cols-[minmax(0,1.7fr)_300px]">
             <div className="p-6 sm:p-7">
               <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">
@@ -533,7 +477,7 @@ export default function Page({ params }: Props) {
           </div>
         </section>
 
-        <section className="self-start rounded-7 border border-neutral-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
+        <section className="rounded-7 self-start border border-neutral-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
           <div className="space-y-6">
             <div>
               <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">
@@ -702,7 +646,9 @@ export default function Page({ params }: Props) {
                       <span className="font-semibold text-neutral-900">
                         {group.companyName}
                       </span>
-                      <Badge variant="secondary">{group.sessions.length}건</Badge>
+                      <Badge variant="secondary">
+                        {group.sessions.length}건
+                      </Badge>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="space-y-3 pb-4">
@@ -756,7 +702,11 @@ export default function Page({ params }: Props) {
                               variant="outline"
                               size="sm"
                               className="gap-1.5"
-                              onClick={() => openEditDialog(session)}
+                              onClick={() =>
+                                router.push(
+                                  `/mentoring/${mentoring.id}?companyId=${session.company_id}`
+                                )
+                              }
                             >
                               <Pencil className="h-4 w-4" />
                               수정
@@ -808,73 +758,6 @@ export default function Page({ params }: Props) {
           )}
         </div>
       </section>
-
-      {/* Edit dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>멘토링 세션 수정</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
-                  회차
-                </label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={editSessionNo}
-                  onChange={(e) => setEditSessionNo(e.target.value)}
-                  className="mt-2"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
-                  멘토링 일시
-                </label>
-                <Input
-                  type="datetime-local"
-                  value={editMentoredAt}
-                  onChange={(e) => setEditMentoredAt(e.target.value)}
-                  className="mt-2"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
-                장소
-              </label>
-              <Input
-                value={editPlace}
-                onChange={(e) => setEditPlace(e.target.value)}
-                placeholder="예: 본사 회의실, 온라인 미팅"
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
-                멘토링 내용
-              </label>
-              <Textarea
-                rows={6}
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                placeholder="멘토링에서 다룬 내용을 입력하세요."
-                className="mt-2 min-h-40 resize-y"
-              />
-            </div>
-            <LoadingButton
-              type="button"
-              className="w-full"
-              loading={adminEditMutation.isPending}
-              onClick={() => adminEditMutation.mutate()}
-            >
-              수정 저장
-            </LoadingButton>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
