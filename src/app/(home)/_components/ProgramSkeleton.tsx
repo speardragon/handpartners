@@ -6,6 +6,12 @@ export default function ProgramSkeleton() {
       <div className="flex w-full max-w-240 flex-col space-y-4 p-4">
         <Skeleton className="mx-auto h-8 w-40" />
 
+        {/* 탭 스켈레톤 */}
+        <div className="flex justify-center gap-2">
+          <Skeleton className="h-9 w-16 rounded-full" />
+          <Skeleton className="h-9 w-20 rounded-full" />
+        </div>
+
         {/* 통계 스켈레톤 */}
         <div className="grid grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
