@@ -1035,9 +1035,10 @@ export async function getMentoringDetail(
         updated_at: session.updated_at,
         photos: photos.sort((a, b) => a.sort_order - b.sort_order),
         can_edit:
-          !isAdminView &&
-          base.status !== "COMPLETED" &&
-          session.mentor_id === context.viewer.id,
+          context.isAdmin ||
+          (!isAdminView &&
+            base.status !== "COMPLETED" &&
+            session.mentor_id === context.viewer.id),
       };
     })
   );
