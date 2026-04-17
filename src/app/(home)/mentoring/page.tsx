@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
+import { Delay } from "@suspensive/react";
 import { mentoringQueries } from "@/queries";
 import ProgramSkeleton from "../_components/ProgramSkeleton";
 import WorkspaceTabs from "../_components/WorkspaceTabs";
@@ -36,11 +37,17 @@ export default function MentoringPage() {
     return () => window.clearTimeout(timer);
   }, [search]);
 
-  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useInfiniteQuery({
-      ...mentoringQueries.infinite(searchKeyword, PAGE_SIZE),
-      placeholderData: keepPreviousData,
-    });
+  const {
+    data,
+    isLoading,
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    ...mentoringQueries.infinite(searchKeyword, PAGE_SIZE),
+    placeholderData: keepPreviousData,
+  });
 
   const sentinelRef = useInfiniteScroll({
     fetchNextPage,
@@ -152,15 +159,22 @@ export default function MentoringPage() {
         )}
 
         {items.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {items.map((item) => (
-              <MentoringCard
-                key={item.id}
-                mentoring={item}
-                isAdminView={isAdminView}
-                onClick={handleCardClick}
-              />
-            ))}
+          <div className="relative">
+            {isFetching && !isLoading && !isFetchingNextPage && (
+              <Delay ms={200}>
+                <div className="absolute inset-0 z-10 rounded-xl bg-white/60" />
+              </Delay>
+            )}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {items.map((item) => (
+                <MentoringCard
+                  key={item.id}
+                  mentoring={item}
+                  isAdminView={isAdminView}
+                  onClick={handleCardClick}
+                />
+              ))}
+            </div>
           </div>
         )}
 

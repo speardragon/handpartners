@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Delay } from "@suspensive/react";
 import { judgingQueries } from "@/queries";
 import { useAuthStore } from "@/store/useAuthStore";
 import { USER_ROLES } from "@/constants/auth";
@@ -73,7 +74,7 @@ export default function Home() {
     }, 500);
   }, []);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     ...judgingQueries.list(
       page,
       PAGE_SIZE,
@@ -270,14 +271,21 @@ export default function Home() {
 
         {/* 카드 그리드 */}
         {data.result.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {data.result.map((judging) => (
-              <JudgingCard
-                key={judging.id}
-                judging={judging}
-                onClick={handleRowClick}
-              />
-            ))}
+          <div className="relative">
+            {isFetching && !isLoading && (
+              <Delay ms={200}>
+                <div className="absolute inset-0 z-10 rounded-xl bg-white/60" />
+              </Delay>
+            )}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {data.result.map((judging) => (
+                <JudgingCard
+                  key={judging.id}
+                  judging={judging}
+                  onClick={handleRowClick}
+                />
+              ))}
+            </div>
           </div>
         )}
 
