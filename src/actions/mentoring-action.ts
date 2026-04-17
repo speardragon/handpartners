@@ -120,16 +120,7 @@ export interface MentoringManagementSummary extends MentoringRow {
     affiliation: string | null;
     assigned_company_count: number;
   }[];
-  recent_sessions: Array<{
-    id: number;
-    company_id: number;
-    company_name: string;
-    mentor_name: string | null;
-    session_no: number;
-    mentored_at: string;
-    place: string | null;
-    content: string | null;
-  }>;
+  recent_sessions: MentoringSession[];
 }
 
 type ViewerContext = {
@@ -476,6 +467,8 @@ export async function getMentoringByProgramId(
           mentored_at,
           place,
           content,
+          created_at,
+          updated_at,
           company:company_id (
             id,
             name
@@ -484,7 +477,14 @@ export async function getMentoringByProgramId(
             id,
             username,
             affiliation,
-            position
+            position,
+            signature_url
+          ),
+          photos:mentoring_session_photo (
+            id,
+            photo_path,
+            original_filename,
+            sort_order
           )
         `
       )
@@ -582,22 +582,63 @@ export async function getMentoringByProgramId(
     recent_mentored_at: sessions?.[0]?.mentored_at ?? null,
     companies: mentoringCompanies,
     mentors: mentoringMentors,
-    recent_sessions: (sessions ?? []).slice(0, 8).map((session) => ({
-      id: session.id,
-      company_id: session.company_id,
-      company_name:
-        takeFirstRelation<{ id: number; name: string }>(
-          session.company as unknown
-        )?.name ?? "",
-      mentor_name:
-        takeFirstRelation<{ id: string; username: string }>(
-          session.mentor as unknown
-        )?.username ?? null,
-      session_no: session.session_no,
-      mentored_at: session.mentored_at,
-      place: session.place,
-      content: session.content,
-    })),
+    recent_sessions: await Promise.all(
+      (sessions ?? []).map(async (session) => {
+        const mentor = takeFirstRelation<{
+          id: string;
+          username: string;
+          affiliation: string | null;
+          position: string | null;
+          signature_url: string | null;
+        }>(session.mentor as unknown);
+        const mentorSignatureUrl = await safePresignedUrl(
+          mentor?.signature_url,
+          600
+        );
+
+        const photos = Array.isArray(session.photos)
+          ? await Promise.all(
+              (session.photos as unknown[]).map(async (p) => {
+                const photo = p as {
+                  id: number;
+                  photo_path: string;
+                  original_filename: string | null;
+                  sort_order: number;
+                };
+                return {
+                  id: photo.id,
+                  photo_path: photo.photo_path,
+                  original_filename: photo.original_filename,
+                  sort_order: photo.sort_order,
+                  download_url: await safePresignedUrl(photo.photo_path),
+                };
+              })
+            )
+          : [];
+
+        return {
+          id: session.id,
+          company_id: session.company_id,
+          company_name:
+            takeFirstRelation<{ id: number; name: string }>(
+              session.company as unknown
+            )?.name ?? "",
+          mentor_id: session.mentor_id,
+          mentor_name: mentor?.username ?? null,
+          mentor_affiliation: mentor?.affiliation ?? null,
+          mentor_position: mentor?.position ?? null,
+          mentor_signature_url: mentorSignatureUrl,
+          session_no: session.session_no,
+          mentored_at: session.mentored_at,
+          place: session.place,
+          content: session.content,
+          created_at: session.created_at,
+          updated_at: session.updated_at,
+          photos: photos.sort((a, b) => a.sort_order - b.sort_order),
+          can_edit: true,
+        };
+      })
+    ),
   };
 }
 
@@ -994,9 +1035,10 @@ export async function getMentoringDetail(
         updated_at: session.updated_at,
         photos: photos.sort((a, b) => a.sort_order - b.sort_order),
         can_edit:
-          !isAdminView &&
-          base.status !== "COMPLETED" &&
-          session.mentor_id === context.viewer.id,
+          context.isAdmin ||
+          (!isAdminView &&
+            base.status !== "COMPLETED" &&
+            session.mentor_id === context.viewer.id),
       };
     })
   );
@@ -1464,5 +1506,130 @@ export async function upsertMentoringSession(args: {
     }
 
     return { sessionId };
+  });
+}
+
+export async function deleteMentoringSession(args: {
+  sessionId: number;
+  mentoringId: string;
+}) {
+  return withActionResult(async () => {
+    const context = await getViewerContext();
+
+    await ensureMentoringParticipant(context, args.mentoringId);
+
+    const { data: mentoringStatus, error: mentoringStatusError } =
+      await context.supabase
+        .from("mentoring")
+        .select("status")
+        .eq("id", args.mentoringId)
+        .single();
+    if (mentoringStatusError) raiseActionError(mentoringStatusError);
+    if (mentoringStatus?.status === "COMPLETED") {
+      throw new Error("종료된 멘토링에서는 기록을 삭제할 수 없습니다.");
+    }
+
+    const { data: session, error: sessionError } = await context.supabase
+      .from("mentoring_session")
+      .select("id, mentor_id")
+      .eq("id", args.sessionId)
+      .eq("mentoring_id", args.mentoringId)
+      .maybeSingle();
+
+    if (sessionError) raiseActionError(sessionError);
+    if (!session) throw new Error("멘토링 세션을 찾을 수 없습니다.");
+    if (session.mentor_id !== context.viewer.id) {
+      throw new Error("본인이 작성한 멘토링 기록만 삭제할 수 있습니다.");
+    }
+
+    const { error: deletePhotoError } = await context.supabase
+      .from("mentoring_session_photo")
+      .delete()
+      .eq("mentoring_session_id", args.sessionId);
+    if (deletePhotoError) raiseActionError(deletePhotoError);
+
+    const { error: deleteError } = await context.supabase
+      .from("mentoring_session")
+      .delete()
+      .eq("id", args.sessionId);
+    if (deleteError) raiseActionError(deleteError);
+
+    return undefined;
+  });
+}
+
+export async function deleteMentoringSessionByAdmin(args: {
+  sessionId: number;
+  mentoringId: string;
+}) {
+  return withActionResult(async () => {
+    const context = await assertAdmin();
+
+    const { data: session, error: sessionError } = await context.supabase
+      .from("mentoring_session")
+      .select("id")
+      .eq("id", args.sessionId)
+      .eq("mentoring_id", args.mentoringId)
+      .maybeSingle();
+
+    if (sessionError) raiseActionError(sessionError);
+    if (!session) throw new Error("멘토링 세션을 찾을 수 없습니다.");
+
+    const { error: deletePhotoError } = await context.supabase
+      .from("mentoring_session_photo")
+      .delete()
+      .eq("mentoring_session_id", args.sessionId);
+    if (deletePhotoError) raiseActionError(deletePhotoError);
+
+    const { error: deleteError } = await context.supabase
+      .from("mentoring_session")
+      .delete()
+      .eq("id", args.sessionId);
+    if (deleteError) raiseActionError(deleteError);
+
+    return undefined;
+  });
+}
+
+export async function upsertMentoringSessionByAdmin(args: {
+  sessionId: number;
+  mentoringId: string;
+  sessionNo: number;
+  mentoredAt: string;
+  place?: string | null;
+  content?: string | null;
+}) {
+  return withActionResult(async () => {
+    const context = await assertAdmin();
+
+    const { data: session, error: sessionError } = await context.supabase
+      .from("mentoring_session")
+      .select("id")
+      .eq("id", args.sessionId)
+      .eq("mentoring_id", args.mentoringId)
+      .maybeSingle();
+
+    if (sessionError) raiseActionError(sessionError);
+    if (!session) throw new Error("멘토링 세션을 찾을 수 없습니다.");
+
+    const { error: updateError } = await context.supabase
+      .from("mentoring_session")
+      .update({
+        session_no: args.sessionNo,
+        mentored_at: args.mentoredAt,
+        place: args.place?.trim() || null,
+        content: args.content?.trim() || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", args.sessionId);
+
+    if (updateError) {
+      if ("code" in updateError && updateError.code === "23505") {
+        throw new Error("같은 기업에 동일한 회차가 이미 존재합니다.");
+      }
+      raiseActionError(updateError);
+    }
+
+    return undefined;
   });
 }

@@ -243,7 +243,8 @@ export async function getAllJudgingWorkspaces(
   isAdmin: boolean,
   searchKeyword?: string,
   isParticipating?: boolean,
-  exactJudgingRoundId?: string
+  exactJudgingRoundId?: string,
+  statusFilter?: string
 ): Promise<AllJudgingWorkspacesResult> {
   const supabase = await createClient();
 
@@ -289,10 +290,13 @@ export async function getAllJudgingWorkspaces(
   }
 
   // Step 1: 페이지 데이터 쿼리와 전체 status 집계 쿼리를 병렬 실행
-  const buildBaseQuery = (selectFields: string, opts?: { count?: "exact" }) => {
+  const buildBaseQuery = (
+    selectFields: string,
+    opts?: { count?: "exact"; skipStatusFilter?: boolean }
+  ) => {
     let q = supabase
       .from("judging_round")
-      .select(selectFields, opts)
+      .select(selectFields, opts ? { count: opts.count } : undefined)
       .order("created_at", { ascending: false });
 
     if (useJudgeLogic) {
@@ -308,6 +312,9 @@ export async function getAllJudgingWorkspaces(
       }
 
       q = q.or(orClauses.join(","));
+    }
+    if (statusFilter && !opts?.skipStatusFilter) {
+      q = q.eq("status", statusFilter);
     }
     return q;
   };
@@ -345,7 +352,7 @@ export async function getAllJudgingWorkspaces(
       (page - 1) * size,
       page * size - 1
     ),
-    buildBaseQuery(statsQueryFields),
+    buildBaseQuery(statsQueryFields, { skipStatusFilter: true }),
   ]);
 
   if (pageResult.error) {

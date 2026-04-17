@@ -77,6 +77,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.47.12
         version: 2.47.12
+      '@suspensive/react':
+        specifier: ^3.20.3
+        version: 3.20.3(react@19.2.4)
       '@tailwindcss/postcss':
         specifier: ^4.2.1
         version: 4.2.1
@@ -1747,6 +1750,11 @@ packages:
 
   '@supabase/supabase-js@2.47.12':
     resolution: {integrity: sha512-My8X5K1KwOBFjQhAqIf7QJaQhP5EILjJwAgjzRNjstlMLJmdVBctwRYD6IGDWKzw+i6/aNGuRd5c9/pI/Y6UFw==}
+
+  '@suspensive/react@3.20.3':
+    resolution: {integrity: sha512-xXZQ6hW4AzDrQvPQB8AsDcKdopOHlkQnu+odESV9C8ZWV64QlwbA3ght/JOf8BTrn8bpFTDO6pph3e0fw7bOIA==}
+    peerDependencies:
+      react: ^18 || ^19
 
   '@swc/helpers@0.5.15':
     resolution: {integrity: sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g==}
@@ -6220,6 +6228,10 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+
+  '@suspensive/react@3.20.3(react@19.2.4)':
+    dependencies:
+      react: 19.2.4
 
   '@swc/helpers@0.5.15':
     dependencies:

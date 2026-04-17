@@ -34,34 +34,34 @@ export default function StatusDistributionTable({
 
       <div className="mb-4 h-1.5 w-full rounded-full bg-gray-100">
         <div
-          className="h-1.5 rounded-full bg-gray-900 transition-all"
+          className="h-1.5 rounded-full bg-green-500 transition-all"
           style={{ width: `${completedPct}%` }}
         />
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div className="flex items-center gap-3 rounded-md bg-gray-50 p-3">
-          <Clock size={16} className="text-gray-400" />
+          <Clock size={16} className="shrink-0 text-gray-400" />
           <div>
-            <p className="text-muted-foreground text-xs">심사 예정</p>
+            <p className="text-xs text-gray-500">심사 예정</p>
             <p className="text-lg font-bold text-gray-900">
               {statusDistribution["심사 예정"]}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 rounded-md bg-gray-50 p-3">
-          <CircleDot size={16} className="text-amber-500" />
+        <div className="flex items-center gap-3 rounded-md bg-amber-50 p-3">
+          <CircleDot size={16} className="shrink-0 text-amber-500" />
           <div>
-            <p className="text-muted-foreground text-xs">심사 중</p>
+            <p className="text-xs text-amber-700">심사 중</p>
             <p className="text-lg font-bold text-gray-900">
               {statusDistribution["심사 중"]}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 rounded-md bg-gray-50 p-3">
-          <CircleCheck size={16} className="text-green-500" />
+        <div className="flex items-center gap-3 rounded-md bg-green-50 p-3">
+          <CircleCheck size={16} className="shrink-0 text-green-500" />
           <div>
-            <p className="text-muted-foreground text-xs">심사 완료</p>
+            <p className="text-xs text-green-700">심사 완료</p>
             <p className="text-lg font-bold text-gray-900">
               {statusDistribution["심사 완료"]}
             </p>

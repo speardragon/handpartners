@@ -2,11 +2,13 @@
 
 import { use, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { executeAction, getErrorMessage } from "@/lib/action";
 import { mentoringQueries } from "@/queries";
 import {
+  deleteMentoringSessionByAdmin,
+  type MentoringSession,
   type MentoringStatus,
   updateMentoringStatus,
 } from "@/actions/mentoring-action";
@@ -15,24 +17,46 @@ import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  ArrowLeft,
+  Building2,
+  Clock3,
+  Download,
+  FileText,
+  MapPin,
+  Pencil,
+  PlayCircle,
+  SquareArrowOutUpRight,
+  StopCircle,
+  Trash2,
+  UserRound,
+} from "lucide-react";
+import ProgramFeatureTabs from "../_components/ProgramFeatureTabs";
+import MentoringEditForm from "../_components/MentoringEditForm";
+import MentoringSessionDocument from "@/app/(home)/mentoring/[mentoringId]/_components/MentoringSessionDocument";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ArrowLeft,
-  Clock3,
-  Download,
-  FileText,
-  PlayCircle,
-  SquareArrowOutUpRight,
-  StopCircle,
-} from "lucide-react";
-import ProgramFeatureTabs from "../_components/ProgramFeatureTabs";
-import MentoringEditForm from "../_components/MentoringEditForm";
-import MentoringSessionDocument from "@/app/(home)/mentoring/[mentoringId]/_components/MentoringSessionDocument";
 
 type Props = {
   params: Promise<{
@@ -51,10 +75,10 @@ function ManagementSkeleton() {
     <div className="flex min-h-screen w-full flex-col gap-4 p-4 sm:p-6 lg:p-8">
       <Skeleton className="h-10 w-28" />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.75fr)_360px]">
-        <Skeleton className="h-72 rounded-7" />
-        <Skeleton className="h-80 rounded-7" />
+        <Skeleton className="rounded-7 h-72" />
+        <Skeleton className="rounded-7 h-80" />
       </div>
-      <Skeleton className="h-240 rounded-7" />
+      <Skeleton className="rounded-7 h-240" />
     </div>
   );
 }
@@ -69,6 +93,9 @@ export default function Page({ params }: Props) {
   const [isSingleReportDownloading, setIsSingleReportDownloading] =
     useState(false);
   const [selectedReportSessionId, setSelectedReportSessionId] = useState("");
+  const [downloadingSessionId, setDownloadingSessionId] = useState<
+    number | null
+  >(null);
 
   const {
     data: mentoring,
@@ -98,6 +125,51 @@ export default function Page({ params }: Props) {
     );
   }, [mentoringDetail, selectedReportSessionId]);
 
+  const sessionsByCompany = useMemo(() => {
+    if (!mentoringDetail) return [];
+
+    const grouped = new Map<
+      number,
+      { companyId: number; companyName: string; sessions: MentoringSession[] }
+    >();
+
+    for (const session of mentoringDetail.sessions) {
+      const existing = grouped.get(session.company_id);
+      if (existing) {
+        existing.sessions.push(session);
+      } else {
+        grouped.set(session.company_id, {
+          companyId: session.company_id,
+          companyName: session.company_name,
+          sessions: [session],
+        });
+      }
+    }
+
+    return Array.from(grouped.values()).sort((a, b) =>
+      a.companyName.localeCompare(b.companyName, "ko")
+    );
+  }, [mentoringDetail]);
+
+  const adminDeleteMutation = useMutation({
+    mutationFn: async (sessionId: number) => {
+      if (!mentoring) return;
+      return executeAction(
+        deleteMentoringSessionByAdmin({
+          sessionId,
+          mentoringId: mentoring.id,
+        })
+      );
+    },
+    onSuccess: () => {
+      toast.success("멘토링 기록을 삭제했습니다.");
+      queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
+    },
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err, "멘토링 기록 삭제에 실패했습니다."));
+    },
+  });
+
   if (isLoading) {
     return <ManagementSkeleton />;
   }
@@ -123,10 +195,7 @@ export default function Page({ params }: Props) {
       );
     } catch (actionError) {
       toast.error(
-        getErrorMessage(
-          actionError,
-          "멘토링 상태 변경 중 오류가 발생했습니다."
-        )
+        getErrorMessage(actionError, "멘토링 상태 변경 중 오류가 발생했습니다.")
       );
     } finally {
       setIsStatusUpdating(false);
@@ -249,6 +318,56 @@ export default function Page({ params }: Props) {
     }
   };
 
+  const handleSessionPdfDownload = async (session: MentoringSession) => {
+    if (!mentoring || !mentoringDetail) return;
+
+    setDownloadingSessionId(session.id);
+    try {
+      const company = mentoringDetail.assignments.find(
+        (a) => a.company_id === session.company_id
+      );
+
+      const [{ pdf }, { saveAs }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("file-saver"),
+      ]);
+
+      const blob = await pdf(
+        <MentoringSessionDocument
+          programName={mentoring.program.name}
+          companyName={company?.company_name ?? session.company_name}
+          companyDescription={company?.company_description ?? null}
+          representativeName={company?.representative_name ?? null}
+          mentorName={session.mentor_name}
+          mentorAffiliation={
+            session.mentor_affiliation ?? company?.mentor_affiliation ?? null
+          }
+          mentorPosition={
+            session.mentor_position ?? company?.mentor_position ?? null
+          }
+          mentorSignatureUrl={session.mentor_signature_url}
+          logoUrl={mentoring.report_logo_url}
+          sessionNo={session.session_no}
+          mentoredAt={session.mentored_at}
+          place={session.place}
+          content={session.content}
+          photos={session.photos}
+        />
+      ).toBlob();
+
+      const sessionDate = session.mentored_at.slice(0, 10);
+      saveAs(
+        blob,
+        `${company?.company_name ?? session.company_name}_멘토링일지_${session.session_no}회차_${sessionDate}.pdf`
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("멘토링 보고서 저장 중 오류가 발생했습니다.");
+    } finally {
+      setDownloadingSessionId(null);
+    }
+  };
+
   return (
     <div className="flex min-h-screen w-full flex-col gap-4 bg-neutral-50 p-4 sm:p-6 lg:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -265,7 +384,7 @@ export default function Page({ params }: Props) {
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.75fr)_360px]">
-        <section className="overflow-hidden rounded-7 border border-neutral-200 bg-white shadow-sm">
+        <section className="rounded-7 overflow-hidden border border-neutral-200 bg-white shadow-sm">
           <div className="grid gap-0 xl:grid-cols-[minmax(0,1.7fr)_300px]">
             <div className="p-6 sm:p-7">
               <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">
@@ -358,7 +477,7 @@ export default function Page({ params }: Props) {
           </div>
         </section>
 
-        <section className="self-start rounded-7 border border-neutral-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
+        <section className="rounded-7 self-start border border-neutral-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
           <div className="space-y-6">
             <div>
               <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">
@@ -492,6 +611,153 @@ export default function Page({ params }: Props) {
         mentoringId={mentoring.id}
         data={mentoring}
       />
+
+      {/* 팀별 멘토링 기록 */}
+      <section className="rounded-7 border border-neutral-200 bg-white shadow-sm">
+        <div className="border-b border-neutral-200 p-6 sm:p-7">
+          <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">
+            Sessions by Company
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-neutral-950">
+            팀별 멘토링 기록
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-neutral-600">
+            참여 기업별로 멘토링 세션을 확인하고, 각 세션을 수정·삭제하거나
+            보고서를 저장할 수 있습니다.
+          </p>
+        </div>
+
+        <div className="p-6 sm:p-7">
+          {sessionsByCompany.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-10 text-center text-sm text-neutral-400">
+              아직 작성된 멘토링 기록이 없습니다.
+            </div>
+          ) : (
+            <Accordion type="multiple" className="space-y-3">
+              {sessionsByCompany.map((group) => (
+                <AccordionItem
+                  key={group.companyId}
+                  value={String(group.companyId)}
+                  className="rounded-2xl border border-neutral-200 bg-neutral-50/50 px-5"
+                >
+                  <AccordionTrigger className="py-4 hover:no-underline">
+                    <div className="flex items-center gap-3">
+                      <Building2 className="h-4 w-4 text-neutral-500" />
+                      <span className="font-semibold text-neutral-900">
+                        {group.companyName}
+                      </span>
+                      <Badge variant="secondary">
+                        {group.sessions.length}건
+                      </Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-3 pb-4">
+                    {group.sessions.map((session) => (
+                      <article
+                        key={session.id}
+                        className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm"
+                      >
+                        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge variant="secondary">
+                                {session.session_no}회차
+                              </Badge>
+                              <span className="text-sm font-medium text-neutral-900">
+                                {session.mentored_at
+                                  .slice(0, 16)
+                                  .replace("T", " ")}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-3 text-sm text-neutral-500">
+                              <span className="flex items-center gap-1">
+                                <UserRound className="h-3.5 w-3.5" />
+                                {session.mentor_name || "작성자 없음"}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-3.5 w-3.5" />
+                                {session.place || "장소 미입력"}
+                              </span>
+                            </div>
+                            {session.content && (
+                              <p className="mt-2 line-clamp-2 text-sm leading-6 text-neutral-600">
+                                {session.content}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <LoadingButton
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5"
+                              loading={downloadingSessionId === session.id}
+                              onClick={() => handleSessionPdfDownload(session)}
+                            >
+                              <FileText className="h-4 w-4" />
+                              보고서
+                            </LoadingButton>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5"
+                              onClick={() =>
+                                router.push(
+                                  `/mentoring/${mentoring.id}?companyId=${session.company_id}`
+                                )
+                              }
+                            >
+                              <Pencil className="h-4 w-4" />
+                              수정
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                  disabled={adminDeleteMutation.isPending}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  삭제
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    멘토링 세션을 삭제하시겠습니까?
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {group.companyName} · {session.session_no}
+                                    회차 기록과 첨부된 사진이 모두 삭제됩니다.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>취소</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() =>
+                                      adminDeleteMutation.mutate(session.id)
+                                    }
+                                    className="bg-red-500 hover:bg-red-600"
+                                  >
+                                    삭제
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

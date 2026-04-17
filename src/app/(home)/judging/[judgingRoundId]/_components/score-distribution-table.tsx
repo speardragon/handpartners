@@ -27,11 +27,16 @@ export default function ScoreDistributionTable({
       <h2 className="mb-3 text-sm font-semibold text-gray-700">
         {isAdminView ? "전체 점수 분포 현황" : "내 점수 분포 현황"}
       </h2>
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-5 gap-1.5">
         {SCORE_RANGES.map((key) => (
-          <div key={key} className="rounded-md bg-gray-50 p-3 text-center">
-            <p className="text-muted-foreground text-xs">{key}</p>
-            <p className="mt-1 text-lg font-bold text-gray-900">
+          <div
+            key={key}
+            className="rounded-md bg-gray-50 px-2 py-3 text-center"
+          >
+            <p className="text-muted-foreground text-[11px] leading-tight whitespace-nowrap">
+              {key}
+            </p>
+            <p className="mt-1.5 text-lg font-bold text-gray-900">
               {scoreDistribution[key]}
             </p>
           </div>

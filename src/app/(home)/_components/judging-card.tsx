@@ -16,9 +16,9 @@ export function JudgingCard({ judging, onClick }: JudgingCardProps) {
   return (
     <div
       onClick={() => onClick(judging)}
-      className="group relative cursor-pointer overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+      className="group relative cursor-pointer overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div className="border-b border-neutral-200 bg-[linear-gradient(180deg,#fafafa_0%,#f3f4f6_100%)] px-5 py-4">
+      <div className="border-b border-neutral-200 bg-neutral-50 px-5 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-[11px] font-medium tracking-[0.2em] text-neutral-400 uppercase">
@@ -40,7 +40,7 @@ export function JudgingCard({ judging, onClick }: JudgingCardProps) {
           {judging.program.description?.trim() || "프로그램 설명이 없습니다."}
         </p>
 
-        <div className="mt-4 grid gap-2 rounded-xl bg-neutral-50 p-3 text-sm text-neutral-600 sm:grid-cols-2">
+        <div className="mt-4 grid gap-2 rounded-lg bg-neutral-50 p-3 text-sm text-neutral-600 sm:grid-cols-2">
           <span className="flex items-center gap-2">
             <Building2 className="h-4 w-4 text-neutral-400" />
             참여 기업 {judging.companies.length}개

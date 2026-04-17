@@ -72,18 +72,9 @@ function splitLines(value: string | null | undefined) {
     .filter(Boolean);
 }
 
-function buildBulletLines(content: string | null) {
-  const contentLines = splitLines(content);
-
-  return [
-    {
-      title: "멘토링 내용",
-      items:
-        contentLines.length > 0
-          ? contentLines
-          : ["기록된 멘토링 내용이 없습니다."],
-    },
-  ];
+function buildContentLines(content: string | null): string[] {
+  const lines = splitLines(content);
+  return lines.length > 0 ? lines : ["기록된 멘토링 내용이 없습니다."];
 }
 
 function chunkPhotos<T>(items: T[], size: number) {
@@ -112,7 +103,7 @@ export default function MentoringSessionDocument({
   content,
   photos,
 }: Props) {
-  const bulletSections = buildBulletLines(content);
+  const contentLines = buildContentLines(content);
   const mentorOrgTitle =
     [mentorAffiliation, mentorPosition].filter(Boolean).join(" / ") || "-";
   const itemName = companyDescription?.trim() || companyName;
@@ -227,22 +218,14 @@ export default function MentoringSessionDocument({
 
           <View style={styles.row}>
             <View style={[styles.fullWidthCell, styles.contentCell]}>
-              {bulletSections.map((section) => (
-                <View key={section.title} style={styles.contentSection}>
-                  <Text style={styles.contentSectionTitle}>
-                    {section.title}
+              <View style={styles.contentSection}>
+                <Text style={styles.contentSectionTitle}>멘토링 내용</Text>
+                {contentLines.map((line, index) => (
+                  <Text key={index} style={styles.contentLineText}>
+                    {line}
                   </Text>
-                  {section.items.map((item, index) => (
-                    <View
-                      key={`${section.title}-${index}`}
-                      style={styles.bulletRow}
-                    >
-                      <Text style={styles.bulletMark}>•</Text>
-                      <Text style={styles.bulletText}>{item}</Text>
-                    </View>
-                  ))}
-                </View>
-              ))}
+                ))}
+              </View>
             </View>
           </View>
 
@@ -486,22 +469,11 @@ const styles = StyleSheet.create({
     color: "#111827",
     marginBottom: 8,
   },
-  bulletRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 6,
-    marginBottom: 6,
-  },
-  bulletMark: {
-    width: 10,
-    fontSize: 11,
-    color: "#111827",
-  },
-  bulletText: {
-    flex: 1,
+  contentLineText: {
     fontSize: 10.5,
     lineHeight: 1.6,
     color: "#1f2937",
+    marginBottom: 4,
   },
   submitCell: {
     borderBottomWidth: 0,

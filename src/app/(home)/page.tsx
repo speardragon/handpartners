@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Delay } from "@suspensive/react";
 import { judgingQueries } from "@/queries";
 import { useAuthStore } from "@/store/useAuthStore";
 import { USER_ROLES } from "@/constants/auth";
@@ -43,6 +44,9 @@ export default function Home() {
   const [searchKeyword, setSearchKeyword] = useState<string | undefined>(
     undefined
   );
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(
+    undefined
+  );
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -70,8 +74,14 @@ export default function Home() {
     }, 500);
   }, []);
 
-  const { data, isLoading } = useQuery({
-    ...judgingQueries.list(page, PAGE_SIZE, isAdmin ?? false, searchKeyword),
+  const { data, isLoading, isFetching } = useQuery({
+    ...judgingQueries.list(
+      page,
+      PAGE_SIZE,
+      isAdmin ?? false,
+      searchKeyword,
+      statusFilter
+    ),
     enabled: isAdmin !== undefined,
     placeholderData: keepPreviousData,
   });
@@ -83,10 +93,18 @@ export default function Home() {
     [router]
   );
 
+  const handleStatusFilter = useCallback((status: string) => {
+    setStatusFilter((prev) => {
+      const next = prev === status ? undefined : status;
+      setPage(1);
+      return next;
+    });
+  }, []);
+
   const stats = useMemo(() => {
     if (!data) return null;
     return {
-      total: data.totalElements,
+      total: data.totalActive + data.totalCompleted + data.totalPending,
       active: data.totalActive,
       completed: data.totalCompleted,
       upcoming: data.totalPending,
@@ -116,51 +134,96 @@ export default function Home() {
 
   return (
     <main className="flex w-full flex-col items-center">
-      <div className="flex w-full max-w-240 flex-col space-y-4 p-4">
+      <div className="flex w-full max-w-240 flex-col gap-4 p-4 pb-10">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-full text-center text-2xl font-bold">
+          <h1 className="text-center text-2xl font-bold text-neutral-900">
             {isAdmin ? "전체 심사 목록" : "나의 심사 목록"}
-          </div>
+          </h1>
           <WorkspaceTabs current="judging" />
         </div>
 
-        {/* 요약 통계 */}
+        {/* 요약 통계 — 클릭으로 필터링 */}
         {stats && (
-          <div className="grid grid-cols-4 gap-3">
-            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
-              <ListChecks size={18} className="text-gray-400" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <button
+              type="button"
+              onClick={() => setStatusFilter(undefined)}
+              className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-left transition-colors ${
+                !statusFilter
+                  ? "border-neutral-900 bg-neutral-900 text-white"
+                  : "border-neutral-200 bg-white hover:bg-neutral-50"
+              }`}
+            >
+              <ListChecks
+                size={18}
+                className={!statusFilter ? "text-neutral-400" : "text-neutral-400"}
+              />
               <div>
-                <p className="text-muted-foreground text-xs">전체</p>
-                <p className="text-lg font-bold text-gray-900">{stats.total}</p>
+                <p className={`text-xs ${!statusFilter ? "text-neutral-400" : "text-neutral-500"}`}>
+                  전체
+                </p>
+                <p className={`text-lg font-bold ${!statusFilter ? "text-white" : "text-neutral-900"}`}>
+                  {stats.total}
+                </p>
               </div>
-            </div>
-            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
-              <Play size={18} className="text-blue-500" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleStatusFilter("IN_PROGRESS")}
+              className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-left transition-colors ${
+                statusFilter === "IN_PROGRESS"
+                  ? "border-sky-600 bg-sky-50"
+                  : "border-neutral-200 bg-white hover:bg-neutral-50"
+              }`}
+            >
+              <Play size={18} className="text-sky-500" />
               <div>
-                <p className="text-muted-foreground text-xs">진행 중</p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className={`text-xs ${statusFilter === "IN_PROGRESS" ? "text-sky-700" : "text-neutral-500"}`}>
+                  진행 중
+                </p>
+                <p className="text-lg font-bold text-neutral-900">
                   {stats.active}
                 </p>
               </div>
-            </div>
-            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
-              <CheckCircle2 size={18} className="text-green-500" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleStatusFilter("COMPLETED")}
+              className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-left transition-colors ${
+                statusFilter === "COMPLETED"
+                  ? "border-emerald-600 bg-emerald-50"
+                  : "border-neutral-200 bg-white hover:bg-neutral-50"
+              }`}
+            >
+              <CheckCircle2 size={18} className="text-emerald-500" />
               <div>
-                <p className="text-muted-foreground text-xs">종료</p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className={`text-xs ${statusFilter === "COMPLETED" ? "text-emerald-700" : "text-neutral-500"}`}>
+                  종료
+                </p>
+                <p className="text-lg font-bold text-neutral-900">
                   {stats.completed}
                 </p>
               </div>
-            </div>
-            <div className="flex items-center gap-2 rounded-lg border bg-white p-3">
-              <Clock size={18} className="text-gray-500" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleStatusFilter("PENDING")}
+              className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-left transition-colors ${
+                statusFilter === "PENDING"
+                  ? "border-neutral-600 bg-neutral-100"
+                  : "border-neutral-200 bg-white hover:bg-neutral-50"
+              }`}
+            >
+              <Clock size={18} className="text-neutral-500" />
               <div>
-                <p className="text-muted-foreground text-xs">진행 전</p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className={`text-xs ${statusFilter === "PENDING" ? "text-neutral-700" : "text-neutral-500"}`}>
+                  진행 전
+                </p>
+                <p className="text-lg font-bold text-neutral-900">
                   {stats.upcoming}
                 </p>
               </div>
-            </div>
+            </button>
           </div>
         )}
 
@@ -184,7 +247,7 @@ export default function Home() {
         {data.result.length === 0 && searchKeyword && (
           <WorkspaceEmptyState
             icon={Search}
-            eyebrow="No Matches"
+            eyebrow="검색 결과 없음"
             title="검색 결과가 없습니다"
             description={`"${searchKeyword}"와 일치하는 심사나 프로그램을 찾지 못했습니다. 번호를 다시 확인하거나 프로그램명으로 검색해 보세요.`}
             actionLabel="검색 초기화"
@@ -198,21 +261,28 @@ export default function Home() {
 
         {/* 카드 그리드 */}
         {data.result.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {data.result.map((judging) => (
-              <JudgingCard
-                key={judging.id}
-                judging={judging}
-                onClick={handleRowClick}
-              />
-            ))}
+          <div className="relative">
+            {isFetching && !isLoading && (
+              <Delay ms={200}>
+                <div className="absolute inset-0 z-10 rounded-xl bg-white/60" />
+              </Delay>
+            )}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {data.result.map((judging) => (
+                <JudgingCard
+                  key={judging.id}
+                  judging={judging}
+                  onClick={handleRowClick}
+                />
+              ))}
+            </div>
           </div>
         )}
 
         {data.result.length === 0 && !searchKeyword && (
           <WorkspaceEmptyState
             icon={CalendarX2}
-            eyebrow={isAdmin ? "Judging Workspace" : "My Judging"}
+            eyebrow={isAdmin ? "심사 워크스페이스" : "내 심사"}
             title={
               isAdmin
                 ? "아직 등록된 심사가 없습니다"

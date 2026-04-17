@@ -9,6 +9,7 @@ import { executeAction, getErrorMessage } from "@/lib/action";
 import {
   claimMentoringCompany,
   createMentoringSessionPhotoUploadUrl,
+  deleteMentoringSession,
   upsertMentoringSession,
   type MentoringSession,
 } from "@/actions/mentoring-action";
@@ -40,8 +41,20 @@ import {
   Pencil,
   Plus,
   Sparkles,
+  Trash2,
   UserRound,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 function toLocalInputValue(dateString?: string | null) {
   const date = dateString ? new Date(dateString) : new Date();
@@ -342,6 +355,23 @@ export default function MentoringDetailPage() {
     onError: (mutationError: unknown) => {
       toast.error(
         getErrorMessage(mutationError, "멘토링 기록을 저장하지 못했습니다.")
+      );
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (sessionId: number) =>
+      executeAction(deleteMentoringSession({ sessionId, mentoringId })),
+    onSuccess: () => {
+      toast.success("멘토링 기록을 삭제했습니다.");
+      setEditingSessionId(null);
+      setIsComposerOpen(false);
+      clearEditorPhotos();
+      queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
+    },
+    onError: (mutationError: unknown) => {
+      toast.error(
+        getErrorMessage(mutationError, "멘토링 기록 삭제에 실패했습니다.")
       );
     },
   });
@@ -653,7 +683,7 @@ export default function MentoringDetailPage() {
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
                       <p className="text-xs font-medium tracking-[0.18em] text-neutral-400 uppercase">
-                        Company Workspace
+                        기업 워크스페이스
                       </p>
                       <h2 className="mt-2 text-2xl font-semibold text-neutral-950">
                         {selectedCompany.company_name}
@@ -790,18 +820,65 @@ export default function MentoringDetailPage() {
                                           보고서 저장(.pdf)
                                         </LoadingButton>
                                         {session.can_edit && (
-                                          <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            className="gap-1.5"
-                                            onClick={() =>
-                                              handleEditSession(session)
-                                            }
-                                          >
-                                            <Pencil className="h-4 w-4" />이
-                                            세션 수정
-                                          </Button>
+                                          <>
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="sm"
+                                              className="gap-1.5"
+                                              onClick={() =>
+                                                handleEditSession(session)
+                                              }
+                                            >
+                                              <Pencil className="h-4 w-4" />이
+                                              세션 수정
+                                            </Button>
+                                            <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                <Button
+                                                  type="button"
+                                                  variant="outline"
+                                                  size="sm"
+                                                  className="gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                  disabled={
+                                                    deleteMutation.isPending
+                                                  }
+                                                >
+                                                  <Trash2 className="h-4 w-4" />
+                                                  삭제
+                                                </Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                  <AlertDialogTitle>
+                                                    멘토링 세션을
+                                                    삭제하시겠습니까?
+                                                  </AlertDialogTitle>
+                                                  <AlertDialogDescription>
+                                                    {session.session_no}회차
+                                                    기록과 첨부된 사진이 모두
+                                                    삭제됩니다. 이 작업은 되돌릴
+                                                    수 없습니다.
+                                                  </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                  <AlertDialogCancel>
+                                                    취소
+                                                  </AlertDialogCancel>
+                                                  <AlertDialogAction
+                                                    onClick={() =>
+                                                      deleteMutation.mutate(
+                                                        session.id
+                                                      )
+                                                    }
+                                                    className="bg-red-500 hover:bg-red-600"
+                                                  >
+                                                    삭제
+                                                  </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                            </AlertDialog>
+                                          </>
                                         )}
                                       </div>
                                     </div>

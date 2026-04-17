@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -37,13 +36,17 @@ import MentoringUserSelect, {
 import {
   Building2,
   ClipboardList,
-  Clock3,
   Users,
   ArrowRightLeft,
-  History,
   ImagePlus,
   Trash2,
 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 type Props = {
   programId: number;
@@ -490,132 +493,85 @@ export default function MentoringEditForm({
             저장된 멘토링 대상 기업이 없습니다.
           </div>
         ) : (
-          <div className="space-y-3">
+          <Accordion type="multiple" className="space-y-2">
             {data.companies.map((company) => (
-              <div
+              <AccordionItem
                 key={company.company_id}
-                className="grid gap-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"
+                value={String(company.company_id)}
+                className="rounded-2xl border border-neutral-200 bg-neutral-50/50 px-4"
               >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-base font-semibold text-neutral-950">
-                      {company.company_name}
-                    </p>
-                    <Badge variant="secondary" className="shrink-0">
-                      {company.session_count}회 기록
-                    </Badge>
-                  </div>
-                  <p className="mt-1 text-sm text-neutral-600">
-                    대표자 {company.representative_name || "-"}
-                  </p>
-                  <p className="mt-2 text-xs text-neutral-500">
-                    {company.last_mentored_at
-                      ? `최근 멘토링 ${company.last_mentored_at.slice(0, 16).replace("T", " ")}`
-                      : "아직 멘토링 기록이 없습니다."}
-                  </p>
-                </div>
-
-                <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
-                  <div>
-                    <p className="text-xs font-medium tracking-[0.18em] text-neutral-500 uppercase">
-                      현재 담당 멘토
-                    </p>
-                    {company.mentor_name ? (
-                      <div className="mt-2">
-                        <p className="text-sm font-semibold text-neutral-950">
-                          {company.mentor_name}
-                        </p>
-                        <p className="mt-1 text-sm text-neutral-600">
-                          {company.mentor_affiliation || "소속 정보 없음"}
-                        </p>
+                <AccordionTrigger className="py-3 hover:no-underline">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="min-w-0 flex-1 text-left">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold text-neutral-950">
+                          {company.company_name}
+                        </span>
+                        <Badge variant="secondary" className="shrink-0 text-xs">
+                          {company.session_count}회
+                        </Badge>
                       </div>
-                    ) : (
-                      <p className="mt-2 text-sm text-neutral-500">미배정</p>
-                    )}
+                    </div>
+                    <span className="shrink-0 text-xs text-neutral-500">
+                      {company.mentor_name ? (
+                        <span className="font-medium text-neutral-700">{company.mentor_name}</span>
+                      ) : (
+                        <span className="text-neutral-400">미배정</span>
+                      )}
+                    </span>
                   </div>
-
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium tracking-[0.18em] text-neutral-500 uppercase">
-                      배정 변경
-                    </p>
-                    <Select
-                      value={company.mentor_id ?? "__unassigned"}
-                      onValueChange={(value) =>
-                        assignmentMutation.mutate({
-                          companyId: company.company_id,
-                          mentorId: value === "__unassigned" ? null : value,
-                        })
-                      }
-                      disabled={
-                        assignmentMutation.isPending ||
-                        data.mentors.length === 0
-                      }
-                    >
-                      <SelectTrigger className="bg-white">
-                        <SelectValue placeholder="멘토 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__unassigned">미배정</SelectItem>
-                        {data.mentors.map((mentor) => (
-                          <SelectItem key={mentor.id} value={mentor.id}>
-                            {mentor.name}
-                            {mentor.affiliation
-                              ? ` · ${mentor.affiliation}`
-                              : ""}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl border border-neutral-200 bg-white p-3 text-sm">
+                      <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">기업 정보</p>
+                      <p className="mt-1 font-medium text-neutral-900">{company.company_name}</p>
+                      <p className="text-neutral-600">대표자 {company.representative_name || "-"}</p>
+                      <p className="mt-1 text-xs text-neutral-500">
+                        {company.last_mentored_at
+                          ? `최근 ${company.last_mentored_at.slice(0, 16).replace("T", " ")}`
+                          : "기록 없음"}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-neutral-200 bg-white p-3">
+                      <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">담당 멘토 변경</p>
+                      {company.mentor_name && (
+                        <p className="mt-1 text-sm font-medium text-neutral-900">{company.mentor_name}</p>
+                      )}
+                      <div className="mt-2">
+                        <Select
+                          value={company.mentor_id ?? "__unassigned"}
+                          onValueChange={(value) =>
+                            assignmentMutation.mutate({
+                              companyId: company.company_id,
+                              mentorId: value === "__unassigned" ? null : value,
+                            })
+                          }
+                          disabled={
+                            assignmentMutation.isPending ||
+                            data.mentors.length === 0
+                          }
+                        >
+                          <SelectTrigger className="bg-white text-sm">
+                            <SelectValue placeholder="멘토 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__unassigned">미배정</SelectItem>
+                            {data.mentors.map((mentor) => (
+                              <SelectItem key={mentor.id} value={mentor.id}>
+                                {mentor.name}
+                                {mentor.affiliation ? ` · ${mentor.affiliation}` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-5 rounded-3xl border border-neutral-200 bg-white p-5">
-        <SectionHeader
-          icon={History}
-          title="최근 멘토링 기록"
-          description="관리자는 기록을 읽기 전용으로 확인합니다. 자세한 내용은 실제 멘토링 페이지에서 열람합니다."
-        />
-        {data.recent_sessions.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-neutral-200 px-6 py-10 text-center text-sm text-neutral-400">
-            아직 등록된 멘토링 기록이 없습니다.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {data.recent_sessions.map((session) => (
-              <Link
-                key={session.id}
-                href={`/mentoring/${mentoringId}?companyId=${session.company_id}`}
-                className="grid gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 transition-colors hover:border-neutral-300 hover:bg-neutral-100 lg:grid-cols-[minmax(0,1fr)_160px_180px]"
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-neutral-950">
-                      {session.company_name}
-                    </p>
-                    <Badge variant="secondary">{session.session_no}회차</Badge>
-                  </div>
-                  <p className="mt-1 text-sm text-neutral-600">
-                    {session.content?.trim() || "멘토링 내용이 없습니다."}
-                  </p>
-                </div>
-                <div className="text-sm text-neutral-600">
-                  <p className="font-medium text-neutral-900">
-                    {session.mentor_name || "담당자 없음"}
-                  </p>
-                  <p className="mt-1">{session.place || "장소 미입력"}</p>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-neutral-500">
-                  <Clock3 className="h-4 w-4" />
-                  {session.mentored_at.slice(0, 16).replace("T", " ")}
-                </div>
-              </Link>
-            ))}
-          </div>
+          </Accordion>
         )}
       </div>
 
