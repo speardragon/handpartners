@@ -13,15 +13,15 @@ export default function Header() {
   const isAdmin = user?.role === USER_ROLES.ADMIN;
 
   return (
-    <header className="z-50 flex h-16 w-full items-center border-b border-gray-200 bg-white/95 backdrop-blur">
-      <div className="flex w-full items-center justify-between p-2 px-6 font-medium text-gray-900">
+    <header className="z-50 flex h-16 w-full shrink-0 items-center border-b border-neutral-200 bg-white/95 backdrop-blur-sm">
+      <div className="flex w-full items-center justify-between px-6 font-medium text-gray-900">
         <Link href="/">
           <Image
-            className="h-full w-auto"
-            alt="logo"
+            className="h-auto w-auto max-h-8"
+            alt="Hand Partners 로고"
             src={handpartnersLogo}
-            width={180}
-            height={180}
+            width={160}
+            height={40}
             priority
           />
         </Link>

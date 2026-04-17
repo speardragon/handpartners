@@ -55,8 +55,8 @@ const Page = () => {
       >
         {!isFull && (
           <div className="flex shrink-0 items-center gap-2 border-b bg-white px-6 py-3">
-            <FileText size={14} className="text-muted-foreground" />
-            <span className="text-muted-foreground text-sm font-medium">
+            <FileText size={13} className="text-neutral-400" />
+            <span className="text-xs font-medium tracking-wide text-neutral-400 uppercase">
               제출 서류
             </span>
           </div>
@@ -76,13 +76,13 @@ const Page = () => {
         }`}
       >
         <div className="shrink-0 border-b bg-white px-6 py-4">
-          <div className="text-muted-foreground mb-1 flex items-center gap-2 text-sm">
-            <ClipboardList size={14} />
-            <span>심사 ID {judgeRound.id}</span>
+          <div className="mb-1 flex items-center gap-2 text-xs text-neutral-400">
+            <ClipboardList size={13} />
+            <span className="font-medium tracking-wide uppercase">심사 라운드</span>
           </div>
-          <h1 className="text-lg font-bold text-gray-900">{judgeRound.name}</h1>
+          <h1 className="text-lg font-bold text-neutral-900">{judgeRound.name}</h1>
           {judgeRound.description && (
-            <p className="text-muted-foreground mt-1 text-sm">
+            <p className="mt-1 text-sm text-neutral-500">
               {judgeRound.description}
             </p>
           )}

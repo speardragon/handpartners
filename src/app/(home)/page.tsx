@@ -134,17 +134,17 @@ export default function Home() {
 
   return (
     <main className="flex w-full flex-col items-center">
-      <div className="flex w-full max-w-240 flex-col space-y-4 p-4">
+      <div className="flex w-full max-w-240 flex-col gap-4 p-4 pb-10">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-full text-center text-2xl font-bold">
+          <h1 className="text-center text-2xl font-bold text-neutral-900">
             {isAdmin ? "전체 심사 목록" : "나의 심사 목록"}
-          </div>
+          </h1>
           <WorkspaceTabs current="judging" />
         </div>
 
         {/* 요약 통계 — 클릭으로 필터링 */}
         {stats && (
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <button
               type="button"
               onClick={() => setStatusFilter(undefined)}
@@ -156,17 +156,13 @@ export default function Home() {
             >
               <ListChecks
                 size={18}
-                className={!statusFilter ? "text-neutral-400" : "text-gray-400"}
+                className={!statusFilter ? "text-neutral-400" : "text-neutral-400"}
               />
               <div>
-                <p
-                  className={`text-xs ${!statusFilter ? "text-neutral-400" : "text-muted-foreground"}`}
-                >
+                <p className={`text-xs ${!statusFilter ? "text-neutral-400" : "text-neutral-500"}`}>
                   전체
                 </p>
-                <p
-                  className={`text-lg font-bold ${!statusFilter ? "text-white" : "text-gray-900"}`}
-                >
+                <p className={`text-lg font-bold ${!statusFilter ? "text-white" : "text-neutral-900"}`}>
                   {stats.total}
                 </p>
               </div>
@@ -182,12 +178,10 @@ export default function Home() {
             >
               <Play size={18} className="text-sky-500" />
               <div>
-                <p
-                  className={`text-xs ${statusFilter === "IN_PROGRESS" ? "text-sky-700" : "text-muted-foreground"}`}
-                >
+                <p className={`text-xs ${statusFilter === "IN_PROGRESS" ? "text-sky-700" : "text-neutral-500"}`}>
                   진행 중
                 </p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-lg font-bold text-neutral-900">
                   {stats.active}
                 </p>
               </div>
@@ -203,12 +197,10 @@ export default function Home() {
             >
               <CheckCircle2 size={18} className="text-emerald-500" />
               <div>
-                <p
-                  className={`text-xs ${statusFilter === "COMPLETED" ? "text-emerald-700" : "text-muted-foreground"}`}
-                >
+                <p className={`text-xs ${statusFilter === "COMPLETED" ? "text-emerald-700" : "text-neutral-500"}`}>
                   종료
                 </p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-lg font-bold text-neutral-900">
                   {stats.completed}
                 </p>
               </div>
@@ -222,14 +214,12 @@ export default function Home() {
                   : "border-neutral-200 bg-white hover:bg-neutral-50"
               }`}
             >
-              <Clock size={18} className="text-gray-500" />
+              <Clock size={18} className="text-neutral-500" />
               <div>
-                <p
-                  className={`text-xs ${statusFilter === "PENDING" ? "text-neutral-700" : "text-muted-foreground"}`}
-                >
+                <p className={`text-xs ${statusFilter === "PENDING" ? "text-neutral-700" : "text-neutral-500"}`}>
                   진행 전
                 </p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-lg font-bold text-neutral-900">
                   {stats.upcoming}
                 </p>
               </div>

@@ -180,27 +180,27 @@ export default function EvaluateTable({
   return (
     <div className="w-full space-y-4">
       <section className="rounded-lg border bg-white px-4 py-3">
-        <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+        <p className="text-xs font-semibold tracking-widest text-neutral-400 uppercase">
           평가 대상 기업
         </p>
-        <h2 className="mt-1 text-lg font-semibold text-gray-900">
+        <h2 className="mt-1 text-lg font-semibold text-neutral-900">
           {company?.name ?? `기업 ${companyId}`}
         </h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-neutral-500">
           {company?.description?.trim() || "기업 소개가 없습니다."}
         </p>
       </section>
 
       {!isParticipant && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          <Info size={16} className="shrink-0" />
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <Info size={15} className="shrink-0" />
           <span>참여 중인 심사가 아니므로 점수를 제출할 수 없습니다.</span>
         </div>
       )}
 
       {isParticipant && !isJudgingActive && (
-        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-          <Ban size={16} className="shrink-0" />
+        <div className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
+          <Ban size={15} className="shrink-0" />
           <span>
             {judgeRound?.status === "PENDING"
               ? "아직 심사가 시작되지 않았습니다. 심사가 시작되면 평가할 수 있습니다."
@@ -212,7 +212,7 @@ export default function EvaluateTable({
       <div className="overflow-hidden rounded-lg border bg-white">
         <table className="w-full">
           <thead>
-            <tr className="bg-gray-900 text-sm text-white">
+            <tr className="bg-neutral-900 text-sm text-white">
               <th className="px-4 py-3 text-left font-medium">평가 항목</th>
               <th className="px-4 py-3 text-left font-medium">세부 내용</th>
               <th className="w-24 px-4 py-3 text-center font-medium">배점</th>
@@ -220,16 +220,16 @@ export default function EvaluateTable({
           </thead>
           <tbody className="divide-y">
             {evaluations.map((item) => (
-              <tr key={item.id} className="transition-colors hover:bg-gray-50">
+              <tr key={item.id} className="transition-colors hover:bg-neutral-50">
                 <td className="px-4 py-3">
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-sm font-medium text-neutral-900">
                     {item.item_name}
                   </div>
-                  <div className="text-muted-foreground mt-0.5 text-xs">
+                  <div className="mt-0.5 text-xs text-neutral-400">
                     최대 {item.points}점
                   </div>
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600">
+                <td className="px-4 py-3 text-sm text-neutral-600">
                   {item.description}
                 </td>
                 <td className="px-4 py-3 text-center">
@@ -238,23 +238,23 @@ export default function EvaluateTable({
                     max={item.points}
                     onChange={(e) => handleInputChange(item.id, e.target.value)}
                     disabled={!canEdit}
-                    className="w-16 rounded-md border px-2 py-1.5 text-center text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                    className="w-16 rounded-md border px-2 py-1.5 text-center text-sm font-medium focus:border-neutral-500 focus:ring-2 focus:ring-neutral-300 focus:outline-none disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400"
                   />
                 </td>
               </tr>
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t-2 bg-gray-50">
-              <td className="px-4 py-3 text-sm font-bold text-gray-900">
+            <tr className="border-t-2 bg-neutral-50">
+              <td className="px-4 py-3 text-sm font-bold text-neutral-900">
                 총점
               </td>
               <td className="px-4 py-3" />
               <td className="px-4 py-3 text-center">
-                <span className="text-lg font-bold text-blue-600">
+                <span className="text-lg font-bold text-neutral-900">
                   {totalScore}
                 </span>
-                <span className="text-muted-foreground ml-1 text-sm">
+                <span className="ml-1 text-sm text-neutral-400">
                   / {maxScore}
                 </span>
               </td>

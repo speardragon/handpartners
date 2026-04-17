@@ -4,7 +4,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -49,41 +48,44 @@ export default function Login() {
   }
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-gray-50 py-16">
+    <div className="flex min-h-screen w-full items-center justify-center bg-gray-50 px-4 py-16">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex w-150 flex-col items-center border bg-white shadow-lg"
+          className="flex w-full max-w-md flex-col items-center rounded-xl border bg-white shadow-md"
         >
-          <div className="flex flex-col items-center justify-center space-y-2 p-4 px-8">
-            <Image className="w-64" src={HandPartnersLogo} alt="logo" />
-            <div className="flex w-full flex-col items-center justify-center gap-4 p-4">
-              <div className="mb-4 text-xl font-bold">비밀유지 서약</div>
-              <div className="text-center">
+          <div className="flex w-full flex-col items-center justify-center gap-5 p-8">
+            <Image
+              className="w-56"
+              src={HandPartnersLogo}
+              alt="Hand Partners 로고"
+            />
+            <div className="flex w-full flex-col items-center gap-3">
+              <h1 className="text-xl font-bold text-gray-900">비밀유지 서약</h1>
+              <p className="text-center text-sm leading-6 text-gray-600">
                 본 심사위원은 (주) 핸드파트너스가 주관하는 프로그램에 출품된
                 아이디어가 출품자의 지식재산임을 인정합니다. 심사과정에서 열람한
                 내용을 출품자의 서면 허락없이 사용하거나 외부에 발설하는 등
                 출품자의 지식재산권을 침해 할 만한 행위를 하지 않겠으며, 이로
                 인한 법적 문제 발생 시 민·형사상 책임을 지도록 하겠습니다.
-                <br />
-              </div>
+              </p>
             </div>
             <FormField
               control={form.control}
               name="isAgree"
               render={({ field }) => (
-                <FormItem className="flex w-full flex-row items-start space-y-0 space-x-3 rounded-md border p-4">
+                <FormItem className="flex w-full flex-row items-center space-y-0 space-x-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>위 비밀유지 서약에 동의합니다.</FormLabel>
-                    <FormDescription>
-                      You can manage your mobile notifications in the
-                    </FormDescription>
+                  <div className="space-y-0.5 leading-none">
+                    <FormLabel className="text-sm font-medium text-gray-800">
+                      위 비밀유지 서약에 동의합니다.
+                    </FormLabel>
+                    <FormMessage />
                   </div>
                 </FormItem>
               )}
@@ -97,7 +99,6 @@ export default function Login() {
                     <FormControl>
                       <Input placeholder="이메일 주소" {...field} />
                     </FormControl>
-
                     <FormMessage />
                   </FormItem>
                 )}
@@ -114,14 +115,13 @@ export default function Login() {
                         {...field}
                       />
                     </FormControl>
-
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
             <LoadingButton
-              className="mt-4 w-full"
+              className="mt-2 w-full"
               type="submit"
               loading={isPending}
             >
