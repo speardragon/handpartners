@@ -203,11 +203,19 @@ export default function Page({ params }: Props) {
     }
   };
 
+  // 폴더/파일명에 쓸 수 없는 문자를 치환한다(특히 '/' 는 의도치 않은 폴더를 만든다).
+  const sanitizeForPath = (value: string) =>
+    value.replace(/[\\/:*?"<>|]/g, "_").trim() || "미상";
+
   const buildSessionFileName = (
     companyName: string,
+    mentorName: string | null,
     sessionNo: number,
     date: string
-  ) => `${companyName}_멘토링일지_${sessionNo}회차_${date.slice(0, 10)}.pdf`;
+  ) =>
+    `${sanitizeForPath(companyName)}_${sanitizeForPath(
+      mentorName ?? "멘토미상"
+    )}_멘토링일지_${sessionNo}회차_${date.slice(0, 10)}.pdf`;
 
   const createSessionReportBlob = async (sessionId: number) => {
     if (!mentoringDetail) {
@@ -261,8 +269,10 @@ export default function Page({ params }: Props) {
 
     return {
       blob,
+      companyName: session.company_name,
       fileName: buildSessionFileName(
         session.company_name,
+        session.mentor_name,
         session.session_no,
         session.mentored_at
       ),
@@ -312,9 +322,11 @@ export default function Page({ params }: Props) {
       // 병렬 처리한다. 무제한 병렬은 메모리/서버 부하가 커서 동시 실행을 5개로 제한하고,
       // 한 건이 실패해도 나머지는 zip 에 담는다.
       const CONCURRENCY = 5;
-      const reports = new Array<{ fileName: string; blob: Blob } | null>(
-        sessions.length
-      );
+      const reports = new Array<{
+        fileName: string;
+        blob: Blob;
+        companyName: string;
+      } | null>(sessions.length);
       let cursor = 0;
       let failedCount = 0;
 
@@ -335,9 +347,13 @@ export default function Page({ params }: Props) {
         Array.from({ length: Math.min(CONCURRENCY, sessions.length) }, worker)
       );
 
+      // 기업별 폴더 안에 해당 기업의 세션 보고서를 저장한다.
       reports.forEach((report) => {
         if (report) {
-          zip.file(report.fileName, report.blob);
+          zip.file(
+            `${sanitizeForPath(report.companyName)}/${report.fileName}`,
+            report.blob
+          );
         }
       });
 
