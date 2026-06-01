@@ -28,6 +28,12 @@ Font.register({
   ],
 });
 
+// 소속명처럼 공백 없는 긴 한글 텍스트가 셀을 넘지 않도록 글자 단위 줄바꿈을 허용한다.
+// (영어 등 공백 있는 텍스트는 기존 단어 단위 줄바꿈을 유지)
+Font.registerHyphenationCallback((word) =>
+  word.length > 1 && /[가-힣]/.test(word) ? Array.from(word) : [word]
+);
+
 type Props = {
   programName: string;
   companyName: string;
@@ -310,10 +316,16 @@ export default function MentoringSessionDocument({
                       ...(isLastPhotoRow ? [styles.lastRowCell] : []),
                     ]}
                   >
-                    <PImage
-                      src={photo.download_url ?? photo.photo_path}
-                      style={photoImageStyle}
-                    />
+                    {photo.download_url ? (
+                      <PImage
+                        src={photo.download_url}
+                        style={photoImageStyle}
+                      />
+                    ) : (
+                      <Text style={styles.photoMissingText}>
+                        이미지를 불러올 수 없습니다.
+                      </Text>
+                    )}
                   </View>
                 </View>
               );
@@ -417,10 +429,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   col1: {
-    width: "18%",
+    width: "23%",
   },
   col2: {
-    width: "32%",
+    width: "27%",
   },
   col3: {
     width: "20%",
@@ -531,6 +543,12 @@ const styles = StyleSheet.create({
   },
   photoImageWithLogo: {
     height: 280,
+  },
+  photoMissingText: {
+    fontSize: 10,
+    color: "#9ca3af",
+    textAlign: "center",
+    paddingVertical: 24,
   },
   pageNumber: {
     position: "absolute",

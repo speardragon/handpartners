@@ -8,6 +8,7 @@ import { executeAction, getErrorMessage } from "@/lib/action";
 import { mentoringQueries } from "@/queries";
 import {
   deleteMentoringSessionByAdmin,
+  getMentoringSessionReportAssets,
   type MentoringSession,
   type MentoringStatus,
   updateMentoringStatus,
@@ -220,43 +221,48 @@ export default function Page({ params }: Props) {
       throw new Error("멘토링 세션을 찾을 수 없습니다.");
     }
 
-    const company = mentoringDetail.assignments.find(
-      (item) => item.company_id === session.company_id
+    // 다운로드 직전에 이미지 presigned URL을 다시 발급해 만료로 인한 누락을 방지한다.
+    const [{ pdf }, assets] = await Promise.all([
+      import("@react-pdf/renderer"),
+      executeAction(
+        getMentoringSessionReportAssets({
+          mentoringId: mentoring.id,
+          sessionId: session.id,
+        })
+      ),
+    ]);
+
+    const freshPhotoUrlById = new Map(
+      assets.photos.map((photo) => [photo.id, photo.download_url])
     );
-
-    const companyName = company?.company_name ?? session.company_name;
-    const companyDescription = company?.company_description ?? null;
-    const representativeName = company?.representative_name ?? null;
-
-    const { pdf } = await import("@react-pdf/renderer");
+    const photos = session.photos.map((photo) => ({
+      ...photo,
+      download_url: freshPhotoUrlById.get(photo.id) ?? photo.download_url,
+    }));
 
     const blob = await pdf(
       <MentoringSessionDocument
         programName={mentoring.program.name}
-        companyName={companyName}
-        companyDescription={companyDescription}
-        representativeName={representativeName}
+        companyName={session.company_name}
+        companyDescription={session.company_description}
+        representativeName={session.representative_name}
         mentorName={session.mentor_name}
-        mentorAffiliation={
-          session.mentor_affiliation ?? company?.mentor_affiliation ?? null
-        }
-        mentorPosition={
-          session.mentor_position ?? company?.mentor_position ?? null
-        }
-        mentorSignatureUrl={session.mentor_signature_url}
-        logoUrl={mentoring.report_logo_url}
+        mentorAffiliation={session.mentor_affiliation}
+        mentorPosition={session.mentor_position}
+        mentorSignatureUrl={assets.mentorSignatureUrl}
+        logoUrl={assets.logoUrl}
         sessionNo={session.session_no}
         mentoredAt={session.mentored_at}
         place={session.place}
         content={session.content}
-        photos={session.photos}
+        photos={photos}
       />
     ).toBlob();
 
     return {
       blob,
       fileName: buildSessionFileName(
-        companyName,
+        session.company_name,
         session.session_no,
         session.mentored_at
       ),
@@ -323,43 +329,12 @@ export default function Page({ params }: Props) {
 
     setDownloadingSessionId(session.id);
     try {
-      const company = mentoringDetail.assignments.find(
-        (a) => a.company_id === session.company_id
-      );
-
-      const [{ pdf }, { saveAs }] = await Promise.all([
-        import("@react-pdf/renderer"),
+      const [{ saveAs }, reportFile] = await Promise.all([
         import("file-saver"),
+        createSessionReportBlob(session.id),
       ]);
 
-      const blob = await pdf(
-        <MentoringSessionDocument
-          programName={mentoring.program.name}
-          companyName={company?.company_name ?? session.company_name}
-          companyDescription={company?.company_description ?? null}
-          representativeName={company?.representative_name ?? null}
-          mentorName={session.mentor_name}
-          mentorAffiliation={
-            session.mentor_affiliation ?? company?.mentor_affiliation ?? null
-          }
-          mentorPosition={
-            session.mentor_position ?? company?.mentor_position ?? null
-          }
-          mentorSignatureUrl={session.mentor_signature_url}
-          logoUrl={mentoring.report_logo_url}
-          sessionNo={session.session_no}
-          mentoredAt={session.mentored_at}
-          place={session.place}
-          content={session.content}
-          photos={session.photos}
-        />
-      ).toBlob();
-
-      const sessionDate = session.mentored_at.slice(0, 10);
-      saveAs(
-        blob,
-        `${company?.company_name ?? session.company_name}_멘토링일지_${session.session_no}회차_${sessionDate}.pdf`
-      );
+      saveAs(reportFile.blob, reportFile.fileName);
     } catch (err) {
       console.error(err);
       toast.error("멘토링 보고서 저장 중 오류가 발생했습니다.");

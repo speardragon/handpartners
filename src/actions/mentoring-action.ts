@@ -2,7 +2,11 @@
 
 import { Database } from "types_db";
 import { USER_ROLES } from "@/constants/auth";
-import { raiseActionError, withActionResult } from "@/lib/action";
+import {
+  type ActionResult,
+  raiseActionError,
+  withActionResult,
+} from "@/lib/action";
 import { createClient } from "@/lib/supabase/server";
 import {
   createPresignedDownloadUrl,
@@ -53,6 +57,8 @@ export interface MentoringSession {
   id: number;
   company_id: number;
   company_name: string;
+  company_description: string | null;
+  representative_name: string | null;
   mentor_id: string;
   mentor_name: string | null;
   mentor_affiliation: string | null;
@@ -66,6 +72,12 @@ export interface MentoringSession {
   updated_at: string;
   photos: MentoringSessionPhoto[];
   can_edit: boolean;
+}
+
+export interface MentoringSessionReportAssets {
+  logoUrl: string | null;
+  mentorSignatureUrl: string | null;
+  photos: { id: number; download_url: string | null }[];
 }
 
 export interface MentoringListItem {
@@ -471,7 +483,9 @@ export async function getMentoringByProgramId(
           updated_at,
           company:company_id (
             id,
-            name
+            name,
+            description,
+            representative_name
           ),
           mentor:mentor_id (
             id,
@@ -616,13 +630,19 @@ export async function getMentoringByProgramId(
             )
           : [];
 
+        const company = takeFirstRelation<{
+          id: number;
+          name: string;
+          description: string | null;
+          representative_name: string | null;
+        }>(session.company as unknown);
+
         return {
           id: session.id,
           company_id: session.company_id,
-          company_name:
-            takeFirstRelation<{ id: number; name: string }>(
-              session.company as unknown
-            )?.name ?? "",
+          company_name: company?.name ?? "",
+          company_description: company?.description ?? null,
+          representative_name: company?.representative_name ?? null,
           mentor_id: session.mentor_id,
           mentor_name: mentor?.username ?? null,
           mentor_affiliation: mentor?.affiliation ?? null,
@@ -874,7 +894,9 @@ export async function getMentoringDetail(
           updated_at,
           company:company_id (
             id,
-            name
+            name,
+            description,
+            representative_name
           ),
           mentor:mentor_id (
             id,
@@ -1015,13 +1037,19 @@ export async function getMentoringDetail(
         600
       );
 
+      const company = takeFirstRelation<{
+        id: number;
+        name: string;
+        description: string | null;
+        representative_name: string | null;
+      }>(session.company as unknown);
+
       return {
         id: session.id,
         company_id: session.company_id,
-        company_name:
-          takeFirstRelation<{ id: number; name: string }>(
-            session.company as unknown
-          )?.name ?? "",
+        company_name: company?.name ?? "",
+        company_description: company?.description ?? null,
+        representative_name: company?.representative_name ?? null,
         mentor_id: session.mentor_id,
         mentor_name: mentor?.username ?? null,
         mentor_affiliation: mentor?.affiliation ?? null,
@@ -1060,6 +1088,81 @@ export async function getMentoringDetail(
     assignments: enrichedAssignments,
     sessions: mentoringSessions,
   };
+}
+
+/**
+ * 보고서(PDF) 다운로드 직전에 호출해 이미지용 presigned URL을 새로 발급한다.
+ *
+ * 멘토링 상세를 조회한 시점에 발급된 presigned URL은 만료 시간(기본 5분)이 지나면
+ * S3가 403을 반환하고, @react-pdf/renderer는 이미지 로드 실패를 조용히 무시해
+ * 사진/서명/로고가 누락된 채로 PDF가 만들어진다. 일괄 다운로드처럼 생성에
+ * 시간이 오래 걸릴 때 특히 잘 발생하므로, 렌더링 직전에 URL을 다시 서명한다.
+ */
+export async function getMentoringSessionReportAssets(args: {
+  mentoringId: string;
+  sessionId: number;
+}): Promise<ActionResult<MentoringSessionReportAssets>> {
+  return withActionResult(async () => {
+    const context = await getViewerContext();
+    if (!context.isAdmin) {
+      await ensureMentoringParticipant(context, args.mentoringId);
+    }
+
+    const [
+      { data: mentoring, error: mentoringError },
+      { data: session, error: sessionError },
+    ] = await Promise.all([
+      context.supabase
+        .from("mentoring")
+        .select("report_logo_path")
+        .eq("id", args.mentoringId)
+        .single(),
+      context.supabase
+        .from("mentoring_session")
+        .select(
+          `
+          id,
+          mentor:mentor_id (
+            signature_url
+          ),
+          photos:mentoring_session_photo (
+            id,
+            photo_path,
+            sort_order
+          )
+        `
+        )
+        .eq("id", args.sessionId)
+        .eq("mentoring_id", args.mentoringId)
+        .single(),
+    ]);
+
+    if (mentoringError) raiseActionError(mentoringError);
+    if (sessionError) raiseActionError(sessionError);
+
+    const mentor = takeFirstRelation<{ signature_url: string | null }>(
+      session.mentor as unknown
+    );
+
+    const rawPhotos = Array.isArray(session.photos)
+      ? (session.photos as { id: number; photo_path: string; sort_order: number }[])
+      : [];
+
+    const [logoUrl, mentorSignatureUrl, photos] = await Promise.all([
+      safePresignedUrl(mentoring.report_logo_path, 900),
+      safePresignedUrl(mentor?.signature_url, 900),
+      Promise.all(
+        rawPhotos
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map(async (photo) => ({
+            id: photo.id,
+            download_url: await safePresignedUrl(photo.photo_path, 900),
+          }))
+      ),
+    ]);
+
+    return { logoUrl, mentorSignatureUrl, photos };
+  });
 }
 
 export async function updateMentoringCompanies(args: {
