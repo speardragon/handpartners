@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/speardragon/handpartners/compare/v0.2.0...v0.3.0) (2026-06-01)
+
+
+### Features
+
+* 멘토링 관리 기능 추가 및 전반적인 UI Polish ([#15](https://github.com/speardragon/handpartners/issues/15)) ([94b962a](https://github.com/speardragon/handpartners/commit/94b962ad41f8dc4a938980a8dd34db2ff575d46a))
+* 한 기업에 여러 멘토 배정(N:M) 지원 ([#21](https://github.com/speardragon/handpartners/issues/21)) ([6416e5f](https://github.com/speardragon/handpartners/commit/6416e5f1e476a33a9a4bbdd0052621b45e4b46bf))
+
+
+### Bug Fixes
+
+* 멘토링 PDF 대표자명·이미지 누락 및 소속명 넘침 수정 ([#17](https://github.com/speardragon/handpartners/issues/17)) ([b387a8f](https://github.com/speardragon/handpartners/commit/b387a8fe9fedef45d76d974e997e246f61462d34))
+
 ## [0.2.0](https://github.com/speardragon/handpartners/compare/v0.1.0...v0.2.0) (2026-03-08)
 
 
