@@ -4,10 +4,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Delay } from "@suspensive/react";
 import { judgingQueries } from "@/queries";
-import {
-  JudgingWorkspaceWithStatus,
-  type AllJudgingWorkspacesResult,
-} from "@/actions/program-action";
+import { JudgingWorkspaceWithStatus } from "@/actions/program-action";
 import ProgramSkeleton from "./ProgramSkeleton";
 import { JudgingCard } from "./judging-card";
 import WorkspaceTabs from "./WorkspaceTabs";
@@ -36,10 +33,9 @@ export const PAGE_SIZE = 10;
 
 interface HomeClientProps {
   isAdmin: boolean;
-  initialData: AllJudgingWorkspacesResult;
 }
 
-export default function HomeClient({ isAdmin, initialData }: HomeClientProps) {
+export default function HomeClient({ isAdmin }: HomeClientProps) {
   const router = useRouter();
 
   const [page, setPage] = useState(1);
@@ -77,11 +73,8 @@ export default function HomeClient({ isAdmin, initialData }: HomeClientProps) {
     }, 500);
   }, []);
 
-  // 초기 상태(1페이지, 검색/필터 없음)에서는 서버에서 받은 initialData로 즉시 렌더하고,
-  // 페이지·검색·필터가 바뀌면 React Query가 클라이언트에서 새로 페치한다.
-  const isInitialQuery =
-    page === 1 && searchKeyword === undefined && statusFilter === undefined;
-
+  // isAdmin이 SSR prop으로 첫 렌더부터 확정돼 있어 쿼리가 마운트 즉시 활성화된다.
+  // (기존에는 클라이언트 프로필 페치로 isAdmin이 채워질 때까지 enabled로 막혀 워터폴이 발생했다.)
   const { data, isLoading, isFetching } = useQuery({
     ...judgingQueries.list(
       page,
@@ -90,7 +83,6 @@ export default function HomeClient({ isAdmin, initialData }: HomeClientProps) {
       searchKeyword,
       statusFilter
     ),
-    initialData: isInitialQuery ? initialData : undefined,
     placeholderData: keepPreviousData,
   });
 
