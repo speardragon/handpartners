@@ -479,11 +479,17 @@ export default function MentoringDetailPage() {
           mentorName={session.mentor_name}
           mentorAffiliation={
             session.mentor_affiliation ??
-            (selectedCompany.mentors[0]?.mentor_affiliation ?? null)
+            (selectedCompany.mentors.find(
+              (m) => m.mentor_id === session.mentor_id
+            )?.mentor_affiliation ??
+              null)
           }
           mentorPosition={
             session.mentor_position ??
-            (selectedCompany.mentors[0]?.mentor_position ?? null)
+            (selectedCompany.mentors.find(
+              (m) => m.mentor_id === session.mentor_id
+            )?.mentor_position ??
+              null)
           }
           mentorSignatureUrl={assets.mentorSignatureUrl}
           logoUrl={assets.logoUrl}
