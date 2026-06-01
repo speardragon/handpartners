@@ -25,12 +25,20 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-      # release-please 가 생성/갱신한 release PR 을 사람이 직접 머지하지 않고 자동으로 머지한다.
+      # release-please 가 열어둔 release PR 을 사람이 직접 머지하지 않고 자동으로 머지한다.
+      # action 출력에 의존하면 "이번 실행에서 새로 만든 PR"만 잡혀서, 이전 실행에
+      # 만들어져 열려 있는 release PR 은 놓친다. 그래서 autorelease: pending 라벨이
+      # 붙은 열린 release PR 을 직접 찾아 머지한다.
       - name: Auto-merge release PR
-        if: ${{ steps.release.outputs.pr }}
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
-          gh pr merge "${{ fromJson(steps.release.outputs.pr).number }}" \
-            --repo "${{ github.repository }}" \
-            --squash
+          pr=$(gh pr list --repo "$REPO" --state open \
+            --label "autorelease: pending" --json number --jq '.[0].number // empty')
+          if [ -n "$pr" ]; then
+            echo "Auto-merging release PR #$pr"
+            gh pr merge "$pr" --repo "$REPO" --squash
+          else
+            echo "No open release PR to merge."
+          fi
