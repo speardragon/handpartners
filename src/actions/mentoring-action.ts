@@ -29,18 +29,21 @@ export interface MentoringProgramSummary {
   end_date: string | null;
 }
 
+export interface MentoringAssignmentMentor {
+  mentor_id: string;
+  mentor_name: string | null;
+  mentor_affiliation: string | null;
+  mentor_position: string | null;
+  claimed_at: string | null;
+}
+
 export interface MentoringAssignment {
   company_id: number;
   company_name: string;
   company_description: string | null;
   representative_name: string | null;
-  mentor_id: string | null;
-  mentor_name: string | null;
-  mentor_affiliation: string | null;
-  mentor_position: string | null;
-  claimed_at: string | null;
+  mentors: MentoringAssignmentMentor[];
   is_mine: boolean;
-  can_claim: boolean;
   session_count: number;
   last_mentored_at: string | null;
 }
@@ -296,15 +299,15 @@ async function getMentoringBase(
 function buildAssignmentStats(
   assignments: Array<{
     company_id: number;
-    mentor_id: string | null;
+    mentors: { mentor_id: string }[];
   }>,
   viewerId: string
 ) {
   const assignedCompanyCount = assignments.filter(
-    (item) => item.mentor_id !== null
+    (item) => item.mentors.length > 0
   ).length;
-  const myCompanyCount = assignments.filter(
-    (item) => item.mentor_id === viewerId
+  const myCompanyCount = assignments.filter((item) =>
+    item.mentors.some((m) => m.mentor_id === viewerId)
   ).length;
 
   return { assignedCompanyCount, myCompanyCount };
@@ -436,19 +439,20 @@ export async function getMentoringByProgramId(
       .select(
         `
           company_id,
-          mentor_id,
-          claimed_at,
           company:company_id (
             id,
             name,
             description,
             representative_name
           ),
-          mentor:mentor_id (
-            id,
-            username,
-            affiliation,
-            position
+          mentors:mentoring_company_mentor (
+            claimed_at,
+            mentor:mentor_id (
+              id,
+              username,
+              affiliation,
+              position
+            )
           )
         `
       )
@@ -533,12 +537,6 @@ export async function getMentoringByProgramId(
   const mentoringCompanies: MentoringAssignment[] = (companies ?? []).map(
     (item) => {
       const stats = sessionStats.get(item.company_id);
-      const mentor = takeFirstRelation<{
-        id: string;
-        username: string;
-        affiliation: string | null;
-        position: string | null;
-      }>(item.mentor as unknown);
       const company = takeFirstRelation<{
         id: number;
         name: string;
@@ -546,18 +544,32 @@ export async function getMentoringByProgramId(
         representative_name: string | null;
       }>(item.company as unknown);
 
+      const mentors: MentoringAssignmentMentor[] = (
+        Array.isArray(item.mentors) ? item.mentors : []
+      ).map((link) => {
+        const mentor = takeFirstRelation<{
+          id: string;
+          username: string;
+          affiliation: string | null;
+          position: string | null;
+        }>((link as { mentor: unknown }).mentor);
+        return {
+          mentor_id: mentor?.id ?? "",
+          mentor_name: mentor?.username ?? null,
+          mentor_affiliation: mentor?.affiliation ?? null,
+          mentor_position: mentor?.position ?? null,
+          claimed_at:
+            (link as { claimed_at: string | null }).claimed_at ?? null,
+        };
+      });
+
       return {
         company_id: item.company_id,
         company_name: company?.name ?? "",
         company_description: company?.description ?? null,
         representative_name: company?.representative_name ?? null,
-        mentor_id: item.mentor_id,
-        mentor_name: mentor?.username ?? null,
-        mentor_affiliation: mentor?.affiliation ?? null,
-        mentor_position: mentor?.position ?? null,
-        claimed_at: item.claimed_at,
-        is_mine: false,
-        can_claim: false,
+        mentors,
+        is_mine: mentors.some((m) => m.mentor_id === context.viewer.id),
         session_count: stats?.count ?? 0,
         last_mentored_at: stats?.lastMentoredAt ?? null,
       };
@@ -566,11 +578,12 @@ export async function getMentoringByProgramId(
 
   const assignedCounts = new Map<string, number>();
   mentoringCompanies.forEach((company) => {
-    if (!company.mentor_id) return;
-    assignedCounts.set(
-      company.mentor_id,
-      (assignedCounts.get(company.mentor_id) ?? 0) + 1
-    );
+    company.mentors.forEach((mentor) => {
+      assignedCounts.set(
+        mentor.mentor_id,
+        (assignedCounts.get(mentor.mentor_id) ?? 0) + 1
+      );
+    });
   });
 
   const mentoringMentors = (mentors ?? []).map((item) => {
@@ -686,7 +699,9 @@ export async function getAllMentorings(
       ),
       companies:mentoring_company (
         company_id,
-        mentor_id
+        mentors:mentoring_company_mentor (
+          mentor_id
+        )
       ),
       sessions:mentoring_session (
         id,
@@ -714,7 +729,9 @@ export async function getAllMentorings(
         ),
         companies:mentoring_company (
           company_id,
-          mentor_id
+          mentors:mentoring_company_mentor (
+            mentor_id
+          )
         ),
         sessions:mentoring_session (
           id,
@@ -764,7 +781,10 @@ export async function getAllMentorings(
       created_at: string;
       report_logo_path: string | null;
       program: Partial<MentoringProgramSummary> | null;
-      companies: Array<{ company_id: number; mentor_id: string | null }>;
+      companies: Array<{
+        company_id: number;
+        mentors: { mentor_id: string }[];
+      }>;
       sessions: Array<{ id: number; mentored_at: string }>;
     }>
   ).map(async (item) => {
@@ -862,18 +882,20 @@ export async function getMentoringDetail(
       .select(
         `
           company_id,
-          mentor_id,
-          claimed_at,
           company:company_id (
             id,
             name,
             description,
             representative_name
           ),
-          mentor:mentor_id (
-            id,
-            username,
-            affiliation
+          mentors:mentoring_company_mentor (
+            claimed_at,
+            mentor:mentor_id (
+              id,
+              username,
+              affiliation,
+              position
+            )
           )
         `
       )
@@ -932,12 +954,6 @@ export async function getMentoringDetail(
   const isAdminView = context.isAdmin && !isParticipant;
 
   const allAssignments = (assignments ?? []).map((item) => {
-    const mentor = takeFirstRelation<{
-      id: string;
-      username: string;
-      affiliation: string | null;
-      position: string | null;
-    }>(item.mentor as unknown);
     const company = takeFirstRelation<{
       id: number;
       name: string;
@@ -945,24 +961,37 @@ export async function getMentoringDetail(
       representative_name: string | null;
     }>(item.company as unknown);
 
+    const mentors: MentoringAssignmentMentor[] = (
+      Array.isArray(item.mentors) ? item.mentors : []
+    ).map((link) => {
+      const mentor = takeFirstRelation<{
+        id: string;
+        username: string;
+        affiliation: string | null;
+        position: string | null;
+      }>((link as { mentor: unknown }).mentor);
+      return {
+        mentor_id: mentor?.id ?? "",
+        mentor_name: mentor?.username ?? null,
+        mentor_affiliation: mentor?.affiliation ?? null,
+        mentor_position: mentor?.position ?? null,
+        claimed_at: (link as { claimed_at: string | null }).claimed_at ?? null,
+      };
+    });
+
     return {
       company_id: item.company_id,
       company_name: company?.name ?? "",
       company_description: company?.description ?? null,
       representative_name: company?.representative_name ?? null,
-      mentor_id: item.mentor_id,
-      mentor_name: mentor?.username ?? null,
-      mentor_affiliation: mentor?.affiliation ?? null,
-      mentor_position: mentor?.position ?? null,
-      claimed_at: item.claimed_at,
+      mentors,
     };
   });
 
   const visibleAssignments = isAdminView
     ? allAssignments
-    : allAssignments.filter(
-        (item) =>
-          item.mentor_id === context.viewer.id || item.mentor_id === null
+    : allAssignments.filter((item) =>
+        item.mentors.some((m) => m.mentor_id === context.viewer.id)
       );
   const visibleCompanyIds = new Set(
     visibleAssignments.map((item) => item.company_id)
@@ -997,12 +1026,7 @@ export async function getMentoringDetail(
       const stats = sessionStats.get(item.company_id);
       return {
         ...item,
-        is_mine: item.mentor_id === context.viewer.id,
-        can_claim:
-          !isAdminView &&
-          base.status !== "COMPLETED" &&
-          item.mentor_id === null &&
-          availableMentorIds.has(context.viewer.id),
+        is_mine: item.mentors.some((m) => m.mentor_id === context.viewer.id),
         session_count: stats?.count ?? 0,
         last_mentored_at: stats?.lastMentoredAt ?? null,
       };
@@ -1261,9 +1285,12 @@ export async function updateMentoringUsers(args: {
         { count: sessionCount, error: sessionError },
       ] = await Promise.all([
         context.supabase
-          .from("mentoring_company")
-          .select("id", { count: "exact", head: true })
-          .eq("mentoring_id", args.mentoringId)
+          .from("mentoring_company_mentor")
+          .select("id, mentoring_company!inner(mentoring_id)", {
+            count: "exact",
+            head: true,
+          })
+          .eq("mentoring_company.mentoring_id", args.mentoringId)
           .in("mentor_id", toRemove),
         context.supabase
           .from("mentoring_session")
@@ -1312,92 +1339,93 @@ export async function updateMentoringUsers(args: {
   });
 }
 
-export async function assignMentoringCompanyByAdmin(args: {
+export async function setMentoringCompanyMentors(args: {
   mentoringId: string;
   companyId: number;
-  mentorId: string | null;
+  mentorIds: string[];
 }) {
   return withActionResult(async () => {
     const context = await assertAdmin();
+    const mentorIds = Array.from(new Set(args.mentorIds));
 
-    if (args.mentorId) {
-      const { data: mentor, error: mentorError } = await context.supabase
+    // 대상 기업의 mentoring_company 행 확인
+    const { data: companyRow, error: companyError } = await context.supabase
+      .from("mentoring_company")
+      .select("id")
+      .eq("mentoring_id", args.mentoringId)
+      .eq("company_id", args.companyId)
+      .maybeSingle();
+
+    if (companyError) raiseActionError(companyError);
+    if (!companyRow) {
+      throw new Error("멘토링 대상 기업을 찾을 수 없습니다.");
+    }
+
+    // 멘토는 모두 해당 멘토링 참여자여야 함
+    if (mentorIds.length > 0) {
+      const { data: enrolled, error: enrolledError } = await context.supabase
         .from("mentoring_user")
-        .select("id")
+        .select("user_id")
         .eq("mentoring_id", args.mentoringId)
-        .eq("user_id", args.mentorId)
-        .maybeSingle();
+        .in("user_id", mentorIds);
 
-      if (mentorError) {
-        raiseActionError(mentorError);
-      }
+      if (enrolledError) raiseActionError(enrolledError);
 
-      if (!mentor) {
+      const enrolledIds = new Set((enrolled ?? []).map((m) => m.user_id));
+      if (mentorIds.some((id) => !enrolledIds.has(id))) {
         throw new Error("멘토링 참여 멘토만 배정할 수 있습니다.");
       }
     }
 
-    const { data, error } = await context.supabase
-      .from("mentoring_company")
-      .update({
-        mentor_id: args.mentorId,
-        claimed_at: args.mentorId ? new Date().toISOString() : null,
-      })
-      .eq("mentoring_id", args.mentoringId)
-      .eq("company_id", args.companyId)
-      .select("id")
-      .maybeSingle();
+    // 현재 배정과 diff
+    const { data: current, error: currentError } = await context.supabase
+      .from("mentoring_company_mentor")
+      .select("mentor_id")
+      .eq("mentoring_company_id", companyRow.id);
 
-    if (error) {
-      raiseActionError(error);
+    if (currentError) raiseActionError(currentError);
+
+    const currentIds = new Set((current ?? []).map((m) => m.mentor_id));
+    const nextIds = new Set(mentorIds);
+    const toAdd = mentorIds.filter((id) => !currentIds.has(id));
+    const toRemove = Array.from(currentIds).filter((id) => !nextIds.has(id));
+
+    // 세션을 작성한 멘토는 배정 해제 불가
+    if (toRemove.length > 0) {
+      const { count, error: sessionError } = await context.supabase
+        .from("mentoring_session")
+        .select("id", { count: "exact", head: true })
+        .eq("mentoring_id", args.mentoringId)
+        .eq("company_id", args.companyId)
+        .in("mentor_id", toRemove);
+
+      if (sessionError) raiseActionError(sessionError);
+      if ((count ?? 0) > 0) {
+        throw new Error("멘토링 기록이 있는 멘토는 배정 해제할 수 없습니다.");
+      }
+
+      const { error: deleteError } = await context.supabase
+        .from("mentoring_company_mentor")
+        .delete()
+        .eq("mentoring_company_id", companyRow.id)
+        .in("mentor_id", toRemove);
+
+      if (deleteError) raiseActionError(deleteError);
     }
 
-    if (!data) {
-      throw new Error("멘토링 대상 기업을 찾을 수 없습니다.");
-    }
+    if (toAdd.length > 0) {
+      const { error: insertError } = await context.supabase
+        .from("mentoring_company_mentor")
+        .insert(
+          toAdd.map((mentorId) => ({
+            mentoring_company_id: companyRow.id,
+            mentor_id: mentorId,
+            claimed_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+          }))
+        );
 
-    return undefined;
-  });
-}
-
-export async function claimMentoringCompany(args: {
-  mentoringId: string;
-  companyId: number;
-}) {
-  return withActionResult(async () => {
-    const context = await getViewerContext();
-
-    await ensureMentoringParticipant(context, args.mentoringId);
-
-    const { data: mentoringStatus, error: mentoringStatusError } =
-      await context.supabase
-        .from("mentoring")
-        .select("status")
-        .eq("id", args.mentoringId)
-        .single();
-    if (mentoringStatusError) raiseActionError(mentoringStatusError);
-    if (mentoringStatus?.status === "COMPLETED") {
-      throw new Error("종료된 멘토링에서는 기업을 선택할 수 없습니다.");
-    }
-
-    const { data, error } = await context.supabase
-      .from("mentoring_company")
-      .update({
-        mentor_id: context.viewer.id,
-        claimed_at: new Date().toISOString(),
-      })
-      .eq("mentoring_id", args.mentoringId)
-      .eq("company_id", args.companyId)
-      .is("mentor_id", null)
-      .select("id")
-      .maybeSingle();
-
-    if (error) {
-      raiseActionError(error);
-    }
-
-    if (!data) {
-      throw new Error("이미 다른 멘토가 선택한 기업입니다.");
+      if (insertError) raiseActionError(insertError);
     }
 
     return undefined;
@@ -1494,18 +1522,29 @@ export async function upsertMentoringSession(args: {
       throw new Error("종료된 멘토링에서는 기록을 수정할 수 없습니다.");
     }
 
-    const { data: assignment, error: assignmentError } = await context.supabase
+    const { data: companyRow, error: companyError } = await context.supabase
       .from("mentoring_company")
-      .select("mentor_id")
+      .select("id")
       .eq("mentoring_id", args.mentoringId)
       .eq("company_id", args.companyId)
       .maybeSingle();
 
-    if (assignmentError) {
-      raiseActionError(assignmentError);
+    if (companyError) raiseActionError(companyError);
+    if (!companyRow) {
+      throw new Error(
+        "현재 담당 기업에 대해서만 멘토링 기록을 작성할 수 있습니다."
+      );
     }
 
-    if (!assignment || assignment.mentor_id !== context.viewer.id) {
+    const { data: assignment, error: assignmentError } = await context.supabase
+      .from("mentoring_company_mentor")
+      .select("id")
+      .eq("mentoring_company_id", companyRow.id)
+      .eq("mentor_id", context.viewer.id)
+      .maybeSingle();
+
+    if (assignmentError) raiseActionError(assignmentError);
+    if (!assignment) {
       throw new Error(
         "현재 담당 기업에 대해서만 멘토링 기록을 작성할 수 있습니다."
       );
