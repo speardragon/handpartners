@@ -203,11 +203,19 @@ export default function Page({ params }: Props) {
     }
   };
 
+  // 폴더/파일명에 쓸 수 없는 문자를 치환한다(특히 '/' 는 의도치 않은 폴더를 만든다).
+  const sanitizeForPath = (value: string) =>
+    value.replace(/[\\/:*?"<>|]/g, "_").trim() || "미상";
+
   const buildSessionFileName = (
     companyName: string,
+    mentorName: string | null,
     sessionNo: number,
     date: string
-  ) => `${companyName}_멘토링일지_${sessionNo}회차_${date.slice(0, 10)}.pdf`;
+  ) =>
+    `${sanitizeForPath(companyName)}_${sanitizeForPath(
+      mentorName ?? "멘토미상"
+    )}_멘토링일지_${sessionNo}회차_${date.slice(0, 10)}.pdf`;
 
   const createSessionReportBlob = async (sessionId: number) => {
     if (!mentoringDetail) {
@@ -261,8 +269,10 @@ export default function Page({ params }: Props) {
 
     return {
       blob,
+      companyName: session.company_name,
       fileName: buildSessionFileName(
         session.company_name,
+        session.mentor_name,
         session.session_no,
         session.mentored_at
       ),
@@ -306,16 +316,62 @@ export default function Page({ params }: Props) {
       ]);
 
       const zip = new JSZip();
+      const sessions = mentoringDetail.sessions;
 
-      for (const session of mentoringDetail.sessions) {
-        const reportFile = await createSessionReportBlob(session.id);
-        zip.file(reportFile.fileName, reportFile.blob);
+      // 보고서 생성(서버 presign + react-pdf 렌더 + 이미지 fetch)을 동시성 제한으로
+      // 병렬 처리한다. 무제한 병렬은 메모리/서버 부하가 커서 동시 실행을 5개로 제한하고,
+      // 한 건이 실패해도 나머지는 zip 에 담는다.
+      const CONCURRENCY = 5;
+      const reports = new Array<{
+        fileName: string;
+        blob: Blob;
+        companyName: string;
+      } | null>(sessions.length);
+      let cursor = 0;
+      let failedCount = 0;
+
+      const worker = async () => {
+        while (cursor < sessions.length) {
+          const index = cursor;
+          cursor += 1;
+          try {
+            reports[index] = await createSessionReportBlob(sessions[index].id);
+          } catch (reportError) {
+            console.error(reportError);
+            failedCount += 1;
+          }
+        }
+      };
+
+      await Promise.all(
+        Array.from({ length: Math.min(CONCURRENCY, sessions.length) }, worker)
+      );
+
+      // 기업별 폴더 안에 해당 기업의 세션 보고서를 저장한다.
+      reports.forEach((report) => {
+        if (report) {
+          zip.file(
+            `${sanitizeForPath(report.companyName)}/${report.fileName}`,
+            report.blob
+          );
+        }
+      });
+
+      if (failedCount === sessions.length) {
+        throw new Error("모든 멘토링 보고서 생성에 실패했습니다.");
       }
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
       const date = new Date().toISOString().slice(0, 10);
       saveAs(zipBlob, `멘토링보고서_${mentoring.program.name}_${date}.zip`);
-      toast.success("멘토링 보고서 일괄 저장이 완료되었습니다.");
+
+      if (failedCount > 0) {
+        toast.warning(
+          `멘토링 보고서 일괄 저장을 완료했습니다. (${failedCount}건 실패, 나머지는 저장됨)`
+        );
+      } else {
+        toast.success("멘토링 보고서 일괄 저장이 완료되었습니다.");
+      }
     } catch (downloadError) {
       console.error(downloadError);
       toast.error("멘토링 보고서 일괄 저장 중 오류가 발생했습니다.");
