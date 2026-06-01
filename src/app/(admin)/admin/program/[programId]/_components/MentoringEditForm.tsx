@@ -8,21 +8,15 @@ import { executeAction, getErrorMessage } from "@/lib/action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/ui/loading-button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { mentoringQueries } from "@/queries";
 import type {
   MentoringManagementSummary,
   MentoringStatus,
 } from "@/actions/mentoring-action";
 import {
-  assignMentoringCompanyByAdmin,
   createMentoringReportLogoUploadUrl,
+  setMentoringCompanyMentors,
   updateMentoringCompanies,
   updateMentoringReportLogo,
   updateMentoringUsers,
@@ -194,13 +188,13 @@ export default function MentoringEditForm({
   const assignmentMutation = useMutation({
     mutationFn: async (payload: {
       companyId: number;
-      mentorId: string | null;
+      mentorIds: string[];
     }) =>
       executeAction(
-        assignMentoringCompanyByAdmin({
+        setMentoringCompanyMentors({
           mentoringId,
           companyId: payload.companyId,
-          mentorId: payload.mentorId,
+          mentorIds: payload.mentorIds,
         })
       ),
     onSuccess: () => {
@@ -211,6 +205,18 @@ export default function MentoringEditForm({
       toast.error(getErrorMessage(error, "멘토 배정을 수정하지 못했습니다."));
     },
   });
+
+  const toggleCompanyMentor = (
+    company: (typeof data.companies)[number],
+    mentorId: string,
+    checked: boolean
+  ) => {
+    const currentIds = company.mentors.map((m) => m.mentor_id);
+    const nextIds = checked
+      ? Array.from(new Set([...currentIds, mentorId]))
+      : currentIds.filter((id) => id !== mentorId);
+    assignmentMutation.mutate({ companyId: company.company_id, mentorIds: nextIds });
+  };
 
   const clearLogoDraft = () => {
     if (logoObjectUrlRef.current) {
@@ -286,7 +292,7 @@ export default function MentoringEditForm({
   });
 
   const assignedCompanyCount = useMemo(
-    () => data.companies.filter((company) => company.mentor_id).length,
+    () => data.companies.filter((company) => company.mentors.length > 0).length,
     [data.companies]
   );
 
@@ -513,8 +519,12 @@ export default function MentoringEditForm({
                       </div>
                     </div>
                     <span className="shrink-0 text-xs text-neutral-500">
-                      {company.mentor_name ? (
-                        <span className="font-medium text-neutral-700">{company.mentor_name}</span>
+                      {company.mentors.length > 0 ? (
+                        <span className="font-medium text-neutral-700">
+                          {company.mentors.length === 1
+                            ? company.mentors[0].mentor_name
+                            : `${company.mentors[0].mentor_name} 외 ${company.mentors.length - 1}명`}
+                        </span>
                       ) : (
                         <span className="text-neutral-400">미배정</span>
                       )}
@@ -534,38 +544,42 @@ export default function MentoringEditForm({
                       </p>
                     </div>
                     <div className="rounded-xl border border-neutral-200 bg-white p-3">
-                      <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">담당 멘토 변경</p>
-                      {company.mentor_name && (
-                        <p className="mt-1 text-sm font-medium text-neutral-900">{company.mentor_name}</p>
+                      <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">담당 멘토</p>
+                      {data.mentors.length === 0 ? (
+                        <p className="mt-2 text-sm text-neutral-400">
+                          참여 멘토가 없습니다.
+                        </p>
+                      ) : (
+                        <div className="mt-2 space-y-2">
+                          {data.mentors.map((mentor) => {
+                            const checked = company.mentors.some(
+                              (m) => m.mentor_id === mentor.id
+                            );
+                            return (
+                              <label
+                                key={mentor.id}
+                                className="flex items-center gap-2 text-sm text-neutral-800"
+                              >
+                                <Checkbox
+                                  checked={checked}
+                                  disabled={assignmentMutation.isPending}
+                                  onCheckedChange={(value) =>
+                                    toggleCompanyMentor(
+                                      company,
+                                      mentor.id,
+                                      value === true
+                                    )
+                                  }
+                                />
+                                <span>
+                                  {mentor.name}
+                                  {mentor.affiliation ? ` · ${mentor.affiliation}` : ""}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
                       )}
-                      <div className="mt-2">
-                        <Select
-                          value={company.mentor_id ?? "__unassigned"}
-                          onValueChange={(value) =>
-                            assignmentMutation.mutate({
-                              companyId: company.company_id,
-                              mentorId: value === "__unassigned" ? null : value,
-                            })
-                          }
-                          disabled={
-                            assignmentMutation.isPending ||
-                            data.mentors.length === 0
-                          }
-                        >
-                          <SelectTrigger className="bg-white text-sm">
-                            <SelectValue placeholder="멘토 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__unassigned">미배정</SelectItem>
-                            {data.mentors.map((mentor) => (
-                              <SelectItem key={mentor.id} value={mentor.id}>
-                                {mentor.name}
-                                {mentor.affiliation ? ` · ${mentor.affiliation}` : ""}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
                     </div>
                   </div>
                 </AccordionContent>

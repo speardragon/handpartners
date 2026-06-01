@@ -292,27 +292,21 @@ export type Database = {
       }
       mentoring_company: {
         Row: {
-          claimed_at: string | null
           company_id: number
           created_at: string
           id: number
-          mentor_id: string | null
           mentoring_id: string
         }
         Insert: {
-          claimed_at?: string | null
           company_id: number
           created_at?: string
           id?: number
-          mentor_id?: string | null
           mentoring_id: string
         }
         Update: {
-          claimed_at?: string | null
           company_id?: number
           created_at?: string
           id?: number
-          mentor_id?: string | null
           mentoring_id?: string
         }
         Relationships: [
@@ -324,17 +318,49 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "mentoring_company_mentor_id_fkey"
+            foreignKeyName: "mentoring_company_mentoring_id_fkey"
+            columns: ["mentoring_id"]
+            isOneToOne: false
+            referencedRelation: "mentoring"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentoring_company_mentor: {
+        Row: {
+          claimed_at: string | null
+          created_at: string
+          id: number
+          mentor_id: string
+          mentoring_company_id: number
+        }
+        Insert: {
+          claimed_at?: string | null
+          created_at?: string
+          id?: number
+          mentor_id: string
+          mentoring_company_id: number
+        }
+        Update: {
+          claimed_at?: string | null
+          created_at?: string
+          id?: number
+          mentor_id?: string
+          mentoring_company_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentoring_company_mentor_mentor_id_fkey"
             columns: ["mentor_id"]
             isOneToOne: false
             referencedRelation: "user"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "mentoring_company_mentoring_id_fkey"
-            columns: ["mentoring_id"]
+            foreignKeyName: "mentoring_company_mentor_mentoring_company_id_fkey"
+            columns: ["mentoring_company_id"]
             isOneToOne: false
-            referencedRelation: "mentoring"
+            referencedRelation: "mentoring_company"
             referencedColumns: ["id"]
           },
         ]

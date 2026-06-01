@@ -7,7 +7,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { executeAction, getErrorMessage } from "@/lib/action";
 import {
-  claimMentoringCompany,
   createMentoringSessionPhotoUploadUrl,
   deleteMentoringSession,
   getMentoringSessionReportAssets,
@@ -15,6 +14,7 @@ import {
   type MentoringSession,
 } from "@/actions/mentoring-action";
 import { mentoringQueries } from "@/queries";
+import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingButton } from "@/components/ui/loading-button";
@@ -120,6 +120,8 @@ export default function MentoringDetailPage() {
     error,
   } = useQuery(mentoringQueries.detail(mentoringId));
 
+  const viewerId = useAuthStore((state) => state.user?.id) ?? null;
+
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(
     null
   );
@@ -145,11 +147,6 @@ export default function MentoringDetailPage() {
     () => mentoring?.assignments.filter((item) => item.is_mine) ?? [],
     [mentoring]
   );
-  const availableAssignments = useMemo(
-    () => mentoring?.assignments.filter((item) => item.can_claim) ?? [],
-    [mentoring]
-  );
-
   const activeCompanyId = useMemo(() => {
     if (!mentoring || mentoring.assignments.length === 0) {
       return null;
@@ -176,17 +173,10 @@ export default function MentoringDetailPage() {
 
     return (
       myAssignments[0]?.company_id ??
-      availableAssignments[0]?.company_id ??
       mentoring.assignments[0]?.company_id ??
       null
     );
-  }, [
-    availableAssignments,
-    mentoring,
-    myAssignments,
-    requestedCompanyId,
-    selectedCompanyId,
-  ]);
+  }, [mentoring, myAssignments, requestedCompanyId, selectedCompanyId]);
 
   const selectedCompany = useMemo(
     () =>
@@ -196,12 +186,22 @@ export default function MentoringDetailPage() {
     [activeCompanyId, mentoring]
   );
 
+  // 회차 계산(nextSessionNo)은 기업 단위 공유라 전체 세션을 사용한다.
   const companySessions = useMemo(
     () =>
       mentoring?.sessions.filter(
         (session) => session.company_id === activeCompanyId
       ) ?? [],
     [activeCompanyId, mentoring]
+  );
+
+  // 화면 표시는 비관리자(멘토)의 경우 본인이 작성한 세션만 노출한다.
+  const visibleSessions = useMemo(
+    () =>
+      mentoring?.isAdminView
+        ? companySessions
+        : companySessions.filter((session) => session.mentor_id === viewerId),
+    [companySessions, mentoring?.isAdminView, viewerId]
   );
 
   const nextSessionNo = useMemo(() => {
@@ -263,25 +263,13 @@ export default function MentoringDetailPage() {
     startTransition(() => {
       setSelectedSessionIndex(0);
       setIsComposerOpen(
-        Boolean(selectedCompany.is_mine && companySessions.length === 0)
+        Boolean(selectedCompany.is_mine && visibleSessions.length === 0)
       );
     });
     sessionCarouselApi?.scrollTo(0);
-  }, [companySessions.length, selectedCompany, sessionCarouselApi]);
+  }, [visibleSessions.length, selectedCompany, sessionCarouselApi]);
 
   useEffect(() => () => clearEditorPhotos(), []);
-
-  const claimMutation = useMutation({
-    mutationFn: async (companyId: number) =>
-      executeAction(claimMentoringCompany({ mentoringId, companyId })),
-    onSuccess: () => {
-      toast.success("기업을 선택했습니다.");
-      queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
-    },
-    onError: (mutationError: unknown) => {
-      toast.error(getErrorMessage(mutationError, "기업 선택에 실패했습니다."));
-    },
-  });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -503,10 +491,18 @@ export default function MentoringDetailPage() {
           representativeName={selectedCompany.representative_name}
           mentorName={session.mentor_name}
           mentorAffiliation={
-            session.mentor_affiliation ?? selectedCompany.mentor_affiliation
+            session.mentor_affiliation ??
+            (selectedCompany.mentors.find(
+              (m) => m.mentor_id === session.mentor_id
+            )?.mentor_affiliation ??
+              null)
           }
           mentorPosition={
-            session.mentor_position ?? selectedCompany.mentor_position
+            session.mentor_position ??
+            (selectedCompany.mentors.find(
+              (m) => m.mentor_id === session.mentor_id
+            )?.mentor_position ??
+              null)
           }
           mentorSignatureUrl={assets.mentorSignatureUrl}
           logoUrl={assets.logoUrl}
@@ -529,6 +525,25 @@ export default function MentoringDetailPage() {
     } finally {
       setDownloadingSessionId(null);
     }
+  };
+
+  const formatMentorNames = (
+    mentors: { mentor_name: string | null }[]
+  ): string => {
+    if (mentors.length === 0) return "미배정";
+    const names = mentors.map((m) => m.mentor_name).filter(Boolean) as string[];
+    if (names.length === 0) return "미배정";
+    return names.length === 1
+      ? `담당 ${names[0]}`
+      : `담당 ${names[0]} 외 ${names.length - 1}명`;
+  };
+
+  // 마우스 호버 시 배정된 멘토 전체 이름을 보여주기 위한 title 텍스트
+  const mentorNamesTitle = (
+    mentors: { mentor_name: string | null }[]
+  ): string | undefined => {
+    const names = mentors.map((m) => m.mentor_name).filter(Boolean) as string[];
+    return names.length > 0 ? names.join(", ") : undefined;
   };
 
   if (isLoading || !mentoring) {
@@ -599,7 +614,7 @@ export default function MentoringDetailPage() {
                         setEditingSessionId(null);
                       }}
                       className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
-                        selectedCompanyId === company.company_id
+                        activeCompanyId === company.company_id
                           ? "border-neutral-900 bg-neutral-900 text-white"
                           : "border-neutral-200 bg-neutral-50 hover:border-neutral-300 hover:bg-white"
                       }`}
@@ -610,12 +625,12 @@ export default function MentoringDetailPage() {
                         </span>
                         <Badge
                           variant={
-                            selectedCompanyId === company.company_id
+                            activeCompanyId === company.company_id
                               ? "outline"
                               : "secondary"
                           }
                           className={
-                            selectedCompanyId === company.company_id
+                            activeCompanyId === company.company_id
                               ? "border-white/30 bg-white/10 text-white"
                               : ""
                           }
@@ -624,72 +639,20 @@ export default function MentoringDetailPage() {
                         </Badge>
                       </div>
                       <p
+                        title={mentorNamesTitle(company.mentors)}
                         className={`mt-1 text-xs ${
-                          selectedCompanyId === company.company_id
+                          activeCompanyId === company.company_id
                             ? "text-white/70"
                             : "text-neutral-500"
                         }`}
                       >
-                        {company.mentor_name
-                          ? `담당 ${company.mentor_name}`
-                          : "미배정"}
+                        {formatMentorNames(company.mentors)}
                       </p>
                     </button>
                   ))
                 )}
               </div>
             </section>
-
-            {!mentoring.isAdminView && (
-              <section className="rounded-2xl border bg-white p-5 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <UserRound className="h-4 w-4 text-neutral-500" />
-                  <h2 className="text-sm font-semibold text-neutral-900">
-                    배정 가능한 기업
-                  </h2>
-                </div>
-                <div className="mt-4 space-y-2">
-                  {availableAssignments.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-neutral-200 px-4 py-6 text-center text-sm text-neutral-400">
-                      선택 가능한 기업이 없습니다.
-                    </div>
-                  ) : (
-                    availableAssignments.map((company) => (
-                      <div
-                        key={company.company_id}
-                        className="rounded-xl border border-neutral-200 bg-neutral-50 p-4"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="font-medium text-neutral-900">
-                              {company.company_name}
-                            </p>
-                            <p className="mt-1 text-xs text-neutral-500">
-                              대표자 {company.representative_name || "-"}
-                            </p>
-                          </div>
-                          <Badge variant="outline">미배정</Badge>
-                        </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="mt-3 w-full gap-1.5"
-                          disabled={
-                            claimMutation.isPending ||
-                            mentoring.status === "COMPLETED"
-                          }
-                          onClick={() =>
-                            claimMutation.mutate(company.company_id)
-                          }
-                        >
-                          <Plus className="h-4 w-4" />이 기업 선택하기
-                        </Button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </section>
-            )}
           </aside>
 
           <section className="min-w-0 space-y-4">
@@ -713,10 +676,11 @@ export default function MentoringDetailPage() {
                       <Badge variant="secondary">
                         대표자 {selectedCompany.representative_name || "-"}
                       </Badge>
-                      <Badge variant="outline">
-                        {selectedCompany.mentor_name
-                          ? `담당 ${selectedCompany.mentor_name}`
-                          : "미배정"}
+                      <Badge
+                        variant="outline"
+                        title={mentorNamesTitle(selectedCompany.mentors)}
+                      >
+                        {formatMentorNames(selectedCompany.mentors)}
                       </Badge>
                     </div>
                   </div>
@@ -736,15 +700,15 @@ export default function MentoringDetailPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="secondary">
-                          {companySessions.length}건
+                          {visibleSessions.length}건
                         </Badge>
-                        {companySessions.length > 0 && (
+                        {visibleSessions.length > 0 && (
                           <Badge
                             variant="outline"
                             className="text-xs text-neutral-600"
                           >
                             {selectedSessionIndex + 1} /{" "}
-                            {companySessions.length}
+                            {visibleSessions.length}
                           </Badge>
                         )}
                         {canComposeSession && (
@@ -761,7 +725,7 @@ export default function MentoringDetailPage() {
                     </div>
 
                     <div className="mt-4 space-y-4">
-                      {companySessions.length === 0 ? (
+                      {visibleSessions.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-10 text-center">
                           <p className="text-sm font-medium text-neutral-700">
                             아직 저장된 멘토링 세션이 없습니다.
@@ -792,7 +756,7 @@ export default function MentoringDetailPage() {
                             className="w-full"
                           >
                             <CarouselContent>
-                              {companySessions.map((session) => (
+                              {visibleSessions.map((session) => (
                                 <CarouselItem key={session.id}>
                                   <article className="rounded-6 border border-neutral-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-sm">
                                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -960,7 +924,7 @@ export default function MentoringDetailPage() {
                             </CarouselContent>
                             <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                               <div className="flex flex-wrap gap-2">
-                                {companySessions.map((session, index) => (
+                                {visibleSessions.map((session, index) => (
                                   <Button
                                     key={session.id}
                                     type="button"
@@ -1194,35 +1158,6 @@ export default function MentoringDetailPage() {
                       )}
                     </div>
                   )}
-
-                  {!mentoring.isAdminView &&
-                    selectedCompany &&
-                    !selectedCompany.is_mine &&
-                    selectedCompany.can_claim && (
-                      <div className="rounded-2xl border bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <h3 className="text-lg font-semibold text-neutral-950">
-                              먼저 기업을 선택해주세요
-                            </h3>
-                            <p className="mt-1 text-sm text-neutral-600">
-                              이 기업은 아직 담당 멘토가 없습니다. 선택한 뒤
-                              멘토링 기록을 작성할 수 있습니다.
-                            </p>
-                          </div>
-                        </div>
-                        <LoadingButton
-                          type="button"
-                          className="mt-4 w-full gap-2"
-                          loading={claimMutation.isPending}
-                          onClick={() =>
-                            claimMutation.mutate(selectedCompany.company_id)
-                          }
-                        >
-                          <Plus className="h-4 w-4" />이 기업 선택하기
-                        </LoadingButton>
-                      </div>
-                    )}
 
                   {mentoring.isAdminView && (
                     <div className="rounded-2xl border bg-white p-5 shadow-sm">
