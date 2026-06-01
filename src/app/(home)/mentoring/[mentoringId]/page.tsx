@@ -10,6 +10,7 @@ import {
   claimMentoringCompany,
   createMentoringSessionPhotoUploadUrl,
   deleteMentoringSession,
+  getMentoringSessionReportAssets,
   upsertMentoringSession,
   type MentoringSession,
 } from "@/actions/mentoring-action";
@@ -474,10 +475,25 @@ export default function MentoringDetailPage() {
 
     setDownloadingSessionId(session.id);
     try {
-      const [{ pdf }, { saveAs }] = await Promise.all([
+      // 다운로드 직전에 이미지 presigned URL을 다시 발급해 만료로 인한 누락을 방지한다.
+      const [{ pdf }, { saveAs }, assets] = await Promise.all([
         import("@react-pdf/renderer"),
         import("file-saver"),
+        executeAction(
+          getMentoringSessionReportAssets({
+            mentoringId,
+            sessionId: session.id,
+          })
+        ),
       ]);
+
+      const freshPhotoUrlById = new Map(
+        assets.photos.map((photo) => [photo.id, photo.download_url])
+      );
+      const photos = session.photos.map((photo) => ({
+        ...photo,
+        download_url: freshPhotoUrlById.get(photo.id) ?? photo.download_url,
+      }));
 
       const blob = await pdf(
         <MentoringSessionDocument
@@ -492,13 +508,13 @@ export default function MentoringDetailPage() {
           mentorPosition={
             session.mentor_position ?? selectedCompany.mentor_position
           }
-          mentorSignatureUrl={session.mentor_signature_url}
-          logoUrl={mentoring.report_logo_url}
+          mentorSignatureUrl={assets.mentorSignatureUrl}
+          logoUrl={assets.logoUrl}
           sessionNo={session.session_no}
           mentoredAt={session.mentored_at}
           place={session.place}
           content={session.content}
-          photos={session.photos}
+          photos={photos}
         />
       ).toBlob();
 

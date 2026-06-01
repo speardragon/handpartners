@@ -310,10 +310,16 @@ export default function MentoringSessionDocument({
                       ...(isLastPhotoRow ? [styles.lastRowCell] : []),
                     ]}
                   >
-                    <PImage
-                      src={photo.download_url ?? photo.photo_path}
-                      style={photoImageStyle}
-                    />
+                    {photo.download_url ? (
+                      <PImage
+                        src={photo.download_url}
+                        style={photoImageStyle}
+                      />
+                    ) : (
+                      <Text style={styles.photoMissingText}>
+                        이미지를 불러올 수 없습니다.
+                      </Text>
+                    )}
                   </View>
                 </View>
               );
@@ -531,6 +537,12 @@ const styles = StyleSheet.create({
   },
   photoImageWithLogo: {
     height: 280,
+  },
+  photoMissingText: {
+    fontSize: 10,
+    color: "#9ca3af",
+    textAlign: "center",
+    paddingVertical: 24,
   },
   pageNumber: {
     position: "absolute",
