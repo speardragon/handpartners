@@ -184,6 +184,25 @@ function takeFirstRelation<T>(value: unknown): T | null {
   return (value as T | null | undefined) ?? null;
 }
 
+// mentoring_company_mentor 조인 결과(배정 멘토 목록)를 매핑한다.
+function mapAssignmentMentors(rawMentors: unknown): MentoringAssignmentMentor[] {
+  return (Array.isArray(rawMentors) ? rawMentors : []).map((link) => {
+    const mentor = takeFirstRelation<{
+      id: string;
+      username: string;
+      affiliation: string | null;
+      position: string | null;
+    }>((link as { mentor: unknown }).mentor);
+    return {
+      mentor_id: mentor?.id ?? "",
+      mentor_name: mentor?.username ?? null,
+      mentor_affiliation: mentor?.affiliation ?? null,
+      mentor_position: mentor?.position ?? null,
+      claimed_at: (link as { claimed_at: string | null }).claimed_at ?? null,
+    };
+  });
+}
+
 function isWebpUpload(fileName: string, contentType?: string) {
   const normalizedType = contentType?.toLowerCase();
   const normalizedName = fileName.toLowerCase();
@@ -544,24 +563,7 @@ export async function getMentoringByProgramId(
         representative_name: string | null;
       }>(item.company as unknown);
 
-      const mentors: MentoringAssignmentMentor[] = (
-        Array.isArray(item.mentors) ? item.mentors : []
-      ).map((link) => {
-        const mentor = takeFirstRelation<{
-          id: string;
-          username: string;
-          affiliation: string | null;
-          position: string | null;
-        }>((link as { mentor: unknown }).mentor);
-        return {
-          mentor_id: mentor?.id ?? "",
-          mentor_name: mentor?.username ?? null,
-          mentor_affiliation: mentor?.affiliation ?? null,
-          mentor_position: mentor?.position ?? null,
-          claimed_at:
-            (link as { claimed_at: string | null }).claimed_at ?? null,
-        };
-      });
+      const mentors = mapAssignmentMentors(item.mentors);
 
       return {
         company_id: item.company_id,
