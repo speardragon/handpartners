@@ -350,17 +350,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "mentoring_company_mentor_mentoring_company_id_fkey"
-            columns: ["mentoring_company_id"]
-            isOneToOne: false
-            referencedRelation: "mentoring_company"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "mentoring_company_mentor_mentor_id_fkey"
             columns: ["mentor_id"]
             isOneToOne: false
             referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentoring_company_mentor_mentoring_company_id_fkey"
+            columns: ["mentoring_company_id"]
+            isOneToOne: false
+            referencedRelation: "mentoring_company"
             referencedColumns: ["id"]
           },
         ]
