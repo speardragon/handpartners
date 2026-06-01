@@ -18,6 +18,10 @@ jobs:
         id: release
         uses: googleapis/release-please-action@v4
         with:
+          # PAT 를 사용해야 자동 머지된 push 가 다음 워크플로 실행을 트리거하고,
+          # 그 실행에서 git 태그와 GitHub Release 가 생성된다.
+          # (기본 GITHUB_TOKEN 으로 만든 push 는 워크플로를 트리거하지 못함)
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
@@ -25,7 +29,7 @@ jobs:
       - name: Auto-merge release PR
         if: ${{ steps.release.outputs.pr }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
         run: |
           gh pr merge "${{ fromJson(steps.release.outputs.pr).number }}" \
             --repo "${{ github.repository }}" \
