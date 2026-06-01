@@ -14,6 +14,7 @@ import {
   type MentoringSession,
 } from "@/actions/mentoring-action";
 import { mentoringQueries } from "@/queries";
+import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingButton } from "@/components/ui/loading-button";
@@ -119,6 +120,8 @@ export default function MentoringDetailPage() {
     error,
   } = useQuery(mentoringQueries.detail(mentoringId));
 
+  const viewerId = useAuthStore((state) => state.user?.id) ?? null;
+
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(
     null
   );
@@ -183,12 +186,22 @@ export default function MentoringDetailPage() {
     [activeCompanyId, mentoring]
   );
 
+  // 회차 계산(nextSessionNo)은 기업 단위 공유라 전체 세션을 사용한다.
   const companySessions = useMemo(
     () =>
       mentoring?.sessions.filter(
         (session) => session.company_id === activeCompanyId
       ) ?? [],
     [activeCompanyId, mentoring]
+  );
+
+  // 화면 표시는 비관리자(멘토)의 경우 본인이 작성한 세션만 노출한다.
+  const visibleSessions = useMemo(
+    () =>
+      mentoring?.isAdminView
+        ? companySessions
+        : companySessions.filter((session) => session.mentor_id === viewerId),
+    [companySessions, mentoring?.isAdminView, viewerId]
   );
 
   const nextSessionNo = useMemo(() => {
@@ -250,11 +263,11 @@ export default function MentoringDetailPage() {
     startTransition(() => {
       setSelectedSessionIndex(0);
       setIsComposerOpen(
-        Boolean(selectedCompany.is_mine && companySessions.length === 0)
+        Boolean(selectedCompany.is_mine && visibleSessions.length === 0)
       );
     });
     sessionCarouselApi?.scrollTo(0);
-  }, [companySessions.length, selectedCompany, sessionCarouselApi]);
+  }, [visibleSessions.length, selectedCompany, sessionCarouselApi]);
 
   useEffect(() => () => clearEditorPhotos(), []);
 
@@ -525,6 +538,14 @@ export default function MentoringDetailPage() {
       : `담당 ${names[0]} 외 ${names.length - 1}명`;
   };
 
+  // 마우스 호버 시 배정된 멘토 전체 이름을 보여주기 위한 title 텍스트
+  const mentorNamesTitle = (
+    mentors: { mentor_name: string | null }[]
+  ): string | undefined => {
+    const names = mentors.map((m) => m.mentor_name).filter(Boolean) as string[];
+    return names.length > 0 ? names.join(", ") : undefined;
+  };
+
   if (isLoading || !mentoring) {
     return <DetailSkeleton />;
   }
@@ -593,7 +614,7 @@ export default function MentoringDetailPage() {
                         setEditingSessionId(null);
                       }}
                       className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
-                        selectedCompanyId === company.company_id
+                        activeCompanyId === company.company_id
                           ? "border-neutral-900 bg-neutral-900 text-white"
                           : "border-neutral-200 bg-neutral-50 hover:border-neutral-300 hover:bg-white"
                       }`}
@@ -604,12 +625,12 @@ export default function MentoringDetailPage() {
                         </span>
                         <Badge
                           variant={
-                            selectedCompanyId === company.company_id
+                            activeCompanyId === company.company_id
                               ? "outline"
                               : "secondary"
                           }
                           className={
-                            selectedCompanyId === company.company_id
+                            activeCompanyId === company.company_id
                               ? "border-white/30 bg-white/10 text-white"
                               : ""
                           }
@@ -618,8 +639,9 @@ export default function MentoringDetailPage() {
                         </Badge>
                       </div>
                       <p
+                        title={mentorNamesTitle(company.mentors)}
                         className={`mt-1 text-xs ${
-                          selectedCompanyId === company.company_id
+                          activeCompanyId === company.company_id
                             ? "text-white/70"
                             : "text-neutral-500"
                         }`}
@@ -654,7 +676,10 @@ export default function MentoringDetailPage() {
                       <Badge variant="secondary">
                         대표자 {selectedCompany.representative_name || "-"}
                       </Badge>
-                      <Badge variant="outline">
+                      <Badge
+                        variant="outline"
+                        title={mentorNamesTitle(selectedCompany.mentors)}
+                      >
                         {formatMentorNames(selectedCompany.mentors)}
                       </Badge>
                     </div>
@@ -675,15 +700,15 @@ export default function MentoringDetailPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="secondary">
-                          {companySessions.length}건
+                          {visibleSessions.length}건
                         </Badge>
-                        {companySessions.length > 0 && (
+                        {visibleSessions.length > 0 && (
                           <Badge
                             variant="outline"
                             className="text-xs text-neutral-600"
                           >
                             {selectedSessionIndex + 1} /{" "}
-                            {companySessions.length}
+                            {visibleSessions.length}
                           </Badge>
                         )}
                         {canComposeSession && (
@@ -700,7 +725,7 @@ export default function MentoringDetailPage() {
                     </div>
 
                     <div className="mt-4 space-y-4">
-                      {companySessions.length === 0 ? (
+                      {visibleSessions.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-10 text-center">
                           <p className="text-sm font-medium text-neutral-700">
                             아직 저장된 멘토링 세션이 없습니다.
@@ -731,7 +756,7 @@ export default function MentoringDetailPage() {
                             className="w-full"
                           >
                             <CarouselContent>
-                              {companySessions.map((session) => (
+                              {visibleSessions.map((session) => (
                                 <CarouselItem key={session.id}>
                                   <article className="rounded-6 border border-neutral-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-sm">
                                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -899,7 +924,7 @@ export default function MentoringDetailPage() {
                             </CarouselContent>
                             <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                               <div className="flex flex-wrap gap-2">
-                                {companySessions.map((session, index) => (
+                                {visibleSessions.map((session, index) => (
                                   <Button
                                     key={session.id}
                                     type="button"
