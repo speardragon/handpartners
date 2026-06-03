@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "sonner";
+import NextTopLoader from "nextjs-toploader";
 import ReactQueryClientProvider from "@/config/ReactQueryClientProvider";
 import { AuthProvider } from "@/app/_components/AuthProvider";
 import "core-js/full/promise/with-resolvers";
@@ -43,6 +44,12 @@ export default async function RootLayout({
         )}
       </head>
       <body className={`${pretendard.className} antialiased`}>
+        <NextTopLoader
+          color="#4f46e5"
+          height={3}
+          shadow="0 0 10px #4f46e5, 0 0 5px #4f46e5"
+          showSpinner={false}
+        />
         <ReactQueryClientProvider>
           <AuthProvider>
             <Toaster richColors />
