@@ -24,32 +24,18 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
   ArrowLeft,
   Building2,
   Clock3,
   Download,
   FileText,
-  MapPin,
-  Pencil,
   PlayCircle,
   SquareArrowOutUpRight,
   StopCircle,
-  Trash2,
-  UserRound,
 } from "lucide-react";
 import ProgramFeatureTabs from "../_components/ProgramFeatureTabs";
 import MentoringEditForm from "../_components/MentoringEditForm";
+import MentoringSessionCard from "./_components/MentoringSessionCard";
 import MentoringSessionDocument from "@/app/(home)/mentoring/[mentoringId]/_components/MentoringSessionDocument";
 import {
   Select,
@@ -684,103 +670,18 @@ export default function Page({ params }: Props) {
                   </AccordionTrigger>
                   <AccordionContent className="space-y-3 pb-4">
                     {group.sessions.map((session) => (
-                      <article
+                      <MentoringSessionCard
                         key={session.id}
-                        className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm"
-                      >
-                        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Badge variant="secondary">
-                                {session.session_no}회차
-                              </Badge>
-                              <span className="text-sm font-medium text-neutral-900">
-                                {session.mentored_at
-                                  .slice(0, 16)
-                                  .replace("T", " ")}
-                              </span>
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-3 text-sm text-neutral-500">
-                              <span className="flex items-center gap-1">
-                                <UserRound className="h-3.5 w-3.5" />
-                                {session.mentor_name || "작성자 없음"}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-3.5 w-3.5" />
-                                {session.place || "장소 미입력"}
-                              </span>
-                            </div>
-                            {session.content && (
-                              <p className="mt-2 line-clamp-2 text-sm leading-6 text-neutral-600">
-                                {session.content}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <LoadingButton
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="gap-1.5"
-                              loading={downloadingSessionId === session.id}
-                              onClick={() => handleSessionPdfDownload(session)}
-                            >
-                              <FileText className="h-4 w-4" />
-                              보고서
-                            </LoadingButton>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="gap-1.5"
-                              onClick={() =>
-                                router.push(
-                                  `/mentoring/${mentoring.id}?companyId=${session.company_id}`
-                                )
-                              }
-                            >
-                              <Pencil className="h-4 w-4" />
-                              수정
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  className="gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                  disabled={adminDeleteMutation.isPending}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  삭제
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    멘토링 세션을 삭제하시겠습니까?
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    {group.companyName} · {session.session_no}
-                                    회차 기록과 첨부된 사진이 모두 삭제됩니다.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>취소</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() =>
-                                      adminDeleteMutation.mutate(session.id)
-                                    }
-                                    className="bg-red-500 hover:bg-red-600"
-                                  >
-                                    삭제
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </div>
-                      </article>
+                        session={session}
+                        companyName={group.companyName}
+                        mentoringId={mentoring.id}
+                        isDownloading={downloadingSessionId === session.id}
+                        isDeleting={adminDeleteMutation.isPending}
+                        onDownloadReport={() =>
+                          handleSessionPdfDownload(session)
+                        }
+                        onDelete={() => adminDeleteMutation.mutate(session.id)}
+                      />
                     ))}
                   </AccordionContent>
                 </AccordionItem>
