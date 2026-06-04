@@ -39,7 +39,7 @@ import ProgramEditForm from "./ProgramEditForm";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { programQueries } from "@/queries";
 
 function ProgramManageCell({

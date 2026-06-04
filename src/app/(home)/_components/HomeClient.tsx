@@ -9,7 +9,7 @@ import ProgramSkeleton from "./ProgramSkeleton";
 import { JudgingCard } from "./judging-card";
 import WorkspaceTabs from "./WorkspaceTabs";
 import WorkspaceEmptyState from "./workspace-empty-state";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import {
   CalendarX2,
   Search,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
 import { Delay } from "@suspensive/react";
 import { mentoringQueries } from "@/queries";

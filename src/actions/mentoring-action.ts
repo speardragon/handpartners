@@ -1742,6 +1742,11 @@ export async function upsertMentoringSessionByAdmin(args: {
   mentoredAt: string;
   place?: string | null;
   content?: string | null;
+  photos: Array<{
+    photo_path: string;
+    original_filename?: string | null;
+    sort_order?: number;
+  }>;
 }) {
   return withActionResult(async () => {
     const context = await assertAdmin();
@@ -1772,6 +1777,35 @@ export async function upsertMentoringSessionByAdmin(args: {
         throw new Error("같은 기업에 동일한 회차가 이미 존재합니다.");
       }
       raiseActionError(updateError);
+    }
+
+    // 사진은 "기존 전부 삭제 → 새 목록 삽입" 방식으로 교체한다.
+    // 클라이언트가 유지할 기존 사진은 photo_path 를 그대로 다시 넘겨준다.
+    const { error: deletePhotoError } = await context.supabase
+      .from("mentoring_session_photo")
+      .delete()
+      .eq("mentoring_session_id", args.sessionId);
+
+    if (deletePhotoError) {
+      raiseActionError(deletePhotoError);
+    }
+
+    if (args.photos.length > 0) {
+      const { error: insertPhotoError } = await context.supabase
+        .from("mentoring_session_photo")
+        .insert(
+          args.photos.map((photo, index) => ({
+            mentoring_session_id: args.sessionId,
+            photo_path: photo.photo_path,
+            original_filename: photo.original_filename ?? null,
+            sort_order: photo.sort_order ?? index + 1,
+            created_at: new Date().toISOString(),
+          }))
+        );
+
+      if (insertPhotoError) {
+        raiseActionError(insertPhotoError);
+      }
     }
 
     return undefined;

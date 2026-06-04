@@ -2,7 +2,8 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { executeAction, getErrorMessage } from "@/lib/action";
