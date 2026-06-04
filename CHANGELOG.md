@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/speardragon/handpartners/compare/v0.3.0...v0.4.0) (2026-06-04)
+
+
+### Features
+
+* 관리자 멘토링 세션 인라인 수정 + 페이지 이동 top loader 도입 ([#25](https://github.com/speardragon/handpartners/issues/25)) ([4f42453](https://github.com/speardragon/handpartners/commit/4f424531831a5b30120addeef79986d9356a2fe8))
+* 멘토링 보고서 일괄 저장 병렬 처리 + 기업별 폴더·멘토명 파일명 ([#23](https://github.com/speardragon/handpartners/issues/23)) ([e332862](https://github.com/speardragon/handpartners/commit/e33286248c393d156ef473a7e72fe2761cdb2dc9))
+
 ## [0.3.0](https://github.com/speardragon/handpartners/compare/v0.2.0...v0.3.0) (2026-06-01)
 
 
