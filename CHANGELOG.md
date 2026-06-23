@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/speardragon/handpartners/compare/v0.4.0...v0.4.1) (2026-06-23)
+
+
+### Bug Fixes
+
+* 참여 기업을 전부 제거하면 DB 목록으로 되살아나던 버그 수정 ([#26](https://github.com/speardragon/handpartners/issues/26)) ([08eeb48](https://github.com/speardragon/handpartners/commit/08eeb4877f3b8ba8747633f29b99d00d715a5e41))
+
 ## [0.4.0](https://github.com/speardragon/handpartners/compare/v0.3.0...v0.4.0) (2026-06-04)
 
 
