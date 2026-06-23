@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { programQueries, companyQueries } from "@/queries";
 import { useInfiniteScroll } from "@/app/_hooks/useInfiniteScroll";
@@ -43,17 +43,22 @@ export default function CompanySelectForModify({
   });
   const sourceList = data?.pages.flatMap((page) => page.result) ?? [];
 
+  // 기존 참여 기업으로 targetList를 채우는 작업은 "최초 1회"만 수행한다.
+  // targetList.length === 0 을 초기화 신호로 쓰면, 사용자가 참여 기업을
+  // 전부 제거해 비운 순간에도 다시 DB 목록으로 복원되어 "제거가 안 되는" 버그가 발생한다.
+  const initializedRef = useRef(false);
+
   useEffect(() => {
-    if (!isLoading && allCompanies && allCompanies.length > 0) {
-      if (targetList.length === 0) {
-        const mapped = allCompanies.map((pc) => ({
-          id: pc.company_id,
-          name: pc.company?.name ?? `Company #${pc.company_id}`,
-        }));
-        onTargetListChange(mapped);
-      }
-    }
-  }, [isLoading, allCompanies, targetList.length, onTargetListChange]);
+    if (initializedRef.current) return;
+    if (isLoading || !allCompanies) return;
+
+    initializedRef.current = true;
+    const mapped = allCompanies.map((pc) => ({
+      id: pc.company_id,
+      name: pc.company?.name ?? `Company #${pc.company_id}`,
+    }));
+    onTargetListChange(mapped);
+  }, [isLoading, allCompanies, onTargetListChange]);
 
   const handleSelectSource = (id: number) => {
     setSelectedSourceIds((prev) =>
