@@ -1,7 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { executeAction } from "@/lib/action";
+import { toast } from "sonner";
+import { executeAction, getErrorMessage } from "@/lib/action";
 import { createEvaluation } from "@/actions/evaluation-action";
-import { judgingQueries, evaluationQueries } from "@/queries";
+import {
+  EVALUATION_SAVE_SCOPE,
+  syncEvaluationCache,
+} from "../_lib/sync-evaluation-cache";
 
 interface AutoSaveArgs {
   judgeRoundId: string;
@@ -10,14 +14,12 @@ interface AutoSaveArgs {
   evaluations: { id: number; grade: number }[];
 }
 
-type EvaluationQueryData = Awaited<
-  ReturnType<typeof import("@/actions/evaluation-action").getEvaluationByUser>
->;
-
 export function useAutoSaveMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["evaluation-auto-save"],
+    // 임시 저장·제출 요청을 순서대로 처리 (늦게 도착한 이전 값이 최신 값을 덮어쓰지 않도록)
+    scope: { id: EVALUATION_SAVE_SCOPE },
     mutationFn: async ({
       judgeRoundId,
       companyId,
@@ -37,25 +39,16 @@ export function useAutoSaveMutation() {
         createEvaluation(judgeRoundId, companyId, evaluationRecords)
       );
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: judgingQueries.detailKeyPrefix(),
-      });
-      // evaluation query cache의 status를 ONGOING으로 동기화
-      queryClient.setQueryData<EvaluationQueryData>(
-        evaluationQueries.byUser(variables.judgeRoundId, variables.companyId)
-          .queryKey,
-        (old) =>
-          old
-            ? {
-                ...old,
-                evaluations: old.evaluations.map((e) => ({
-                  ...e,
-                  status: "ONGOING",
-                })),
-              }
-            : old
+    onSuccess: (data, variables) => {
+      syncEvaluationCache(
+        queryClient,
+        variables.judgeRoundId,
+        variables.companyId,
+        data
       );
+    },
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, "임시 저장에 실패했습니다."));
     },
   });
 }

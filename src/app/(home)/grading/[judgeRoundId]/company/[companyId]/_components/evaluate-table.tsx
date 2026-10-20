@@ -42,6 +42,13 @@ type Props = {
   isParticipant: boolean;
 };
 
+type AutoSavePayload = {
+  judgeRoundId: string;
+  companyId: number;
+  feedback: string;
+  evaluations: EvaluationItem[];
+};
+
 const DEBOUNCE_MS = 1000;
 
 const StatusBadge = ({ status }: { status: EvaluationStatus }) => {
@@ -97,7 +104,9 @@ export default function EvaluateTable({
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
   const isInitialized = useRef(false);
+  const isDirty = useRef(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSave = useRef<AutoSavePayload | null>(null);
 
   // 초기 데이터 로드 (최초 마운트 시 1회만)
   useEffect(() => {
@@ -121,31 +130,34 @@ export default function EvaluateTable({
     }, 0);
   }, [judgeRound, existEvaluation]);
 
-  // 자동 저장
-  const triggerAutoSave = useCallback(() => {
-    if (!isInitialized.current || !canEdit || evaluations.length === 0) return;
-
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-
-    debounceTimer.current = setTimeout(() => {
-      autoSave(
-        { judgeRoundId, companyId, feedback, evaluations },
-        { onSuccess: () => setStatus("ONGOING") }
-      );
-    }, DEBOUNCE_MS);
-  }, [judgeRoundId, companyId, feedback, evaluations, canEdit, autoSave]);
+  // 자동 저장: 사용자가 직접 수정한 경우에만 debounce 후 저장
+  const flushAutoSave = useCallback(() => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+    }
+    const payload = pendingSave.current;
+    if (!payload) return;
+    pendingSave.current = null;
+    autoSave(payload, { onSuccess: () => setStatus("ONGOING") });
+  }, [autoSave]);
 
   useEffect(() => {
-    triggerAutoSave();
-    return () => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    };
-  }, [triggerAutoSave]);
+    if (!isDirty.current || !canEdit || evaluations.length === 0) return;
+
+    pendingSave.current = { judgeRoundId, companyId, feedback, evaluations };
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(flushAutoSave, DEBOUNCE_MS);
+  }, [judgeRoundId, companyId, feedback, evaluations, canEdit, flushAutoSave]);
+
+  // 화면을 벗어날 때 아직 전송되지 않은 변경 사항을 즉시 저장
+  useEffect(() => flushAutoSave, [flushAutoSave]);
 
   const handleInputChange = (id: number, value: string) => {
     const numValue = Number(value);
     if (numValue < 0) return;
 
+    isDirty.current = true;
     setEvaluations((prev) =>
       prev.map((item) =>
         item.id === id
@@ -156,7 +168,7 @@ export default function EvaluateTable({
   };
 
   const handleClose = () => {
-    if (canEdit && status === "ONGOING") {
+    if (canEdit && (status === "ONGOING" || pendingSave.current)) {
       setShowLeaveDialog(true);
     } else {
       router.back();
@@ -164,6 +176,11 @@ export default function EvaluateTable({
   };
 
   const handleSubmit = () => {
+    // 제출 데이터가 최신이므로 대기 중인 임시 저장은 취소 (제출 후 ONGOING으로 되돌아가지 않도록)
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = null;
+    pendingSave.current = null;
+
     submitEvaluation(
       { judgeRoundId, companyId, feedback, evaluations },
       { onSuccess: () => setStatus("DONE") }
@@ -268,7 +285,10 @@ export default function EvaluateTable({
         <Textarea
           placeholder="총 피드백을 입력하세요"
           value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
+          onChange={(e) => {
+            isDirty.current = true;
+            setFeedback(e.target.value);
+          }}
           disabled={!canEdit}
           className="resize-none disabled:cursor-not-allowed disabled:bg-gray-100"
           rows={4}
