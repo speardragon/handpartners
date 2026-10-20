@@ -3,6 +3,7 @@
 import { Database } from "types_db";
 import { raiseActionError, withActionResult } from "@/lib/action";
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import { generateJudgingRoundId } from "@/lib/utils/judging-round-id";
 
 export type JudgingRoundStatus =
@@ -392,10 +393,11 @@ export async function getJudgingRoundDetails(
       `
       )
       .eq("judging_round_id", judgingRoundId),
-    supabase
-      .from("evaluation")
-      .select(
-        `
+    fetchAllRows((from, to) =>
+      supabase
+        .from("evaluation")
+        .select(
+          `
         company_id,
         user_id,
         evaluation_criterion_id,
@@ -405,8 +407,11 @@ export async function getJudgingRoundDetails(
           username
         )
       `
-      )
-      .eq("judging_round_id", judgingRoundId),
+        )
+        .eq("judging_round_id", judgingRoundId)
+        .order("id")
+        .range(from, to)
+    ),
   ]);
 
   if (roundError || !roundData) {
@@ -516,15 +521,19 @@ export async function getJudgingRoundDetails(
 export async function getCompanyFeedbacksByRoundId(judging_round_id: string) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("evaluation")
-    .select(
-      `
+  const { data, error } = await fetchAllRows((from, to) =>
+    supabase
+      .from("evaluation")
+      .select(
+        `
       feedback,
       company:company_id (name)
     `
-    )
-    .eq("judging_round_id", judging_round_id);
+      )
+      .eq("judging_round_id", judging_round_id)
+      .order("id")
+      .range(from, to)
+  );
 
   if (error) {
     console.error("getCompanyFeedbacksByRoundId error:", error);
@@ -586,16 +595,21 @@ export async function getCompanyScoresByRoundId(
   //
   // DB 스키마상 user 테이블에는 username 필드가 존재하므로,
   // select("..., user:user_id(username)") 형태로 조인
-  const { data: evaluationRows, error } = await supabase
-    .from("evaluation")
-    .select(
-      `
+  // 라운드 전체 행 수가 1000을 넘으면 잘리므로 페이지를 이어 받는다
+  const { data: evaluationRows, error } = await fetchAllRows((from, to) =>
+    supabase
+      .from("evaluation")
+      .select(
+        `
         grade,
         company:company_id ( name ),
         user:user_id ( username )
       `
-    )
-    .eq("judging_round_id", judging_round_id);
+      )
+      .eq("judging_round_id", judging_round_id)
+      .order("id")
+      .range(from, to)
+  );
 
   if (error) {
     console.error("getCompanyScoresByRoundId error:", error);

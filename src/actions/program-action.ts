@@ -3,6 +3,7 @@
 import { Database } from "types_db";
 import { raiseActionError, withActionResult } from "@/lib/action";
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import { generateJudgingRoundId } from "@/lib/utils/judging-round-id";
 import { generateMentoringId } from "@/lib/utils/mentoring-id";
 
@@ -417,17 +418,22 @@ export async function getAllJudgingWorkspaces(
     {};
 
   if (judgingRoundIds.length > 0) {
-    let evalQuery = supabase
-      .from("evaluation")
-      .select("judging_round_id, company_id, status, grade")
-      .in("judging_round_id", judgingRoundIds);
+    // 관리자는 여러 라운드의 전체 평가를 조회하므로 1000행을 넘을 수 있어 페이지를 이어 받는다
+    const { data: evaluations, error: evalError } = await fetchAllRows(
+      (from, to) => {
+        let evalQuery = supabase
+          .from("evaluation")
+          .select("judging_round_id, company_id, status, grade")
+          .in("judging_round_id", judgingRoundIds);
 
-    // 심사자 로직: 자기 평가만, 관리자 비참여: 전체 평가
-    if (useJudgeLogic) {
-      evalQuery = evalQuery.eq("user_id", userId);
-    }
+        // 심사자 로직: 자기 평가만, 관리자 비참여: 전체 평가
+        if (useJudgeLogic) {
+          evalQuery = evalQuery.eq("user_id", userId);
+        }
 
-    const { data: evaluations, error: evalError } = await evalQuery;
+        return evalQuery.order("id").range(from, to);
+      }
+    );
 
     if (evalError) {
       throw new Error(evalError.message);
