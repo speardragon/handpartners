@@ -135,18 +135,24 @@ export type Database = {
       }
       judging_round: {
         Row: {
+          auto_end_applied_at: string | null
+          auto_start_applied_at: string | null
           created_at: string
           id: string
           program_id: number
           status: Database["public"]["Enums"]["judging_round_status"]
         }
         Insert: {
+          auto_end_applied_at?: string | null
+          auto_start_applied_at?: string | null
           created_at?: string
           id: string
           program_id: number
           status?: Database["public"]["Enums"]["judging_round_status"]
         }
         Update: {
+          auto_end_applied_at?: string | null
+          auto_start_applied_at?: string | null
           created_at?: string
           id?: string
           program_id?: number
@@ -260,6 +266,8 @@ export type Database = {
       }
       mentoring: {
         Row: {
+          auto_end_applied_at: string | null
+          auto_start_applied_at: string | null
           created_at: string
           id: string
           program_id: number
@@ -267,6 +275,8 @@ export type Database = {
           status: Database["public"]["Enums"]["mentoring_status"]
         }
         Insert: {
+          auto_end_applied_at?: string | null
+          auto_start_applied_at?: string | null
           created_at?: string
           id: string
           program_id: number
@@ -274,6 +284,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["mentoring_status"]
         }
         Update: {
+          auto_end_applied_at?: string | null
+          auto_start_applied_at?: string | null
           created_at?: string
           id?: string
           program_id?: number
