@@ -1,3 +1,5 @@
+import { formatLocalDate } from "@/lib/date-format";
+
 // 파일 시스템에서 쓸 수 없는 문자: \ / : * ? " < > | 및 제어 문자
 const INVALID_FILE_NAME_CHARS = /[\\/:*?"<>|\u0000-\u001f]/g;
 
@@ -6,12 +8,6 @@ function sanitizeFileNamePart(value: string) {
     .replace(INVALID_FILE_NAME_CHARS, " ")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-/** 사용자의 로컬 시간대 기준 YYYY-MM-DD (toISOString은 UTC라 한국 오전 9시 전에는 전날이 된다) */
-function formatLocalDate(date: Date) {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 /**

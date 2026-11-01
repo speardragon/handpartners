@@ -57,15 +57,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { formatLocalDate, formatLocalDateTime, formatLocalMonthDay } from "@/lib/date-format";
 
 function toLocalInputValue(dateString?: string | null) {
   const date = dateString ? new Date(dateString) : new Date();
   const offset = date.getTimezoneOffset();
   return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
-}
-
-function formatDateTime(dateString: string) {
-  return dateString.slice(0, 16).replace("T", " ");
 }
 
 function isWebpFile(file: File) {
@@ -515,7 +512,7 @@ export default function MentoringDetailPage() {
         />
       ).toBlob();
 
-      const sessionDate = session.mentored_at.slice(0, 10);
+      const sessionDate = formatLocalDate(session.mentored_at);
       saveAs(
         blob,
         `${selectedCompany.company_name}_멘토링일지_${session.session_no}회차_${sessionDate}.pdf`
@@ -767,7 +764,7 @@ export default function MentoringDetailPage() {
                                             {session.session_no}회차
                                           </Badge>
                                           <span className="text-sm font-medium text-neutral-900">
-                                            {formatDateTime(
+                                            {formatLocalDateTime(
                                               session.mentored_at
                                             )}
                                           </span>
@@ -942,7 +939,7 @@ export default function MentoringDetailPage() {
                                   >
                                     <span>{session.session_no}회차</span>
                                     <span className="text-[11px] opacity-70">
-                                      {session.mentored_at.slice(5, 10)}
+                                      {formatLocalMonthDay(session.mentored_at)}
                                     </span>
                                   </Button>
                                 ))}
