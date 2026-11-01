@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/speardragon/handpartners/compare/v0.4.1...v0.5.0) (2026-11-01)
+
+
+### Features
+
+* 심사 결과 엑셀 분반별 시트 분리, 내보내기 파일명 개선, 멘토링 기업 전체 선택 ([#32](https://github.com/speardragon/handpartners/issues/32)) ([b8cd698](https://github.com/speardragon/handpartners/commit/b8cd698966f4d37b43583f889db11b4cc16fa8c1))
+
+
+### Bug Fixes
+
+* 크롬 자동 번역으로 인한 클라이언트 예외(removeChild) 크래시 수정 ([#30](https://github.com/speardragon/handpartners/issues/30)) ([7e5ddda](https://github.com/speardragon/handpartners/commit/7e5ddda6e62de3051d487d61d7df58ef06b120d8))
+
 ## [0.4.1](https://github.com/speardragon/handpartners/compare/v0.4.0...v0.4.1) (2026-10-20)
 
 
