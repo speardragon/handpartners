@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/speardragon/handpartners/compare/v0.5.0...v0.5.1) (2026-11-01)
+
+
+### Bug Fixes
+
+* 멘토링 일시가 화면에서 UTC로 표시되어 보고서·입력값과 9시간 어긋나던 문제 수정 ([#33](https://github.com/speardragon/handpartners/issues/33)) ([c14b2d0](https://github.com/speardragon/handpartners/commit/c14b2d0fbecab6ef746906996cbcfb3e84f17a5f))
+
 ## [0.5.0](https://github.com/speardragon/handpartners/compare/v0.4.1...v0.5.0) (2026-11-01)
 
 
