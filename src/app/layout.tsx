@@ -26,8 +26,9 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${pretendard.variable}`}>
+    <html lang="ko" translate="no" className={`${pretendard.variable}`}>
       <head>
+        <meta name="google" content="notranslate" />
         <link
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"
