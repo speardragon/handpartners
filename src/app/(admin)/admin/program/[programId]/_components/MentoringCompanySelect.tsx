@@ -38,6 +38,27 @@ export default function MentoringCompanySelect({
       representative_name: item.company?.representative_name ?? null,
     })) ?? [];
 
+  // 이미 멘토링 대상으로 옮겨진 기업은 비활성 상태라 전체 선택 대상에서 제외한다.
+  const selectableSourceIds = sourceList
+    .filter((item) => !targetList.some((target) => target.id === item.id))
+    .map((item) => item.id);
+  const areAllSourceSelected =
+    selectableSourceIds.length > 0 &&
+    selectableSourceIds.every((id) => selectedSourceIds.includes(id));
+  const areAllTargetSelected =
+    targetList.length > 0 &&
+    targetList.every((item) => selectedTargetIds.includes(item.id));
+
+  const toggleSelectAllSource = () => {
+    setSelectedSourceIds(areAllSourceSelected ? [] : selectableSourceIds);
+  };
+
+  const toggleSelectAllTarget = () => {
+    setSelectedTargetIds(
+      areAllTargetSelected ? [] : targetList.map((item) => item.id)
+    );
+  };
+
   const handleSelectSource = (id: number) => {
     setSelectedSourceIds((prev) =>
       prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]
@@ -78,6 +99,16 @@ export default function MentoringCompanySelect({
           <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
             {selectedSourceIds.length}개 선택
           </span>
+        </div>
+        <div className="border-b border-neutral-100 px-3 py-1.5">
+          <button
+            type="button"
+            onClick={toggleSelectAllSource}
+            disabled={selectableSourceIds.length === 0}
+            className="w-full rounded-md px-2 py-1 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-300 disabled:hover:bg-transparent"
+          >
+            {areAllSourceSelected ? "전체 해제" : "전체 선택"}
+          </button>
         </div>
         <div className="h-56 overflow-y-auto">
           {isLoading ? (
@@ -150,6 +181,16 @@ export default function MentoringCompanySelect({
           <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs text-white">
             {targetList.length}개
           </span>
+        </div>
+        <div className="border-b border-neutral-100 px-3 py-1.5">
+          <button
+            type="button"
+            onClick={toggleSelectAllTarget}
+            disabled={targetList.length === 0}
+            className="w-full rounded-md px-2 py-1 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-300 disabled:hover:bg-transparent"
+          >
+            {areAllTargetSelected ? "전체 해제" : "전체 선택"}
+          </button>
         </div>
         <div className="h-56 overflow-y-auto">
           {targetList.length === 0 ? (

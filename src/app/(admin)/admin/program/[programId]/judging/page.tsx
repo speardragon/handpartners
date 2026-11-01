@@ -1,5 +1,6 @@
 "use client";
 
+import { buildExportFileName } from "@/lib/export-file-name";
 import { use, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -177,8 +178,10 @@ export default function Page({ params }: Props) {
       }
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
-      const date = new Date().toISOString().split("T")[0];
-      saveAs(zipBlob, `심사보고서_${date}.zip`);
+      saveAs(
+        zipBlob,
+        buildExportFileName("심사보고서", judgingRound.program.name, "zip")
+      );
       toast.success("보고서 일괄 다운로드가 완료되었습니다.");
     } catch {
       toast.error("보고서 다운로드 중 오류가 발생했습니다.");
@@ -233,8 +236,10 @@ export default function Page({ params }: Props) {
       );
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
-      const date = new Date().toISOString().split("T")[0];
-      saveAs(zipBlob, `발표자료_${date}.zip`);
+      saveAs(
+        zipBlob,
+        buildExportFileName("발표자료", judgingRound.program.name, "zip")
+      );
       toast.success("발표자료 일괄 다운로드가 완료되었습니다.");
     } catch {
       toast.error("발표자료 다운로드 중 오류가 발생했습니다.");
@@ -297,7 +302,7 @@ export default function Page({ params }: Props) {
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.75fr)_360px]">
-        <section className="overflow-hidden rounded-7 border border-neutral-200 bg-white shadow-sm">
+        <section className="rounded-7 overflow-hidden border border-neutral-200 bg-white shadow-sm">
           <div className="grid gap-0 xl:grid-cols-[minmax(0,1.7fr)_300px]">
             <div className="p-6 sm:p-7">
               <div className="space-y-3">
@@ -401,7 +406,7 @@ export default function Page({ params }: Props) {
           </div>
         </section>
 
-        <section className="self-start rounded-7 border border-neutral-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
+        <section className="rounded-7 self-start border border-neutral-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
           <div className="flex flex-col gap-6">
             <div>
               <p className="text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase">
@@ -507,10 +512,12 @@ export default function Page({ params }: Props) {
                 </LoadingButton>
                 <ScoreToExcelButton
                   judgingRoundId={judgingRound.id}
+                  programName={judgingRound.program.name}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 px-4 py-2 text-sm text-neutral-700 transition-colors hover:border-neutral-400 hover:bg-neutral-50"
                 />
                 <FeedbackToExcelButton
                   judgingRoundId={judgingRound.id}
+                  programName={judgingRound.program.name}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 px-4 py-2 text-sm text-neutral-700 transition-colors hover:border-neutral-400 hover:bg-neutral-50"
                 />
               </div>

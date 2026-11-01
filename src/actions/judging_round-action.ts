@@ -515,25 +515,51 @@ export async function getJudgingRoundDetails(
 }
 
 /**
+ * 심사 라운드에 배정된 기업별 그룹(분반) 이름을 company_id 기준으로 반환한다.
+ * 그룹이 비어 있으면 null로 정규화한다.
+ */
+async function getCompanyGroupMap(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  judging_round_id: string
+) {
+  const { data, error } = await supabase
+    .from("judging_round_company")
+    .select("company_id, group_name")
+    .eq("judging_round_id", judging_round_id);
+
+  if (error) {
+    console.error("getCompanyGroupMap error:", error);
+    throw new Error(error.message);
+  }
+
+  return new Map<number, string | null>(
+    (data ?? []).map((row) => [row.company_id, row.group_name?.trim() || null])
+  );
+}
+
+/**
  * 주어진 judging_round_id를 기반으로
  * 회사별(Company.name) 모든 feedback을 배열 형태로 모아서 반환
  */
 export async function getCompanyFeedbacksByRoundId(judging_round_id: string) {
   const supabase = await createClient();
 
-  const { data, error } = await fetchAllRows((from, to) =>
-    supabase
-      .from("evaluation")
-      .select(
-        `
+  const [{ data, error }, companyGroupMap] = await Promise.all([
+    fetchAllRows((from, to) =>
+      supabase
+        .from("evaluation")
+        .select(
+          `
       feedback,
-      company:company_id (name)
+      company:company_id (id, name)
     `
-      )
-      .eq("judging_round_id", judging_round_id)
-      .order("id")
-      .range(from, to)
-  );
+        )
+        .eq("judging_round_id", judging_round_id)
+        .order("id")
+        .range(from, to)
+    ),
+    getCompanyGroupMap(supabase, judging_round_id),
+  ]);
 
   if (error) {
     console.error("getCompanyFeedbacksByRoundId error:", error);
@@ -541,29 +567,39 @@ export async function getCompanyFeedbacksByRoundId(judging_round_id: string) {
   }
 
   // 회사별 피드백을 모으기 (중복 제거)
-  const feedbackMap = new Map<string, Set<string>>();
+  const feedbackMap = new Map<
+    string,
+    { groupName: string | null; feedbacks: Set<string> }
+  >();
 
   data?.forEach((row) => {
-    const companyName = (row.company as unknown as { name: string })?.name;
+    const company = row.company as unknown as { id: number; name: string };
+    const companyName = company?.name;
     const feedback = row.feedback;
 
     if (!companyName || !feedback) return;
 
     if (!feedbackMap.has(companyName)) {
-      feedbackMap.set(companyName, new Set<string>());
+      feedbackMap.set(companyName, {
+        groupName: companyGroupMap.get(company.id) ?? null,
+        feedbacks: new Set<string>(),
+      });
     }
 
     // 중복 제거를 위해 Set 사용
-    feedbackMap.get(companyName)!.add(feedback);
+    feedbackMap.get(companyName)!.feedbacks.add(feedback);
   });
 
   // 최종 반환 구조
   // 회사마다 feedbacks: Set -> Array 로 변환
   return {
-    companies: Array.from(feedbackMap.entries()).map(([name, feedbackSet]) => ({
-      name,
-      feedbacks: Array.from(feedbackSet),
-    })),
+    companies: Array.from(feedbackMap.entries()).map(
+      ([name, { groupName, feedbacks }]) => ({
+        name,
+        groupName,
+        feedbacks: Array.from(feedbacks),
+      })
+    ),
   };
 }
 
@@ -574,10 +610,11 @@ export interface JudgingRow {
 
 export interface CompanyScoreResult {
   name: string; // 회사명
+  groupName: string | null; // 심사 그룹(분반). 미지정이면 null
   judgings: JudgingRow[]; // [{judgingUserName, score}, ...]
   totalScore: number;
   avgScore: number;
-  ranking: number; // totalScore 내림차순 순위
+  ranking: number; // 같은 그룹 내 totalScore 내림차순 순위
 }
 /**
  * 주어진 judging_round_id에 대해
@@ -596,20 +633,24 @@ export async function getCompanyScoresByRoundId(
   // DB 스키마상 user 테이블에는 username 필드가 존재하므로,
   // select("..., user:user_id(username)") 형태로 조인
   // 라운드 전체 행 수가 1000을 넘으면 잘리므로 페이지를 이어 받는다
-  const { data: evaluationRows, error } = await fetchAllRows((from, to) =>
-    supabase
-      .from("evaluation")
-      .select(
-        `
+  const [{ data: evaluationRows, error }, companyGroupMap] = await Promise.all([
+    fetchAllRows((from, to) =>
+      supabase
+        .from("evaluation")
+        .select(
+          `
         grade,
-        company:company_id ( name ),
+        company:company_id ( id, name ),
         user:user_id ( username )
       `
-      )
-      .eq("judging_round_id", judging_round_id)
-      .order("id")
-      .range(from, to)
-  );
+        )
+        .eq("judging_round_id", judging_round_id)
+        .order("id")
+        .range(from, to)
+    ),
+    getCompanyGroupMap(supabase, judging_round_id),
+  ]);
+  const groupByCompanyName = new Map<string, string | null>();
 
   if (error) {
     console.error("getCompanyScoresByRoundId error:", error);
@@ -653,13 +694,21 @@ export async function getCompanyScoresByRoundId(
   >();
 
   evaluationRows?.forEach((row) => {
-    const companyName = (row.company as unknown as { name: string })?.name;
+    const company = row.company as unknown as { id: number; name: string };
+    const companyName = company?.name;
     const userName = (row.user as unknown as { username: string })?.username;
     const grade = row.grade;
 
     // 유효성 체크
     if (!companyName || !userName || grade == null) {
       return; // 누락 데이터는 무시
+    }
+
+    if (!groupByCompanyName.has(companyName)) {
+      groupByCompanyName.set(
+        companyName,
+        companyGroupMap.get(company.id) ?? null
+      );
     }
 
     // 회사명이 없으면 생성
@@ -678,7 +727,7 @@ export async function getCompanyScoresByRoundId(
   });
 
   // 3) 이제 companyMap을 순회하며 최종 CompanyScoreResult 계산
-  let companiesArray: CompanyScoreResult[] = [];
+  const companiesArray: CompanyScoreResult[] = [];
 
   companyMap.forEach((userScoreMap, companyName) => {
     let totalScore = 0;
@@ -699,6 +748,7 @@ export async function getCompanyScoresByRoundId(
 
     companiesArray.push({
       name: companyName,
+      groupName: groupByCompanyName.get(companyName) ?? null,
       judgings,
       totalScore,
       avgScore,
@@ -707,19 +757,31 @@ export async function getCompanyScoresByRoundId(
   });
 
   // 4) totalScore 내림차순 정렬 & 동순위 처리
-  companiesArray.sort((a, b) => b.totalScore - a.totalScore);
+  //    분반(그룹)마다 심사위원과 평가 대상이 다르므로 순위는 같은 그룹 안에서만 매긴다.
+  //    그룹이 없거나 하나뿐인 라운드는 기존과 동일하게 전체 순위가 된다.
+  const sortedCompanies = [...companiesArray].sort(
+    (a, b) => b.totalScore - a.totalScore
+  );
+  const lastByGroup = new Map<
+    string | null,
+    { index: number; totalScore: number; ranking: number }
+  >();
 
-  companiesArray.forEach((company, index) => {
-    if (index === 0) {
-      company.ranking = 1;
-    } else {
-      company.ranking =
-        company.totalScore === companiesArray[index - 1].totalScore
-          ? companiesArray[index - 1].ranking
-          : index + 1;
-    }
+  const rankedCompanies = sortedCompanies.map((company) => {
+    const previous = lastByGroup.get(company.groupName);
+    const index = (previous?.index ?? 0) + 1;
+    const ranking =
+      previous && previous.totalScore === company.totalScore
+        ? previous.ranking
+        : index;
+    lastByGroup.set(company.groupName, {
+      index,
+      totalScore: company.totalScore,
+      ranking,
+    });
+    return { ...company, ranking };
   });
 
   // 5) 반환
-  return { companies: companiesArray };
+  return { companies: rankedCompanies };
 }

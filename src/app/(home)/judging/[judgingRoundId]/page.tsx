@@ -90,6 +90,7 @@ export default function JudgingDetailPage() {
         <ExportDropdown
           judgingRoundId={judging.id}
           programId={judging.program.id}
+          programName={judging.program.name}
         />
 
         <div className="rounded-lg border bg-white shadow-sm">
