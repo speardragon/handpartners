@@ -1,5 +1,6 @@
 "use client";
 
+import { buildExportFileName } from "@/lib/export-file-name";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/ui/loading-button";
@@ -107,7 +108,9 @@ export default function AdminPanel({
         `심사 상태가 "${STATUS_LABEL[nextStatus]}"(으)로 변경되었습니다.`
       );
     } catch (actionError) {
-      toast.error(getErrorMessage(actionError, "상태 변경 중 오류가 발생했습니다."));
+      toast.error(
+        getErrorMessage(actionError, "상태 변경 중 오류가 발생했습니다.")
+      );
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -193,8 +196,7 @@ export default function AdminPanel({
       }
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
-      const date = new Date().toISOString().split("T")[0];
-      saveAs(zipBlob, `심사보고서_${date}.zip`);
+      saveAs(zipBlob, buildExportFileName("심사보고서", programName, "zip"));
 
       toast.success("보고서 일괄 다운로드가 완료되었습니다.");
     } catch (error) {

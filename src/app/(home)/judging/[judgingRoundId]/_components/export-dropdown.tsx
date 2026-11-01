@@ -7,6 +7,7 @@ import PdfDownloadButton from "@/app/(home)/_components/PdfDownloadButton";
 interface ExportDropdownProps {
   judgingRoundId: string;
   programId: number;
+  programName: string;
 }
 
 const exportButtonClass =
@@ -15,6 +16,7 @@ const exportButtonClass =
 export default function ExportDropdown({
   judgingRoundId,
   programId,
+  programName,
 }: ExportDropdownProps) {
   return (
     <div className="rounded-lg border bg-white p-5 shadow-sm">
@@ -23,10 +25,12 @@ export default function ExportDropdown({
         <ScoreToExcelButton
           className={exportButtonClass}
           judgingRoundId={judgingRoundId}
+          programName={programName}
         />
         <FeedbackToExcelButton
           className={exportButtonClass}
           judgingRoundId={judgingRoundId}
+          programName={programName}
         />
         <PdfDownloadButton
           className={exportButtonClass}

@@ -4,6 +4,7 @@ import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
 import { FileDigit } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { buildExportFileName } from "@/lib/export-file-name";
 import { judgingRoundQueries } from "@/queries";
 
 // 헬퍼 함수
@@ -15,12 +16,14 @@ import { splitIntoGroupSheets } from "../_lib/group-sheets";
 
 type Props = {
   judgingRoundId: string;
+  programName: string;
   className?: string;
 };
 
 export default function ScoreToExcelButton({
   className,
   judgingRoundId,
+  programName,
 }: Props) {
   const { isLoading, refetch } = useQuery({
     ...judgingRoundQueries.scores(judgingRoundId),
@@ -60,7 +63,7 @@ export default function ScoreToExcelButton({
       const wbOut = XLSX.write(wb, { bookType: "xlsx", type: "array" });
       saveAs(
         new Blob([wbOut], { type: "application/octet-stream" }),
-        "결과 점수.xlsx"
+        buildExportFileName("결과점수", programName, "xlsx")
       );
     } catch (err: unknown) {
       console.error(err);

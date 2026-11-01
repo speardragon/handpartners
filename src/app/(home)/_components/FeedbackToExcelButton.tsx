@@ -3,6 +3,7 @@
 import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
 import { useQuery } from "@tanstack/react-query";
+import { buildExportFileName } from "@/lib/export-file-name";
 import { judgingRoundQueries } from "@/queries";
 import {
   applySheetStylesAndWidths,
@@ -13,11 +14,13 @@ import { FileSpreadsheet } from "lucide-react";
 
 type Props = {
   judgingRoundId: string;
+  programName: string;
   className?: string;
 };
 
 export default function FeedbackToExcelButton({
   judgingRoundId,
+  programName,
   className,
 }: Props) {
   const { isLoading, refetch } = useQuery({
@@ -61,7 +64,7 @@ export default function FeedbackToExcelButton({
       const wbOut = XLSX.write(wb, { bookType: "xlsx", type: "array" });
       saveAs(
         new Blob([wbOut], { type: "application/octet-stream" }),
-        "심사 정리.xlsx"
+        buildExportFileName("피드백", programName, "xlsx")
       );
     } catch (err: unknown) {
       console.error(err);
