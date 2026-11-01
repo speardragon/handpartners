@@ -8,6 +8,7 @@ import {
   applySheetStylesAndWidths,
   createSheetDataAndMerges,
 } from "../_lib/helper";
+import { splitIntoGroupSheets } from "../_lib/group-sheets";
 import { FileSpreadsheet } from "lucide-react";
 
 type Props = {
@@ -35,22 +36,27 @@ export default function FeedbackToExcelButton({
         throw new Error("No data to export.");
       }
 
-      // 1) AOA & merges 생성
-      const { sheetData, merges, maxCompanyNameLength } =
-        createSheetDataAndMerges(refetchedData.companies);
-
-      // 2) 시트 생성
-      const ws = XLSX.utils.aoa_to_sheet(sheetData);
-
-      // 3) 머지 정보
-      ws["!merges"] = merges;
-
-      // 4) 스타일 & 열 너비
-      applySheetStylesAndWidths(ws, maxCompanyNameLength);
-
-      // 5) Workbook & 저장
+      // 심사 그룹(분반)이 나뉘어 있으면 그룹마다 시트를 따로 만든다.
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Feedbacks");
+      splitIntoGroupSheets(refetchedData.companies, "Feedbacks").forEach(
+        ({ sheetName, items }) => {
+          // 1) AOA & merges 생성
+          const { sheetData, merges, maxCompanyNameLength } =
+            createSheetDataAndMerges(items);
+
+          // 2) 시트 생성
+          const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+          // 3) 머지 정보
+          ws["!merges"] = merges;
+
+          // 4) 스타일 & 열 너비
+          applySheetStylesAndWidths(ws, maxCompanyNameLength);
+
+          // 5) Workbook에 시트 추가
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        }
+      );
 
       const wbOut = XLSX.write(wb, { bookType: "xlsx", type: "array" });
       saveAs(
