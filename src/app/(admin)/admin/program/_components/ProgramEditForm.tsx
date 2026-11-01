@@ -20,7 +20,11 @@ import { ProgramRow } from "@/actions/program-action";
 import CompanySelectForModify from "./CompanySelectForModify";
 import { useState } from "react";
 import { updateProgramAndCompanies } from "@/actions/program-company-action";
-import { programQueries } from "@/queries";
+import {
+  judgingRoundQueries,
+  mentoringQueries,
+  programQueries,
+} from "@/queries";
 
 interface Company {
   id: number;
@@ -63,6 +67,9 @@ export default function ProgramEditForm({
         )
       );
       queryClient.invalidateQueries({ queryKey: programQueries.all() });
+      // 기간에 따라 DB 트리거가 심사·멘토링 상태를 다시 계산하므로 함께 갱신한다.
+      queryClient.invalidateQueries({ queryKey: judgingRoundQueries.all() });
+      queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
       toast.success("프로그램 정보를 수정하였습니다.");
       setOpenEdit(false);
     } catch (error) {
@@ -143,6 +150,11 @@ export default function ProgramEditForm({
                 )}
               />
             </div>
+            <p className="text-xs text-neutral-500">
+              기간에 맞춰 심사·멘토링 상태가 자동으로 바뀝니다. 시작일이 되면
+              진행 중으로, 종료일이 지나면 종료로 전환됩니다. 기간을 바꾸면 새
+              기간 기준으로 다시 계산됩니다.
+            </p>
           </div>
         </section>
 

@@ -28,7 +28,11 @@ import { createProgram, ProgramRowInsert } from "@/actions/program-action";
 import CompanySelect from "./CompanySelect";
 import { useState } from "react";
 import { CompanyRow } from "@/actions/company-action";
-import { programQueries } from "@/queries";
+import {
+  judgingRoundQueries,
+  mentoringQueries,
+  programQueries,
+} from "@/queries";
 
 export default function ProgramCreateSheet() {
   const { createOpen, setCreateOpen } = useDialogOpenStore((state) => state);
@@ -57,6 +61,9 @@ export default function ProgramCreateSheet() {
         )
       );
       queryClient.invalidateQueries({ queryKey: programQueries.all() });
+      // 기간에 따라 DB 트리거가 심사·멘토링 상태를 다시 계산하므로 함께 갱신한다.
+      queryClient.invalidateQueries({ queryKey: judgingRoundQueries.all() });
+      queryClient.invalidateQueries({ queryKey: mentoringQueries.all() });
       setCreateOpen(false);
       toast.success("새로운 프로그램 추가되었습니다.");
     } catch (error) {
@@ -149,6 +156,11 @@ export default function ProgramCreateSheet() {
                     )}
                   />
                 </div>
+                <p className="text-xs text-neutral-500">
+                  기간에 맞춰 심사·멘토링 상태가 자동으로 바뀝니다. 시작일이 되면
+                  진행 중으로, 종료일이 지나면 종료로 전환됩니다. 기간을 바꾸면 새
+                  기간 기준으로 다시 계산됩니다.
+                </p>
               </div>
             </section>
 
