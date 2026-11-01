@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/speardragon/handpartners/compare/v0.5.1...v0.6.0) (2026-11-01)
+
+
+### Features
+
+* 프로그램 기간에 맞춰 심사·멘토링 상태 자동 시작/종료 ([#34](https://github.com/speardragon/handpartners/issues/34)) ([798a81a](https://github.com/speardragon/handpartners/commit/798a81a27ace25ba5dc6441ac301863597854039))
+
 ## [0.5.1](https://github.com/speardragon/handpartners/compare/v0.5.0...v0.5.1) (2026-11-01)
 
 
