@@ -4,6 +4,7 @@ import Image from "next/image";
 import type { MentoringListItem } from "@/actions/mentoring-action";
 import { getStatusBadge } from "../_lib/lib";
 import { Building2, Calendar, History, Users } from "lucide-react";
+import { formatLocalDateTime } from "@/lib/date-format";
 
 interface Props {
   mentoring: MentoringListItem;
@@ -82,9 +83,7 @@ export function MentoringCard({ mentoring, isAdminView, onClick }: Props) {
 
         <p className="mt-4 text-xs text-neutral-400">
           {mentoring.recent_mentored_at
-            ? `최근 멘토링 ${mentoring.recent_mentored_at
-                .slice(0, 16)
-                .replace("T", " ")}`
+            ? `최근 멘토링 ${formatLocalDateTime(mentoring.recent_mentored_at)}`
             : "아직 멘토링 기록이 없습니다."}
         </p>
       </div>

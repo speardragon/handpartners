@@ -44,6 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatLocalDate, formatLocalDateTime } from "@/lib/date-format";
 
 type Props = {
   params: Promise<{
@@ -201,7 +202,7 @@ export default function Page({ params }: Props) {
   ) =>
     `${sanitizeForPath(companyName)}_${sanitizeForPath(
       mentorName ?? "멘토미상"
-    )}_멘토링일지_${sessionNo}회차_${date.slice(0, 10)}.pdf`;
+    )}_멘토링일지_${sessionNo}회차_${formatLocalDate(date)}.pdf`;
 
   const createSessionReportBlob = async (sessionId: number) => {
     if (!mentoringDetail) {
@@ -456,9 +457,7 @@ export default function Page({ params }: Props) {
                   </p>
                   <p className="mt-2 text-sm font-medium text-neutral-900">
                     {mentoring.recent_mentored_at
-                      ? mentoring.recent_mentored_at
-                          .slice(0, 16)
-                          .replace("T", " ")
+                      ? formatLocalDateTime(mentoring.recent_mentored_at)
                       : "아직 없음"}
                   </p>
                 </div>
@@ -600,7 +599,7 @@ export default function Page({ params }: Props) {
                       {(mentoringDetail?.sessions ?? []).map((session) => (
                         <SelectItem key={session.id} value={String(session.id)}>
                           {session.company_name} · {session.session_no}회차 ·{" "}
-                          {session.mentored_at.slice(0, 10)}
+                          {formatLocalDate(session.mentored_at)}
                         </SelectItem>
                       ))}
                     </SelectContent>

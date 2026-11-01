@@ -39,6 +39,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import { formatLocalDateTime } from "@/lib/date-format";
 
 // ISO 문자열을 datetime-local input 값(YYYY-MM-DDTHH:mm)으로 변환한다.
 function toLocalInputValue(dateString?: string | null) {
@@ -426,7 +427,7 @@ export default function MentoringSessionCard({
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">{session.session_no}회차</Badge>
             <span className="text-sm font-medium text-neutral-900">
-              {session.mentored_at.slice(0, 16).replace("T", " ")}
+              {formatLocalDateTime(session.mentored_at)}
             </span>
           </div>
           <div className="mt-2 flex flex-wrap gap-3 text-sm text-neutral-500">

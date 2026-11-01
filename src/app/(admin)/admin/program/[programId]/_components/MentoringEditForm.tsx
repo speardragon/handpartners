@@ -41,6 +41,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { formatLocalDateTime } from "@/lib/date-format";
 
 type Props = {
   programId: number;
@@ -346,7 +347,7 @@ export default function MentoringEditForm({
           value={`${data.number_of_sessions}건`}
           hint={
             data.recent_mentored_at
-              ? `최근 기록 ${data.recent_mentored_at.slice(0, 16).replace("T", " ")}`
+              ? `최근 기록 ${formatLocalDateTime(data.recent_mentored_at)}`
               : "아직 기록이 없습니다"
           }
         />
@@ -539,7 +540,7 @@ export default function MentoringEditForm({
                       <p className="text-neutral-600">대표자 {company.representative_name || "-"}</p>
                       <p className="mt-1 text-xs text-neutral-500">
                         {company.last_mentored_at
-                          ? `최근 ${company.last_mentored_at.slice(0, 16).replace("T", " ")}`
+                          ? `최근 ${formatLocalDateTime(company.last_mentored_at)}`
                           : "기록 없음"}
                       </p>
                     </div>
